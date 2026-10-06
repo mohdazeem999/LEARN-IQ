@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>LearnIQ — AI-Powered Learning Intelligence</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+<!-- ==========================================
+     SIDEBAR
+     ========================================== -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+
+        <div class="logo-icon">
+            <i class="fa-solid fa-brain"></i>
+        </div>
+
+        <div>
+            <h2>LearnIQ</h2>
+            <span>Learning Intelligence</span>
+        </div>
+
+    </div>
+
+
+    <!-- Navigation -->
+
+    <nav class="navigation">
+
+        <button class="nav-item active"
+                onclick="showPage('dashboard')">
+
+            <i class="fa-solid fa-grid-2"></i>
+
+            <span>Dashboard</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('generator')">
+
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+            <span>AI Quiz Generator</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('assessment')">
+
+            <i class="fa-solid fa-brain"></i>
+
+            <span>Adaptive Quiz Taker</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('intelligence')">
+
+            <i class="fa-solid fa-chart-line"></i>
+
+            <span>Learning Intelligence</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('teacher-map')">
+
+            <i class="fa-solid fa-chalkboard-user"></i>
+
+            <span>Teacher Class Map</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('challenges')">
+
+            <i class="fa-solid fa-bolt"></i>
+
+            <span>Challenges</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('rankings')">
+
+            <i class="fa-solid fa-ranking-star"></i>
+
+            <span>Rankings</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('rewards')">
+
+            <i class="fa-solid fa-trophy"></i>
+
+            <span>Rewards</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('profile')">
+
+            <i class="fa-solid fa-user"></i>
+
+            <span>Profile</span>
+
+        </button>
+
+
+        <button class="nav-item"
+                onclick="showPage('settings')">
+
+            <i class="fa-solid fa-gear"></i>
+
+            <span>Settings</span>
+
+        </button>
+
+    </nav>
+
+
+    <!-- XP Card -->
+
+    <div class="xp-card">
+
+        <div class="xp-icon">
+            <i class="fa-solid fa-star"></i>
+        </div>
+
+        <div>
+
+            <span>Total XP</span>
+
+            <strong class="xp-value">
+                2,480
+            </strong>
+
+        </div>
+
+    </div>
+
+
+</aside>
+
+
+
+<!-- ==========================================
+     MAIN CONTENT
+     ========================================== -->
+
+<main class="main-content">
+
+
+    <!-- TOP BAR -->
+
+    <header class="topbar">
+
+        <button class="mobile-menu"
+                onclick="toggleSidebar()">
+
+            <i class="fa-solid fa-bars"></i>
+
+        </button>
+
+
+        <div class="search-box">
+
+            <i class="fa-solid fa-search"></i>
+
+            <input type="text"
+                   placeholder="Search LearnIQ...">
+
+        </div>
+
+
+        <div class="topbar-right">
+
+            <button class="role-pill" id="rolePillBtn" onclick="toggleRole()">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span id="roleLabel">Mode: Student</span>
+            </button>
+
+            <button class="icon-button">
+
+                <i class="fa-regular fa-bell"></i>
+
+            </button>
+
+
+            <div class="user-profile">
+
+                <div class="avatar" id="userAvatar">
+                    A
+                </div>
+
+                <div>
+
+                    <strong id="userName">Alex</strong>
+
+                    <span id="userSub">Class 10</span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+
+<!-- ==========================================
+     AI QUIZ GENERATOR
+     ========================================== -->
+
+<section id="generator" class="page">
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                AI POWERED CREATION
+            </span>
+
+            <h1>
+                AI Quiz Generator
+            </h1>
+
+            <p>
+                Generate personalized, curriculum-aligned assessments in seconds.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="generator-card">
+
+        <h2 style="margin-bottom: 20px; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--cyan);"></i> Configure Assessment Parameters
+        </h2>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Class / Grade Level</label>
+                <select id="genClass" class="form-control">
+                    <option value="5">Class 5</option>
+                    <option value="6">Class 6</option>
+                    <option value="7">Class 7</option>
+                    <option value="8">Class 8</option>
+                    <option value="9">Class 9</option>
+                    <option value="10" selected>Class 10</option>
+                    <option value="11">Class 11</option>
+                    <option value="12">Class 12</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Subject</label>
+                <select id="genSubject" class="form-control">
+                    <option value="Mathematics" selected>Mathematics</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Biology">Biology</option>
+                    <option value="English">English</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Topic / Sub-Concept</label>
+                <input type="text" id="genTopic" class="form-control" value="Linear Equations" placeholder="e.g. Quadratic Equations, Photosynthesis">
+                <div class="quick-topics" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                    <button type="button" class="chip-btn" onclick="setTopic('Linear Equations', 'Mathematics', '10')">⚡ Linear Equations</button>
+                    <button type="button" class="chip-btn" onclick="setTopic('Fractions', 'Mathematics', '6')">⚡ Fractions</button>
+                    <button type="button" class="chip-btn" onclick="setTopic('Physics', 'Physics', '9')">⚡ Physics</button>
+                    <button type="button" class="chip-btn" onclick="setTopic('Photosynthesis', 'Biology', '10')">⚡ Photosynthesis</button>
+                    <button type="button" class="chip-btn" onclick="setTopic('Periodic Table', 'Chemistry', '10')">⚡ Periodic Table</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Target Difficulty</label>
+                <select id="genDifficulty" class="form-control">
+                    <option value="Easy">Easy (Foundational)</option>
+                    <option value="Medium" selected>Medium (Standard)</option>
+                    <option value="Hard">Hard (Application & Challenge)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Number of Questions</label>
+                <select id="genCount" class="form-control">
+                    <option value="3">3 Questions (Quick Check)</option>
+                    <option value="5" selected>5 Questions (Standard Quiz)</option>
+                    <option value="10">10 Questions (Comprehensive Test)</option>
+                </select>
+            </div>
+
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label>Special AI Prompt / Instructions (Optional)</label>
+            <textarea id="genPrompt" class="form-control" placeholder="e.g. Focus on word problems involving speed and distance, include step-by-step hints."></textarea>
+        </div>
+
+        <button class="primary-btn" id="generateBtn" onclick="generateAIQuiz()">
+            <i class="fa-solid fa-sparkles"></i>
+            Generate AI Quiz Now
+        </button>
+
+    </div>
+
+    <div id="genPreviewContainer" style="display: none;" class="glass-card">
+
+        <div class="card-header">
+
+            <div>
+                <span class="eyebrow">PREVIEW GENERATED QUIZ</span>
+                <h2 id="previewQuizTitle">Quiz Preview</h2>
+            </div>
+
+            <button class="primary-btn" onclick="startGeneratedQuiz()">
+                Start Taking Quiz <i class="fa-solid fa-play"></i>
+            </button>
+
+        </div>
+
+        <div id="previewQuestionsList" style="margin-top: 15px; display: flex; flex-direction: column; gap: 14px;">
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==========================================
+     TEACHER CLASS MAP & GAP DETECTION
+     ========================================== -->
+
+<section id="teacher-map" class="page">
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                TEACHER LEARNING INTELLIGENCE
+            </span>
+
+            <h1>
+                Class Learning Map & Gap Detection
+            </h1>
+
+            <p>
+                Real-time concept mastery trends and AI automated intervention plans for Class 10-B.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="dashboard-grid" style="margin-bottom: 24px;">
+
+        <div class="glass-card">
+
+            <div class="card-header">
+
+                <div>
+                    <span class="eyebrow">CLASSROOM CONCEPT MAP</span>
+                    <h2>Concept Mastery Levels</h2>
+                </div>
+
+            </div>
+
+            <div id="teacherConceptBars" class="dna-bars" style="margin-top: 15px;">
+
+            </div>
+
+        </div>
+
+
+        <div class="glass-card">
+
+            <div class="card-header">
+
+                <div>
+                    <span class="eyebrow">INTERVENTION NEEDED</span>
+                    <h2>Students Requiring Support</h2>
+                </div>
+
+            </div>
+
+            <div id="studentsSupportList" style="margin-top: 15px; display: flex; flex-direction: column; gap: 12px;">
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="glass-card">
+
+        <div class="card-header">
+
+            <div>
+                <span class="eyebrow">AI TEACHER ASSISTANT</span>
+                <h2>Automated Classroom Intervention Plan</h2>
+            </div>
+
+            <button class="primary-btn" onclick="generateIntervention()">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Remedial Strategy
+            </button>
+
+        </div>
+
+        <div id="interventionOutput" style="margin-top: 15px;" class="ai-insight">
+
+            <div class="ai-icon">
+                <i class="fa-solid fa-lightbulb"></i>
+            </div>
+
+            <div>
+                <h3 id="interventTitle">Linear Equations Bracket Expansion gap detected</h3>
+                <p id="interventDesc">18 of 32 students stumbled on sign rules during bracket expansion. Click above to generate tailored practice exercises for tomorrow's class.</p>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==========================================
+     DASHBOARD
+     ========================================== -->
+
+<section id="dashboard"
+         class="page active">
+
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                LEARNING INTELLIGENCE
+            </span>
+
+            <h1>
+                Good evening, Alex 👋
+            </h1>
+
+            <p>
+                Here's what LearnIQ discovered about your learning today.
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- STATS -->
+
+    <div class="stats-grid">
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon cyan">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+
+            <div>
+
+                <span>Overall Progress</span>
+
+                <strong>78%</strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon purple">
+                <i class="fa-solid fa-star"></i>
+            </div>
+
+            <div>
+
+                <span>Total XP</span>
+
+                <strong>2,480</strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon orange">
+                <i class="fa-solid fa-fire"></i>
+            </div>
+
+            <div>
+
+                <span>Current Streak</span>
+
+                <strong>12 Days</strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon green">
+                <i class="fa-solid fa-ranking-star"></i>
+            </div>
+
+            <div>
+
+                <span>Class Rank</span>
+
+                <strong>#7</strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- AI INSIGHT -->
+
+    <div class="ai-insight">
+
+        <div class="ai-icon">
+
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+        </div>
+
+        <div>
+
+            <span class="eyebrow">
+                AI LEARNING INSIGHT
+            </span>
+
+            <h3>
+                You're close to mastering Linear Equations.
+            </h3>
+
+            <p>
+                Your recent answers show strong progress.
+                Practice a few more application problems to strengthen your understanding.
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- TWO COLUMN -->
+
+    <div class="dashboard-grid">
+
+
+        <!-- LEARNING DNA -->
+
+        <div class="glass-card">
+
+            <div class="card-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        YOUR LEARNING DNA
+                    </span>
+
+                    <h2>
+                        Learning Profile
+                    </h2>
+
+                </div>
+
+                <i class="fa-solid fa-dna"></i>
+
+            </div>
+
+
+            <div class="dna-score">
+
+                <div class="circle-progress">
+
+                    <strong>78%</strong>
+
+                    <span>Mastery</span>
+
+                </div>
+
+            </div>
+
+
+            <div class="dna-bars">
+
+
+                <div class="dna-item">
+
+                    <div>
+
+                        <span>Concept Mastery</span>
+
+                        <strong>82%</strong>
+
+                    </div>
+
+                    <div class="progress">
+                        <div style="width:82%"></div>
+                    </div>
+
+                </div>
+
+
+                <div class="dna-item">
+
+                    <div>
+
+                        <span>Problem Solving</span>
+
+                        <strong>74%</strong>
+
+                    </div>
+
+                    <div class="progress">
+                        <div style="width:74%"></div>
+                    </div>
+
+                </div>
+
+
+                <div class="dna-item">
+
+                    <div>
+
+                        <span>Consistency</span>
+
+                        <strong>91%</strong>
+
+                    </div>
+
+                    <div class="progress">
+                        <div style="width:91%"></div>
+                    </div>
+
+                </div>
+
+
+                <div class="dna-item">
+
+                    <div>
+
+                        <span>Improvement</span>
+
+                        <strong>86%</strong>
+
+                    </div>
+
+                    <div class="progress">
+                        <div style="width:86%"></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PROGRESS CHART -->
+
+        <div class="glass-card">
+
+            <div class="card-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        PERFORMANCE
+                    </span>
+
+                    <h2>
+                        Learning Progress
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <canvas id="progressChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- MISSIONS -->
+
+    <div class="glass-card">
+
+        <div class="card-header">
+
+            <div>
+
+                <span class="eyebrow">
+                    TODAY
+                </span>
+
+                <h2>
+                    Learning Missions
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="missions-grid">
+
+
+            <div class="mission-card">
+
+                <div class="mission-icon">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+
+                <div>
+
+                    <h3>
+                        Master Linear Equations
+                    </h3>
+
+                    <p>
+                        Complete 10 adaptive questions
+                    </p>
+
+                    <span>
+                        +150 XP
+                    </span>
+
+                </div>
+
+                <button onclick="showPage('assessment')">
+                    Start
+                </button>
+
+            </div>
+
+
+            <div class="mission-card">
+
+                <div class="mission-icon">
+                    <i class="fa-solid fa-atom"></i>
+                </div>
+
+                <div>
+
+                    <h3>
+                        Physics Challenge
+                    </h3>
+
+                    <p>
+                        Test your conceptual understanding
+                    </p>
+
+                    <span>
+                        +200 XP
+                    </span>
+
+                </div>
+
+                <button>
+                    Start
+                </button>
+
+            </div>
+
+
+            <div class="mission-card">
+
+                <div class="mission-icon">
+                    <i class="fa-solid fa-language"></i>
+                </div>
+
+                <div>
+
+                    <h3>
+                        Vocabulary Sprint
+                    </h3>
+
+                    <p>
+                        Learn 10 new words
+                    </p>
+
+                    <span>
+                        +100 XP
+                    </span>
+
+                </div>
+
+                <button>
+                    Start
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ==========================================
+     ADAPTIVE ASSESSMENT
+     ========================================== -->
+
+<section id="assessment"
+         class="page">
+
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                AI ADAPTIVE ASSESSMENT
+            </span>
+
+            <h1>
+                Test Your Understanding
+            </h1>
+
+            <p>
+                Questions adapt according to your performance.
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="quiz-card">
+
+
+        <!-- QUIZ HEADER -->
+
+        <div class="quiz-header">
+
+            <div>
+
+                <span class="eyebrow">
+                    ADAPTIVE ASSESSMENT
+                </span>
+
+                <h2 id="quizTitle">
+                    Linear Equations
+                </h2>
+
+            </div>
+
+
+            <div class="quiz-timer">
+
+                <i class="fa-regular fa-clock"></i>
+
+                <span id="quizTimer">
+                    05:00
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PROGRESS -->
+
+        <div class="quiz-progress">
+
+            <div class="quiz-progress-bar">
+
+                <div id="quizProgressFill"
+                     style="width:10%">
+                </div>
+
+            </div>
+
+
+            <div class="quiz-progress-info">
+
+                <span id="questionNumber">
+                    Question 1 of 10
+                </span>
+
+                <span id="scoreDisplay">
+                    Score: 0
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- QUESTION -->
+
+        <div class="question-area">
+
+
+            <div class="question-number"
+                 id="questionIndex">
+
+                01
+
+            </div>
+
+
+            <h3 id="questionText">
+
+                Loading question...
+
+            </h3>
+
+
+            <!-- JavaScript inserts answers here -->
+
+            <div class="answer-grid"
+                 id="answerContainer">
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- FOOTER -->
+
+        <div class="quiz-footer">
+
+
+            <div class="adaptive-message">
+
+                <i class="fa-solid fa-brain"></i>
+
+                <span id="adaptiveMessage">
+
+                    Choose an answer.
+                    Your next question will adapt to your performance.
+
+                </span>
+
+            </div>
+
+
+            <button class="primary-btn"
+                    onclick="nextQuestion()">
+
+                Next Question
+
+                <i class="fa-solid fa-arrow-right"></i>
+
+            </button>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- ==========================================
+     LEARNING INTELLIGENCE
+     ========================================== -->
+
+<section id="intelligence"
+         class="page">
+
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                LEARNING INTELLIGENCE
+            </span>
+
+            <h1>
+                Understand How You Learn
+            </h1>
+
+            <p>
+                LearnIQ analyzes your performance to identify learning gaps.
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="concept-grid">
+
+
+        <div class="concept-card">
+
+            <span>Fractions</span>
+
+            <strong>92%</strong>
+
+            <div class="progress">
+                <div style="width:92%"></div>
+            </div>
+
+            <small>
+                Strong mastery
+            </small>
+
+        </div>
+
+
+        <div class="concept-card">
+
+            <span>Algebra</span>
+
+            <strong>71%</strong>
+
+            <div class="progress">
+                <div style="width:71%"></div>
+            </div>
+
+            <small>
+                Developing
+            </small>
+
+        </div>
+
+
+        <div class="concept-card">
+
+            <span>Linear Equations</span>
+
+            <strong>54%</strong>
+
+            <div class="progress">
+                <div style="width:54%"></div>
+            </div>
+
+            <small>
+                Learning gap detected
+            </small>
+
+        </div>
+
+
+        <div class="concept-card">
+
+            <span>Geometry</span>
+
+            <strong>84%</strong>
+
+            <div class="progress">
+                <div style="width:84%"></div>
+            </div>
+
+            <small>
+                Strong mastery
+            </small>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="glass-card">
+
+        <div class="card-header">
+
+            <div>
+
+                <span class="eyebrow">
+                    MISTAKE INTELLIGENCE
+                </span>
+
+                <h2>
+                    Your Common Mistakes
+                </h2>
+
+            </div>
+
+            <i class="fa-solid fa-magnifying-glass-chart"></i>
+
+        </div>
+
+
+        <div class="mistake-grid">
+
+
+            <div class="mistake-card">
+
+                <strong>
+                    Calculation Errors
+                </strong>
+
+                <span>
+                    4×
+                </span>
+
+            </div>
+
+
+            <div class="mistake-card">
+
+                <strong>
+                    Conceptual Errors
+                </strong>
+
+                <span>
+                    3×
+                </span>
+
+            </div>
+
+
+            <div class="mistake-card">
+
+                <strong>
+                    Misreading
+                </strong>
+
+                <span>
+                    2×
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ==========================================
+     CHALLENGES
+     ========================================== -->
+
+<section id="challenges"
+         class="page">
+
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                CHALLENGES
+            </span>
+
+            <h1>
+                Push Your Learning
+            </h1>
+
+            <p>
+                Complete challenges and earn XP.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="challenge-grid">
+
+
+        <div class="challenge-card">
+
+            <i class="fa-solid fa-calculator"></i>
+
+            <h3>
+                Math Master
+            </h3>
+
+            <p>
+                Solve 20 mathematics problems.
+            </p>
+
+            <strong>
+                +300 XP
+            </strong>
+
+        </div>
+
+
+        <div class="challenge-card">
+
+            <i class="fa-solid fa-flask"></i>
+
+            <h3>
+                Science Explorer
+            </h3>
+
+            <p>
+                Complete 15 science questions.
+            </p>
+
+            <strong>
+                +450 XP
+            </strong>
+
+        </div>
+
+
+        <div class="challenge-card">
+
+            <i class="fa-solid fa-fire"></i>
+
+            <h3>
+                7 Day Streak
+            </h3>
+
+            <p>
+                Learn every day for one week.
+            </p>
+
+            <strong>
+                +600 XP
+            </strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ==========================================
+     RANKINGS
+     ========================================== -->
+
+<section id="rankings"
+         class="page">
+
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                LEARNING LEAGUE
+            </span>
+
+            <h1>
+                Rankings
+            </h1>
+
+            <p>
+                Track your progress against your classmates.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="ranking-tabs">
+
+        <button class="active">
+            Overall
+        </button>
+
+        <button>
+            Most Improved
+        </button>
+
+        <button>
+            Consistency
+        </button>
+
+        <button>
+            Mastery
+        </button>
+
+        <button>
+            Challenges
+        </button>
+
+        <button>
+            Subject
+        </button>
+
+    </div>
+
+
+    <div class="ranking-list">
+
+
+        <div class="ranking-row">
+
+            <span>#1</span>
+
+            <div class="avatar">
+                A
+            </div>
+
+            <strong>
+                Aisha
+            </strong>
+
+            <span>
+                3,920 XP
+            </span>
+
+        </div>
+
+
+        <div class="ranking-row">
+
+            <span>#2</span>
+
+            <div class="avatar">
+                R
+            </div>
+
+            <strong>
+                Rahul
+            </strong>
+
+            <span>
+                3,680 XP
+            </span>
+
+        </div>
+
+
+        <div class="ranking-row you">
+
+            <span>#7</span>
+
+            <div class="avatar">
+                A
+            </div>
+
+            <strong>
+                You
+            </strong>
+
+            <span>
+                2,480 XP
+            </span>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ==========================================
+     REWARDS
+     ========================================== -->
+
+<section id="rewards"
+         class="page">
+
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                DIGITAL REWARDS
+            </span>
+
+            <h1>
+                Your Achievements
+            </h1>
+
+            <p>
+                Use your XP to unlock digital rewards.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="reward-grid">
+
+
+        <div class="reward-card">
+
+            <i class="fa-solid fa-medal"></i>
+
+            <h3>
+                Scholar Badge
+            </h3>
+
+            <p>
+                Show your learning achievement.
+            </p>
+
+            <strong>
+                500 XP
+            </strong>
+
+            <button onclick="redeemReward(500)">
+                Redeem
+            </button>
+
+        </div>
+
+
+        <div class="reward-card">
+
+            <i class="fa-solid fa-rocket"></i>
+
+            <h3>
+                Learning Rocket
+            </h3>
+
+            <p>
+                For consistent improvement.
+            </p>
+
+            <strong>
+                800 XP
+            </strong>
+
+            <button onclick="redeemReward(800)">
+                Redeem
+            </button>
+
+        </div>
+
+
+        <div class="reward-card">
+
+            <i class="fa-solid fa-crown"></i>
+
+            <h3>
+                Master Crown
+            </h3>
+
+            <p>
+                Demonstrate concept mastery.
+            </p>
+
+            <strong>
+                1500 XP
+            </strong>
+
+            <button onclick="redeemReward(1500)">
+                Redeem
+            </button>
+
+        </div>
+
+
+        <div class="reward-card">
+
+            <i class="fa-solid fa-fire"></i>
+
+            <h3>
+                30 Day Streak
+            </h3>
+
+            <p>
+                Celebrate long-term consistency.
+            </p>
+
+            <strong>
+                2000 XP
+            </strong>
+
+            <button onclick="redeemReward(2000)">
+                Redeem
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ==========================================
+     PROFILE
+     ========================================== -->
+
+<section id="profile"
+         class="page">
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                PROFILE
+            </span>
+
+            <h1>
+                Alex
+            </h1>
+
+            <p>
+                Class 10 • LearnIQ Student
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="glass-card">
+
+        <h2>
+            Learning Profile
+        </h2>
+
+        <p>
+            Your personalized learning information will appear here.
+        </p>
+
+    </div>
+
+</section>
+
+
+
+<!-- ==========================================
+     SETTINGS
+     ========================================== -->
+
+<section id="settings"
+         class="page">
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                SETTINGS
+            </span>
+
+            <h1>
+                Settings
+            </h1>
+
+            <p>
+                Manage your LearnIQ preferences.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="glass-card">
+
+        <h2>
+            Account Settings
+        </h2>
+
+        <p>
+            Settings and preferences will be connected later.
+        </p>
+
+        <button class="primary-btn"
+                onclick="logout()">
+
+            Logout
+
+        </button>
+
+    </div>
+
+</section>
+
+
+
+</main>
+
+
+
+<!-- ==========================================
+     POST-QUIZ AI DIAGNOSIS MODAL
+     ========================================== -->
+
+<div id="diagnosisModal" class="modal-overlay">
+
+    <div class="modal-content">
+
+        <button class="modal-close" onclick="closeDiagnosisModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div style="text-align: center; margin-bottom: 24px;">
+
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--cyan), var(--purple)); display: inline-grid; place-items: center; font-size: 26px; color: white; margin: 0 auto 14px; box-shadow: 0 0 25px rgba(57, 217, 255, 0.4);">
+                <i class="fa-solid fa-award"></i>
+            </div>
+
+            <span class="eyebrow">AI DIAGNOSIS COMPLETE</span>
+
+            <h2 id="diagScoreTitle" style="font-size: 28px; margin-top: 4px;">Score: 80%</h2>
+
+            <p id="diagSubTitle" style="color: var(--cyan); font-size: 14px; font-weight: 600; margin-top: 4px;">You earned +180 XP!</p>
+
+        </div>
+
+        <div class="ai-insight" style="margin-bottom: 20px;">
+
+            <div class="ai-icon">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+
+            <div>
+                <span class="eyebrow">AI DIAGNOSTIC INSIGHT</span>
+
+                <h3 id="diagInsightHeader">Strong Understanding!</h3>
+
+                <p id="diagInsightBody">Your performance shows solid mastery of core concepts with high accuracy.</p>
+            </div>
+
+        </div>
+
+        <div style="margin-bottom: 20px;">
+
+            <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--muted);">Mistake Intelligence Breakdown</h3>
+
+            <div id="diagMistakeContainer" class="mistake-grid">
+
+            </div>
+
+        </div>
+
+        <div style="text-align: right; margin-top: 24px;">
+
+            <button class="primary-btn" onclick="closeDiagnosisModal()">
+                Continue to Dashboard <i class="fa-solid fa-arrow-right"></i>
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     TOAST
+     ========================================== -->
+
+<div id="toast"
+     class="toast">
+
+</div>
+
+
+
+<!-- ==========================================
+     JAVASCRIPT
+     ========================================== -->
+
+<script src="script.js"></script>
+
+
+<!-- ==========================================
+     PROGRESS CHART
+     ========================================== -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const canvas =
+            document.getElementById(
+                "progressChart"
+            );
+
+        if (!canvas) return;
+
+
+        new Chart(canvas, {
+
+            type: "line",
+
+            data: {
+
+                labels: [
+                    "Mon",
+                    "Tue",
+                    "Wed",
+                    "Thu",
+                    "Fri",
+                    "Sat",
+                    "Sun"
+                ],
+
+                datasets: [
+
+                    {
+                        label: "Learning Progress",
+
+                        data: [
+                            45,
+                            52,
+                            57,
+                            63,
+                            67,
+                            72,
+                            78
+                        ],
+
+                        borderWidth: 3,
+
+                        tension: 0.4,
+
+                        fill: false
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+                        display: false
+                    }
+
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        max: 100
+
+                    }
+
+                }
+
+            }
+
+        });
+
+    }
+);
+
+</script>
+
+
+</body>
+
+</html>
