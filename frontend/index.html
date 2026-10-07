@@ -104,7 +104,7 @@
 
             <i class="fa-solid fa-chalkboard-user"></i>
 
-            <span>Teacher Class Map</span>
+            <span>Class Learning Map</span>
 
         </button>
 
@@ -174,7 +174,7 @@
             <span>Total XP</span>
 
             <strong class="xp-value">
-                2,480
+                0
             </strong>
 
         </div>
@@ -222,6 +222,15 @@
                 <span id="roleLabel">Mode: Student</span>
             </button>
 
+            <button class="primary-btn" id="authBtn" onclick="openAuthModal()" style="padding: 6px 14px; font-size: 13px; gap: 6px;">
+                <i class="fa-solid fa-user-shield"></i>
+                <span id="authBtnLabel">Sign In</span>
+            </button>
+
+            <button class="icon-button" id="topbarLogoutBtn" onclick="logout()" title="Sign Out / Logout" style="color: var(--red); border-color: rgba(255, 68, 68, 0.3); background: rgba(255, 68, 68, 0.1); display: none;">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+
             <button class="icon-button">
 
                 <i class="fa-regular fa-bell"></i>
@@ -229,15 +238,15 @@
             </button>
 
 
-            <div class="user-profile">
+            <div class="user-profile" onclick="openAuthModal()" style="cursor: pointer;">
 
                 <div class="avatar" id="userAvatar">
-                    A
+                    G
                 </div>
 
                 <div>
 
-                    <strong id="userName">Alex</strong>
+                    <strong id="userName">Guest</strong>
 
                     <span id="userSub">Class 10</span>
 
@@ -248,6 +257,126 @@
         </div>
 
     </header>
+
+
+
+<!-- ==========================================
+     LANDING & LOGIN PAGE (UNAUTHENTICATED)
+     ========================================== -->
+<section id="landing" class="page active">
+    <!-- Hero Banner -->
+    <div class="glass-card" style="background: linear-gradient(135deg, rgba(11, 17, 32, 0.95), rgba(15, 23, 42, 0.98)); border: 1px solid var(--border); border-radius: 24px; padding: 40px; margin-bottom: 30px; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -80px; right: -80px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(0,240,255,0.15), transparent 70%); pointer-events: none;"></div>
+        <div style="position: absolute; bottom: -80px; left: -80px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(168,85,247,0.15), transparent 70%); pointer-events: none;"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 400px; gap: 40px; align-items: center;">
+            <!-- Hero Description -->
+            <div>
+                <span class="eyebrow" style="background: rgba(0, 240, 255, 0.1); color: var(--cyan); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(0, 240, 255, 0.2); font-weight: 700; letter-spacing: 1px; font-size: 11px;">
+                    <i class="fa-solid fa-sparkles"></i> AI-POWERED CLASSROOM INTELLIGENCE
+                </span>
+
+                <h1 style="font-size: 38px; font-weight: 800; color: var(--text); margin: 18px 0 14px 0; line-height: 1.2;">
+                    Welcome to <span style="background: linear-gradient(135deg, var(--cyan), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LearnIQ</span>
+                </h1>
+
+                <p style="font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 24px;">
+                    LearnIQ is an intelligent learning platform designed for students and educators. Generate curriculum-aligned quizzes in seconds, diagnose personal learning gaps, track classroom concept mastery, and earn XP rewards.
+                </p>
+
+                <!-- Platform Feature Highlights -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--cyan); font-size: 18px;"></i>
+                        <div>
+                            <strong style="display: block; font-size: 13px; color: var(--text);">AI Quiz Generator</strong>
+                            <span style="font-size: 11px; color: var(--muted);">Instant assessments</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <i class="fa-solid fa-brain" style="color: var(--purple); font-size: 18px;"></i>
+                        <div>
+                            <strong style="display: block; font-size: 13px; color: var(--text);">Adaptive Quiz Taker</strong>
+                            <span style="font-size: 11px; color: var(--muted);">Smart difficulty tuning</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <i class="fa-solid fa-chalkboard-user" style="color: #3b82f6; font-size: 18px;"></i>
+                        <div>
+                            <strong style="display: block; font-size: 13px; color: var(--text);">Teacher Class Map</strong>
+                            <span style="font-size: 11px; color: var(--muted);">Real-time gap detection</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <i class="fa-solid fa-trophy" style="color: #f59e0b; font-size: 18px;"></i>
+                        <div>
+                            <strong style="display: block; font-size: 13px; color: var(--text);">Gamified Rewards</strong>
+                            <span style="font-size: 11px; color: var(--muted);">XP streaks & badges</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inline Landing Login Card -->
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: 0 15px 40px rgba(0,0,0,0.5);">
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--cyan), var(--purple)); display: grid; place-items: center; color: white; font-size: 20px; margin: 0 auto 10px auto;">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <h2 style="font-size: 18px; font-weight: 700; color: var(--text);">Sign In to LearnIQ</h2>
+                    <p style="font-size: 12px; color: var(--muted);">Log in to unlock your personalized learning dashboard</p>
+                </div>
+
+                <!-- Tabs -->
+                <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px; margin-bottom: 16px;">
+                    <button id="landingTabLogin" class="primary-btn" onclick="switchLandingTab('login')" style="flex: 1; padding: 8px; font-size: 12px; justify-content: center;">Sign In</button>
+                    <button id="landingTabSignup" class="primary-btn" onclick="switchLandingTab('signup')" style="flex: 1; padding: 8px; font-size: 12px; justify-content: center; background: transparent; border: none; color: var(--muted);">Create Account</button>
+                </div>
+
+                <!-- Landing Login Form -->
+                <form id="landingLoginForm" onsubmit="handleAuthSubmit(event, 'login')">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 12px; color: var(--muted);">Email Address</label>
+                        <input type="email" id="landingLoginEmail" class="form-control" placeholder="student@learniq.edu" required style="font-size: 13px; padding: 10px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="font-size: 12px; color: var(--muted);">Password</label>
+                        <input type="password" id="landingLoginPassword" class="form-control" placeholder="••••••••" required style="font-size: 13px; padding: 10px;">
+                    </div>
+                    <button type="submit" class="primary-btn" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In to LearnIQ
+                    </button>
+                </form>
+
+                <!-- Landing Signup Form -->
+                <form id="landingSignupForm" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 12px; color: var(--muted);">Full Name</label>
+                        <input type="text" id="landingSignupName" class="form-control" placeholder="Your Name" required style="font-size: 13px; padding: 10px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 12px; color: var(--muted);">Email Address</label>
+                        <input type="email" id="landingSignupEmail" class="form-control" placeholder="student@learniq.edu" required style="font-size: 13px; padding: 10px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 12px; color: var(--muted);">Password</label>
+                        <input type="password" id="landingSignupPassword" class="form-control" placeholder="••••••••" required style="font-size: 13px; padding: 10px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label style="font-size: 12px; color: var(--muted);">Role</label>
+                        <select id="landingSignupRole" class="form-control" style="font-size: 13px; padding: 10px;">
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher / Educator</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="primary-btn" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
+                        <i class="fa-solid fa-user-plus"></i> Create Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
 
 
 
@@ -302,7 +431,7 @@
 
             <div class="form-group">
                 <label>Subject</label>
-                <select id="genSubject" class="form-control">
+                <select id="genSubject" class="form-control" onchange="onSubjectChange()">
                     <option value="Mathematics" selected>Mathematics</option>
                     <option value="Physics">Physics</option>
                     <option value="Chemistry">Chemistry</option>
@@ -311,15 +440,27 @@
                 </select>
             </div>
 
-            <div class="form-group">
-                <label>Topic / Sub-Concept</label>
-                <input type="text" id="genTopic" class="form-control" value="Linear Equations" placeholder="e.g. Quadratic Equations, Photosynthesis">
-                <div class="quick-topics" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
-                    <button type="button" class="chip-btn" onclick="setTopic('Linear Equations', 'Mathematics', '10')">⚡ Linear Equations</button>
-                    <button type="button" class="chip-btn" onclick="setTopic('Fractions', 'Mathematics', '6')">⚡ Fractions</button>
-                    <button type="button" class="chip-btn" onclick="setTopic('Physics', 'Physics', '9')">⚡ Physics</button>
-                    <button type="button" class="chip-btn" onclick="setTopic('Photosynthesis', 'Biology', '10')">⚡ Photosynthesis</button>
-                    <button type="button" class="chip-btn" onclick="setTopic('Periodic Table', 'Chemistry', '10')">⚡ Periodic Table</button>
+            <div class="form-group" style="grid-column: span 2;">
+                <label style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Topic / Chapter / Sub-Concept Name</span>
+                    <span class="badge-pill" style="font-size: 11px; background: rgba(0, 240, 255, 0.1); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.2);">
+                        <i class="fa-solid fa-pen"></i> Type any custom topic
+                    </span>
+                </label>
+
+                <!-- Subline Topic Box for Teachers -->
+                <input type="text" id="genTopic" class="form-control" placeholder="e.g. Laws of Motion, Quadratic Equations, Photosynthesis, Acids & Bases..." style="font-size: 15px; padding: 12px 16px; border: 1.5px solid var(--cyan-glow, rgba(0,240,255,0.3)); background: rgba(7, 11, 20, 0.8);">
+
+                <div style="font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-circle-info" style="color: var(--cyan);"></i>
+                    <span>Teachers can write any lesson topic above. Quick suggestions for <strong id="selectedSubjectLabel" style="color: var(--text);">Mathematics</strong>:</span>
+                </div>
+
+                <div id="quickTopicChips" class="quick-topics" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                    <button type="button" class="chip-btn" onclick="setTopic('Quadratic Equations', 'Mathematics', '10')">⚡ Quadratic Equations</button>
+                    <button type="button" class="chip-btn" onclick="setTopic('Trigonometry', 'Mathematics', '10')">⚡ Trigonometry</button>
+                    <button type="button" class="chip-btn" onclick="setTopic('Fractions & Decimals', 'Mathematics', '6')">⚡ Fractions & Decimals</button>
+                    <button type="button" class="chip-btn" onclick="setTopic('Calculus Foundations', 'Mathematics', '11')">⚡ Calculus Foundations</button>
                 </div>
             </div>
 
@@ -496,7 +637,7 @@
             </span>
 
             <h1>
-                Good evening, Alex 👋
+                Welcome back, <span id="welcomeUserName">Guest</span> 👋
             </h1>
 
             <p>
@@ -541,7 +682,7 @@
 
                 <span>Total XP</span>
 
-                <strong>2,480</strong>
+                <strong id="dashboardXpVal" class="xp-value">0</strong>
 
             </div>
 
@@ -558,7 +699,7 @@
 
                 <span>Current Streak</span>
 
-                <strong>12 Days</strong>
+                <strong id="dashboardStreakVal">0 Days</strong>
 
             </div>
 
@@ -575,7 +716,7 @@
 
                 <span>Class Rank</span>
 
-                <strong>#7</strong>
+                <strong id="dashboardRankVal">#--</strong>
 
             </div>
 
@@ -601,13 +742,12 @@
                 AI LEARNING INSIGHT
             </span>
 
-            <h3>
-                You're close to mastering Linear Equations.
+            <h3 id="dashboardAiInsightTitle">
+                Welcome to LearnIQ AI Learning Intelligence!
             </h3>
 
-            <p>
-                Your recent answers show strong progress.
-                Practice a few more application problems to strengthen your understanding.
+            <p id="dashboardAiInsightDesc">
+                Generate an AI Quiz or take an adaptive assessment to build your learning profile and track real-time concept mastery.
             </p>
 
         </div>
@@ -616,7 +756,7 @@
 
 
 
-    <!-- TWO COLUMN -->
+    <!-- TWO COLUMN: LEARNING DNA & COMPACT MISSIONS -->
 
     <div class="dashboard-grid">
 
@@ -639,7 +779,7 @@
 
                 </div>
 
-                <i class="fa-solid fa-dna"></i>
+                <i class="fa-solid fa-dna" style="color: var(--cyan);"></i>
 
             </div>
 
@@ -732,142 +872,87 @@
         </div>
 
 
+        <!-- COMPACT ATTRACTIVE LEARNING MISSIONS -->
 
-        <!-- PROGRESS CHART -->
+        <div class="glass-card" style="padding: 20px;">
 
-        <div class="glass-card">
-
-            <div class="card-header">
+            <div class="card-header" style="margin-bottom: 14px;">
 
                 <div>
 
                     <span class="eyebrow">
-                        PERFORMANCE
+                        DAILY GOALS
                     </span>
 
                     <h2>
-                        Learning Progress
+                        Learning Missions
                     </h2>
 
                 </div>
 
             </div>
 
-            <canvas id="progressChart"></canvas>
 
-        </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
 
-    </div>
+                <div style="background: rgba(7, 11, 20, 0.6); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
 
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 240, 255, 0.1); color: var(--cyan); display: grid; place-items: center; font-size: 14px;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div>
+                            <strong style="font-size: 12px; display: block; color: var(--text);">Generate AI Quiz</strong>
+                            <span style="font-size: 10px; color: var(--muted);">Create 1 quiz in any subject</span>
+                        </div>
+                    </div>
 
-
-    <!-- MISSIONS -->
-
-    <div class="glass-card">
-
-        <div class="card-header">
-
-            <div>
-
-                <span class="eyebrow">
-                    TODAY
-                </span>
-
-                <h2>
-                    Learning Missions
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="missions-grid">
-
-
-            <div class="mission-card">
-
-                <div class="mission-icon">
-                    <i class="fa-solid fa-calculator"></i>
-                </div>
-
-                <div>
-
-                    <h3>
-                        Master Linear Equations
-                    </h3>
-
-                    <p>
-                        Complete 10 adaptive questions
-                    </p>
-
-                    <span>
-                        +150 XP
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge-pill strong" style="font-size: 10px; padding: 2px 6px;">+100 XP</span>
+                        <button class="primary-btn" onclick="showPage('generator')" style="padding: 4px 10px; font-size: 11px;">Start</button>
+                    </div>
 
                 </div>
 
-                <button onclick="showPage('assessment')">
-                    Start
-                </button>
 
-            </div>
+                <div style="background: rgba(7, 11, 20, 0.6); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
 
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(168, 85, 247, 0.1); color: var(--purple); display: grid; place-items: center; font-size: 14px;">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <div>
+                            <strong style="font-size: 12px; display: block; color: var(--text);">Adaptive Assessment</strong>
+                            <span style="font-size: 10px; color: var(--muted);">Score 80%+ on any topic</span>
+                        </div>
+                    </div>
 
-            <div class="mission-card">
-
-                <div class="mission-icon">
-                    <i class="fa-solid fa-atom"></i>
-                </div>
-
-                <div>
-
-                    <h3>
-                        Physics Challenge
-                    </h3>
-
-                    <p>
-                        Test your conceptual understanding
-                    </p>
-
-                    <span>
-                        +200 XP
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge-pill strong" style="font-size: 10px; padding: 2px 6px; background: rgba(168,85,247,0.15); color: var(--purple);">+150 XP</span>
+                        <button class="primary-btn" onclick="showPage('assessment')" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, var(--purple), #7e22ce);">Start</button>
+                    </div>
 
                 </div>
 
-                <button>
-                    Start
-                </button>
 
-            </div>
+                <div style="background: rgba(7, 11, 20, 0.6); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
 
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; display: grid; place-items: center; font-size: 14px;">
+                            <i class="fa-solid fa-chalkboard-user"></i>
+                        </div>
+                        <div>
+                            <strong style="font-size: 12px; display: block; color: var(--text);">Class Learning Map</strong>
+                            <span style="font-size: 10px; color: var(--muted);">Check classroom gap analysis</span>
+                        </div>
+                    </div>
 
-            <div class="mission-card">
-
-                <div class="mission-icon">
-                    <i class="fa-solid fa-language"></i>
-                </div>
-
-                <div>
-
-                    <h3>
-                        Vocabulary Sprint
-                    </h3>
-
-                    <p>
-                        Learn 10 new words
-                    </p>
-
-                    <span>
-                        +100 XP
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge-pill strong" style="font-size: 10px; padding: 2px 6px; background: rgba(59,130,246,0.15); color: #3b82f6;">+50 XP</span>
+                        <button class="primary-btn" onclick="showPage('teacher-map')" style="padding: 4px 10px; font-size: 11px;">View</button>
+                    </div>
 
                 </div>
-
-                <button>
-                    Start
-                </button>
 
             </div>
 
@@ -1367,65 +1452,8 @@
     </div>
 
 
-    <div class="ranking-list">
-
-
-        <div class="ranking-row">
-
-            <span>#1</span>
-
-            <div class="avatar">
-                A
-            </div>
-
-            <strong>
-                Aisha
-            </strong>
-
-            <span>
-                3,920 XP
-            </span>
-
-        </div>
-
-
-        <div class="ranking-row">
-
-            <span>#2</span>
-
-            <div class="avatar">
-                R
-            </div>
-
-            <strong>
-                Rahul
-            </strong>
-
-            <span>
-                3,680 XP
-            </span>
-
-        </div>
-
-
-        <div class="ranking-row you">
-
-            <span>#7</span>
-
-            <div class="avatar">
-                A
-            </div>
-
-            <strong>
-                You
-            </strong>
-
-            <span>
-                2,480 XP
-            </span>
-
-        </div>
-
+    <div id="rankingListContainer" class="ranking-list">
+        <!-- Dynamically populated from Supabase profiles -->
     </div>
 
 </section>
@@ -1565,6 +1593,10 @@
      PROFILE
      ========================================== -->
 
+<!-- ==========================================
+     PROFILE & TEST ACTIVITY HISTORY
+     ========================================== -->
+
 <section id="profile"
          class="page">
 
@@ -1573,15 +1605,15 @@
         <div>
 
             <span class="eyebrow">
-                PROFILE
+                STUDENT PROFILE & ACTIVITY
             </span>
 
             <h1>
-                Alex
+                <span id="profilePageName">Guest Student</span>
             </h1>
 
-            <p>
-                Class 10 • LearnIQ Student
+            <p id="profileSubText">
+                Class 10 • Attended Assessments & Subject Mastery Breakdown
             </p>
 
         </div>
@@ -1589,15 +1621,76 @@
     </div>
 
 
-    <div class="glass-card">
-
-        <h2>
-            Learning Profile
+    <!-- SUBJECT TEST ATTENDANCE COUNTERS -->
+    <div style="margin-bottom: 24px;">
+        <h2 style="font-size: 16px; margin-bottom: 14px; color: var(--text); display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-layer-group" style="color: var(--cyan);"></i> Tests Attended by Subject
         </h2>
 
-        <p>
-            Your personalized learning information will appear here.
-        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px;">
+
+            <div style="background: rgba(7, 11, 20, 0.6); padding: 14px; border-radius: 14px; border: 1px solid var(--border); text-align: center;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(0, 240, 255, 0.1); color: var(--cyan); display: grid; place-items: center; margin: 0 auto 8px auto; font-size: 16px;">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <span style="font-size: 12px; color: var(--muted); display: block;">Mathematics</span>
+                <strong id="countMathTests" style="font-size: 20px; color: var(--text);">0</strong>
+                <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 2px;">tests attended</span>
+            </div>
+
+            <div style="background: rgba(7, 11, 20, 0.6); padding: 14px; border-radius: 14px; border: 1px solid var(--border); text-align: center;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(168, 85, 247, 0.1); color: var(--purple); display: grid; place-items: center; margin: 0 auto 8px auto; font-size: 16px;">
+                    <i class="fa-solid fa-atom"></i>
+                </div>
+                <span style="font-size: 12px; color: var(--muted); display: block;">Physics</span>
+                <strong id="countPhysicsTests" style="font-size: 20px; color: var(--text);">0</strong>
+                <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 2px;">tests attended</span>
+            </div>
+
+            <div style="background: rgba(7, 11, 20, 0.6); padding: 14px; border-radius: 14px; border: 1px solid var(--border); text-align: center;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(236, 72, 153, 0.1); color: #ec4899; display: grid; place-items: center; margin: 0 auto 8px auto; font-size: 16px;">
+                    <i class="fa-solid fa-flask"></i>
+                </div>
+                <span style="font-size: 12px; color: var(--muted); display: block;">Chemistry</span>
+                <strong id="countChemistryTests" style="font-size: 20px; color: var(--text);">0</strong>
+                <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 2px;">tests attended</span>
+            </div>
+
+            <div style="background: rgba(7, 11, 20, 0.6); padding: 14px; border-radius: 14px; border: 1px solid var(--border); text-align: center;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(34, 197, 94, 0.1); color: #22c55e; display: grid; place-items: center; margin: 0 auto 8px auto; font-size: 16px;">
+                    <i class="fa-solid fa-dna"></i>
+                </div>
+                <span style="font-size: 12px; color: var(--muted); display: block;">Biology</span>
+                <strong id="countBiologyTests" style="font-size: 20px; color: var(--text);">0</strong>
+                <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 2px;">tests attended</span>
+            </div>
+
+            <div style="background: rgba(7, 11, 20, 0.6); padding: 14px; border-radius: 14px; border: 1px solid var(--border); text-align: center;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(234, 179, 8, 0.1); color: #eab308; display: grid; place-items: center; margin: 0 auto 8px auto; font-size: 16px;">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <span style="font-size: 12px; color: var(--muted); display: block;">English</span>
+                <strong id="countEnglishTests" style="font-size: 20px; color: var(--text);">0</strong>
+                <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 2px;">tests attended</span>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- DETAILED TEST ATTENDANCE HISTORY LOG -->
+    <div class="glass-card">
+
+        <div class="card-header" style="margin-bottom: 16px;">
+            <div>
+                <span class="eyebrow">ATTENDANCE LOG</span>
+                <h2>Attended Assessment History</h2>
+            </div>
+        </div>
+
+        <div id="testHistoryLogContainer" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Dynamically populated test activity log -->
+        </div>
 
     </div>
 
@@ -1836,6 +1929,100 @@ document.addEventListener(
 
 </script>
 
+
+<!-- ==========================================
+     SUPABASE AUTHENTICATION MODAL
+     ========================================== -->
+<div id="authModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 440px; background: #0b1120; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.8); border-radius: 20px; padding: 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="logo-icon" style="width: 38px; height: 38px; font-size: 18px; background: linear-gradient(135deg, var(--cyan), var(--purple)); border-radius: 10px; display: grid; place-items: center; color: white;">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 700; color: var(--text);">LearnIQ Account</h2>
+                    <span style="font-size: 12px; color: var(--muted);">Powered by Supabase Cloud Auth</span>
+                </div>
+            </div>
+            <button onclick="closeAuthModal()" style="background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Logged-in User Session View -->
+        <div id="userSessionView" style="display: none; text-align: center; padding: 10px 0;">
+            <div id="modalUserAvatar" style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--cyan), var(--purple)); color: white; font-size: 26px; font-weight: 700; display: grid; place-items: center; margin: 0 auto 14px auto; border: 3px solid rgba(255,255,255,0.1);">
+                U
+            </div>
+            <h3 id="modalUserName" style="font-size: 18px; color: var(--text); margin-bottom: 4px;">User Name</h3>
+            <p id="modalUserEmail" style="font-size: 13px; color: var(--muted); margin-bottom: 6px;">user@learniq.edu</p>
+            <span id="modalUserRoleBadge" class="badge-pill strong" style="display: inline-block; margin-bottom: 20px;">Student Mode</span>
+
+            <button onclick="logout(); closeAuthModal();" class="primary-btn" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; padding: 12px; font-weight: 600;">
+                <i class="fa-solid fa-right-from-bracket"></i> Sign Out of Account
+            </button>
+        </div>
+
+        <!-- Auth Forms Container (For Sign In / Sign Up) -->
+        <div id="authFormsContainer">
+            <!-- Auth Tabs -->
+            <div style="display: flex; gap: 10px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; margin-bottom: 20px;">
+                <button id="tabLoginBtn" class="primary-btn" onclick="switchAuthTab('login')" style="flex: 1; padding: 8px; font-size: 13px; justify-content: center;">
+                    Sign In
+                </button>
+                <button id="tabSignupBtn" class="primary-btn" onclick="switchAuthTab('signup')" style="flex: 1; padding: 8px; font-size: 13px; justify-content: center; background: transparent; border: 1px solid transparent; color: var(--muted);">
+                    Create Account
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="handleAuthSubmit(event, 'login')">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Email Address</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="student@learniq.edu" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Password</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="primary-btn" id="loginSubmitBtn" style="width: 100%; justify-content: center; padding: 12px;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In to LearnIQ
+                </button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signupForm" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Full Name</label>
+                    <input type="text" id="signupName" class="form-control" placeholder="Your Name" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Email Address</label>
+                    <input type="email" id="signupEmail" class="form-control" placeholder="student@learniq.edu" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Password</label>
+                    <input type="password" id="signupPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Role</label>
+                    <select id="signupRole" class="form-control">
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher / Educator</option>
+                    </select>
+                </div>
+                <button type="submit" class="primary-btn" id="signupSubmitBtn" style="width: 100%; justify-content: center; padding: 12px;">
+                    <i class="fa-solid fa-user-plus"></i> Create Account
+                </button>
+            </form>
+        </div>
+
+        <div style="margin-top: 18px; text-align: center; font-size: 12px; color: var(--muted);">
+            ⚡ Secured with Supabase Cloud Authentication & Row Level Security
+        </div>
+    </div>
+</div>
 
 </body>
 

@@ -1,15 +1,32 @@
 const express = require("express");
 const router = express.Router();
+const supabase = require("../config/supabaseClient");
 
 // GET /api/teachers/class-map
-router.get("/class-map", (req, res) => {
+router.get("/class-map", async (req, res) => {
+    let conceptsData = null;
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.from('class_learning_maps').select('*');
+            if (data && data.length > 0 && !error) {
+                conceptsData = data.map(item => ({
+                    name: item.concept_name,
+                    mastery: item.mastery_percentage,
+                    status: item.status
+                }));
+            }
+        } catch (err) {
+            console.warn("Supabase fetch class map warning:", err.message);
+        }
+    }
+
     res.json({
         success: true,
         className: "Class 10 - Section B",
         totalStudents: 32,
         assessmentsCompleted: 14,
         averageMastery: 74,
-        concepts: [
+        concepts: conceptsData || [
             { name: "Fractions & Decimals", mastery: 88, status: "Strong" },
             { name: "Linear Equations in 1 Variable", mastery: 54, status: "Critical Learning Gap" },
             { name: "Algebraic Bracket Expansion", mastery: 61, status: "Needs Practice" },
@@ -24,7 +41,7 @@ router.get("/class-map", (req, res) => {
         topPerformers: [
             { name: "Aisha K.", score: "96%", xp: 3920 },
             { name: "Rahul M.", score: "92%", xp: 3680 },
-            { name: "Alex (You)", score: "88%", xp: 2480 }
+            { name: "Guest Student (You)", score: "88%", xp: 2480 }
         ]
     });
 });
@@ -50,3 +67,4 @@ router.post("/intervention", (req, res) => {
 });
 
 module.exports = router;
+

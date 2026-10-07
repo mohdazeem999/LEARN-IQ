@@ -13,10 +13,10 @@ let userAnswers = {};
 let quizTimerInterval = null;
 let quizSecondsLeft = 300; // 5 mins
 let studentProfile = {
-    xp: 2480,
-    streak: 12,
-    rank: 7,
-    name: "Alex",
+    xp: 0,
+    streak: 0,
+    rank: "-",
+    name: "Guest Student",
     classLevel: "Class 10"
 };
 
@@ -73,16 +73,28 @@ const defaultQuiz = {
 // ==========================================
 // INITIALIZATION
 // ==========================================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    await checkAuthSession();
     fetchStudentProfile();
     loadTeacherClassMap();
-    showPage("dashboard");
+    updateDailyStreak();
+    if (currentUser && currentUser.email) {
+        showPage("dashboard");
+    } else {
+        showPage("landing");
+    }
 });
 
 // ==========================================
 // PAGE SWITCHING & UI NAVIGATION
 // ==========================================
 function showPage(pageId) {
+    if (!currentUser && pageId !== 'landing') {
+        showToast("ℹ️ Sign in or create an account to unlock all LearnIQ features.");
+        openAuthModal();
+        pageId = 'landing';
+    }
+
     const pages = document.querySelectorAll(".page");
     pages.forEach(p => p.classList.remove("active"));
 
@@ -103,6 +115,10 @@ function showPage(pageId) {
         startQuiz(currentQuiz || defaultQuiz);
     } else if (pageId === "teacher-map") {
         loadTeacherClassMap();
+    } else if (pageId === "rankings") {
+        loadLeaderboard();
+    } else if (pageId === "profile") {
+        renderProfileTestHistory();
     }
 }
 
@@ -137,9 +153,9 @@ async function toggleRole() {
         roleLabel.innerText = "Mode: Student";
         rolePillBtn.style.borderColor = "var(--cyan)";
         rolePillBtn.style.color = "var(--cyan)";
-        userName.innerText = studentProfile.name || "Alex";
+        userName.innerText = studentProfile.name || "Guest Student";
         userSub.innerText = studentProfile.classLevel || "Class 10";
-        userAvatar.innerText = "A";
+        userAvatar.innerText = "G";
         showToast("Switched to Student Mode.");
         showPage("dashboard");
     }
@@ -158,17 +174,84 @@ async function toggleRole() {
 // ==========================================
 // AI QUIZ GENERATOR
 // ==========================================
+function onSubjectChange() {
+    const subject = document.getElementById("genSubject").value;
+    const topicInput = document.getElementById("genTopic");
+    const subjectLabel = document.getElementById("selectedSubjectLabel");
+    const chipsContainer = document.getElementById("quickTopicChips");
+
+    if (subjectLabel) subjectLabel.innerText = subject;
+
+    const subjectPresets = {
+        Physics: [
+            { topic: "Laws of Motion", classLevel: "10" },
+            { topic: "Electricity & Circuits", classLevel: "10" },
+            { topic: "Work & Energy", classLevel: "9" },
+            { topic: "Optics & Light Refraction", classLevel: "10" }
+        ],
+        Chemistry: [
+            { topic: "Periodic Table & Trends", classLevel: "10" },
+            { topic: "Acids, Bases & Salts", classLevel: "10" },
+            { topic: "Chemical Reactions", classLevel: "9" },
+            { topic: "Atomic Structure", classLevel: "9" }
+        ],
+        Biology: [
+            { topic: "Photosynthesis in Plants", classLevel: "10" },
+            { topic: "Cell Structure & Organelles", classLevel: "9" },
+            { topic: "Human Respiration System", classLevel: "10" },
+            { topic: "Genetics & DNA", classLevel: "11" }
+        ],
+        Mathematics: [
+            { topic: "Quadratic Equations", classLevel: "10" },
+            { topic: "Trigonometry Ratios", classLevel: "10" },
+            { topic: "Fractions & Decimals", classLevel: "6" },
+            { topic: "Simultaneous Equations", classLevel: "10" }
+        ],
+        English: [
+            { topic: "Tenses & Active/Passive Voice", classLevel: "9" },
+            { topic: "Subject-Verb Agreement", classLevel: "8" },
+            { topic: "Reading Comprehension", classLevel: "10" },
+            { topic: "Vocabulary & Idioms", classLevel: "10" }
+        ]
+    };
+
+    const presets = subjectPresets[subject] || subjectPresets["Physics"];
+    if (topicInput) {
+        topicInput.placeholder = `e.g. ${presets.map(p => p.topic).join(", ")}...`;
+    }
+
+    if (chipsContainer) {
+        chipsContainer.innerHTML = presets.map(p => `
+            <button type="button" class="chip-btn" onclick="setTopic('${p.topic}', '${subject}', '${p.classLevel}')">⚡ ${p.topic}</button>
+        `).join("");
+    }
+}
+
+function getDefaultTopicForSubject(subject) {
+    switch (subject) {
+        case "Physics": return "Laws of Motion";
+        case "Chemistry": return "Acids & Bases";
+        case "Biology": return "Photosynthesis";
+        case "English": return "Grammar & Tenses";
+        case "Mathematics": default: return "Quadratic Equations";
+    }
+}
+
 function setTopic(topic, subject, classLevel) {
     if (topic) document.getElementById("genTopic").value = topic;
-    if (subject) document.getElementById("genSubject").value = subject;
+    if (subject) {
+        document.getElementById("genSubject").value = subject;
+        onSubjectChange();
+    }
     if (classLevel) document.getElementById("genClass").value = classLevel;
-    showToast(`Selected quick preset: ${topic} (${subject})`);
+    showToast(`Selected topic: ${topic} (${subject})`);
 }
 
 async function generateAIQuiz() {
     const classLevel = document.getElementById("genClass").value;
     const subject = document.getElementById("genSubject").value;
-    const topic = document.getElementById("genTopic").value.trim() || "Linear Equations";
+    const enteredTopic = document.getElementById("genTopic").value.trim();
+    const topic = enteredTopic || getDefaultTopicForSubject(subject);
     const difficulty = document.getElementById("genDifficulty").value;
     const questionCount = document.getElementById("genCount").value;
     const prompt = document.getElementById("genPrompt").value.trim();
@@ -176,7 +259,7 @@ async function generateAIQuiz() {
     const generateBtn = document.getElementById("generateBtn");
     const originalBtnHTML = generateBtn.innerHTML;
     generateBtn.disabled = true;
-    generateBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Generating AI Quiz...`;
+    generateBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Generating AI ${subject} Quiz...`;
 
     try {
         const response = await fetch(`${API_BASE}/assessments/generate`, {
@@ -189,22 +272,49 @@ async function generateAIQuiz() {
         if (data.success && data.quiz) {
             currentQuiz = data.quiz;
             renderQuizPreview(data.quiz);
-            showToast(`✨ Generated ${data.quiz.questions.length} AI questions for ${topic}!`);
+            showToast(`✨ Generated ${data.quiz.questions.length} AI ${subject} questions for "${topic}"!`);
         } else {
             throw new Error(data.message || "Failed to generate");
         }
     } catch (err) {
-        console.warn("API generate offline, using smart fallback quiz generation:", err);
-        // Offline / fallback generation
+        console.warn("API generate notice:", err);
+        // Fallback subject-aligned quiz generation
         currentQuiz = {
             title: `${topic} (${subject})`,
             subject,
             classLevel: `Class ${classLevel}`,
             difficulty,
-            questions: defaultQuiz.questions.slice(0, parseInt(questionCount))
+            questions: [
+                {
+                    id: 1,
+                    question: `In ${subject}, what is the foundational concept behind ${topic}?`,
+                    options: [
+                        `Key theoretical principles governing ${topic}`,
+                        `An unrelated formula`,
+                        `An obsolete convention`,
+                        `None of the above`
+                    ],
+                    correctIndex: 0,
+                    concept: `${subject} - ${topic}`,
+                    explanation: `Understanding ${topic} requires mastering core principles in ${subject}.`
+                },
+                {
+                    id: 2,
+                    question: `Which of the following is essential when evaluating ${topic} in ${subject}?`,
+                    options: [
+                        `Accurate conceptual definition and empirical analysis`,
+                        `Ignoring environmental factors`,
+                        `Relying on arbitrary guesses`,
+                        `Omitting standard formulas`
+                    ],
+                    correctIndex: 0,
+                    concept: `${subject} - ${topic} Principles`,
+                    explanation: `Proper evaluation in ${subject} relies on verifying foundational concepts.`
+                }
+            ]
         };
         renderQuizPreview(currentQuiz);
-        showToast(`✨ Generated AI Quiz preview for ${topic}!`);
+        showToast(`✨ Generated AI ${subject} Quiz preview for "${topic}"!`);
     } finally {
         generateBtn.disabled = false;
         generateBtn.innerHTML = originalBtnHTML;
@@ -362,6 +472,7 @@ async function finishQuiz() {
         if (data.success && data.analysis) {
             openDiagnosisModal(data.analysis);
             updateStudentXP(data.analysis.xpEarned || 150);
+            logQuizAttendance(currentQuiz, data.analysis);
         } else {
             throw new Error("Invalid response");
         }
@@ -391,6 +502,7 @@ async function finishQuiz() {
 
         openDiagnosisModal(mockAnalysis);
         updateStudentXP(xp);
+        logQuizAttendance(currentQuiz, mockAnalysis);
     }
 }
 
@@ -542,13 +654,10 @@ function updateStudentXP(pointsGained) {
 }
 
 function updateXPDisplay(xpValue) {
-    const xpElements = document.querySelectorAll(".xp-value, .stat-card strong");
+    const val = typeof xpValue === 'number' ? xpValue : (studentProfile.xp || 0);
+    const xpElements = document.querySelectorAll(".xp-value");
     xpElements.forEach(el => {
-        if (el.innerText.includes(",") || !isNaN(parseInt(el.innerText.replace(/,/g, '')))) {
-            if (el.closest('.xp-card') || el.closest('.stat-card')) {
-                el.innerText = xpValue.toLocaleString();
-            }
-        }
+        el.innerText = val.toLocaleString();
     });
 }
 
@@ -580,10 +689,374 @@ async function redeemReward(cost, title = "Reward Item") {
 }
 
 function logout() {
-    showToast("Logged out of LearnIQ session.");
-    setTimeout(() => {
-        showPage("dashboard");
-    }, 1000);
+    try {
+        fetch(`${API_BASE}/auth/logout`, { method: "POST" });
+    } catch (e) {
+        // ignore
+    }
+    localStorage.removeItem("learniq_token");
+    authToken = null;
+    currentUser = null;
+
+    updateUserUI(null);
+
+    showToast("👋 Successfully signed out of LearnIQ session.");
+    showPage("landing");
+}
+
+// ==========================================
+// AUTHENTICATION & SUPABASE AUTH MODAL
+// ==========================================
+let authToken = localStorage.getItem("learniq_token") || null;
+let currentUser = null;
+
+async function checkAuthSession() {
+    if (!authToken) return;
+    try {
+        const response = await fetch(`${API_BASE}/auth/me`, {
+            headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        if (data.success && data.user) {
+            currentUser = data.user;
+            updateUserUI(data.user);
+        }
+    } catch (e) {
+        console.warn("Auth check failed:", e.message);
+    }
+}
+
+function updateUserUI(user) {
+    const userNameElem = document.getElementById("userName");
+    const userSubElem = document.getElementById("userSub");
+    const userAvatarElem = document.getElementById("userAvatar");
+    const authBtnLabel = document.getElementById("authBtnLabel");
+    const welcomeUserName = document.getElementById("welcomeUserName");
+    const profilePageName = document.getElementById("profilePageName");
+    const topbarLogoutBtn = document.getElementById("topbarLogoutBtn");
+
+    if (user) {
+        const name = user.name || "Guest Student";
+        if (userNameElem) userNameElem.innerText = name;
+        if (welcomeUserName) welcomeUserName.innerText = name;
+        if (profilePageName) profilePageName.innerText = name;
+        if (userSubElem) userSubElem.innerText = user.class || (user.role === "teacher" ? "Educator" : "Student");
+        if (userAvatarElem) userAvatarElem.innerText = name.charAt(0).toUpperCase();
+        if (authBtnLabel) authBtnLabel.innerText = "Account";
+        if (topbarLogoutBtn) topbarLogoutBtn.style.display = "inline-flex";
+
+        studentProfile.name = name;
+        studentProfile.classLevel = user.class || studentProfile.classLevel;
+        studentProfile.xp = user.xp !== undefined ? user.xp : 0;
+        updateXPDisplay(studentProfile.xp);
+
+        const modalUserAvatar = document.getElementById("modalUserAvatar");
+        const modalUserName = document.getElementById("modalUserName");
+        const modalUserEmail = document.getElementById("modalUserEmail");
+        const modalUserRoleBadge = document.getElementById("modalUserRoleBadge");
+
+        if (modalUserAvatar) modalUserAvatar.innerText = name.charAt(0).toUpperCase();
+        if (modalUserName) modalUserName.innerText = name;
+        if (modalUserEmail) modalUserEmail.innerText = user.email || "student@learniq.edu";
+        if (modalUserRoleBadge) modalUserRoleBadge.innerText = user.role === "teacher" ? "Teacher Mode" : "Student Mode";
+    } else {
+        if (userNameElem) userNameElem.innerText = "Guest";
+        if (welcomeUserName) welcomeUserName.innerText = "Guest";
+        if (profilePageName) profilePageName.innerText = "Guest Student";
+        if (userSubElem) userSubElem.innerText = "Class 10";
+        if (userAvatarElem) userAvatarElem.innerText = "G";
+        if (authBtnLabel) authBtnLabel.innerText = "Sign In";
+        if (topbarLogoutBtn) topbarLogoutBtn.style.display = "none";
+
+        studentProfile.xp = 0;
+        updateXPDisplay(0);
+    }
+    loadLeaderboard();
+}
+
+async function loadLeaderboard() {
+    const container = document.getElementById("rankingListContainer");
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/students/leaderboard`);
+        const data = await response.json();
+
+        if (data.success && data.leaderboard && data.leaderboard.length > 0) {
+            container.innerHTML = data.leaderboard.map(item => {
+                const isCurrentUser = currentUser && (currentUser.id === item.userId || currentUser.name === item.name);
+                const initial = (item.name || "S").charAt(0).toUpperCase();
+                if (isCurrentUser) {
+                    const rankElem = document.getElementById("dashboardRankVal");
+                    if (rankElem) rankElem.innerText = `#${item.rank}`;
+                }
+                return `
+                    <div class="ranking-row ${isCurrentUser ? 'you' : ''}">
+                        <span>#${item.rank}</span>
+                        <div class="avatar">${initial}</div>
+                        <strong>${item.name} ${isCurrentUser ? '(You)' : ''}</strong>
+                        <span class="badge-pill" style="font-size: 11px; margin-left: auto; margin-right: 12px; background: rgba(255,255,255,0.05);">${item.class || 'Class 10'}</span>
+                        <span style="color: var(--cyan); font-weight: 700;">${(item.xp || 0).toLocaleString()} XP</span>
+                    </div>
+                `;
+            }).join("");
+        } else {
+            if (currentUser && currentUser.name) {
+                container.innerHTML = `
+                    <div class="ranking-row you">
+                        <span>#1</span>
+                        <div class="avatar">${(currentUser.name || "U").charAt(0).toUpperCase()}</div>
+                        <strong>${currentUser.name} (You)</strong>
+                        <span class="badge-pill" style="font-size: 11px; margin-left: auto; margin-right: 12px; background: rgba(0,240,255,0.1); color: var(--cyan);">${currentUser.class || 'Class 10'}</span>
+                        <span style="color: var(--cyan); font-weight: 700;">${(studentProfile.xp || 0).toLocaleString()} XP</span>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; background: rgba(7,11,20,0.6); border-radius: 16px; border: 1px dashed var(--border);">
+                        <i class="fa-solid fa-ranking-star" style="font-size: 36px; color: var(--cyan); margin-bottom: 12px;"></i>
+                        <h3 style="font-size: 16px; color: var(--text); margin-bottom: 6px;">No Active Leaderboard Members Yet</h3>
+                        <p style="font-size: 13px; color: var(--muted); max-width: 380px; margin: 0 auto 16px auto;">Sign in and complete AI quizzes to earn XP and claim the #1 spot on the leaderboard!</p>
+                        <button class="primary-btn" onclick="openAuthModal()" style="margin: 0 auto;">
+                            <i class="fa-solid fa-user-plus"></i> Sign In to Join Leaderboard
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    } catch (err) {
+        console.warn("Leaderboard fetch notice:", err.message);
+    }
+}
+
+function openAuthModal() {
+    const modal = document.getElementById("authModal");
+    const userSessionView = document.getElementById("userSessionView");
+    const authFormsContainer = document.getElementById("authFormsContainer");
+
+    if (currentUser && currentUser.email) {
+        if (userSessionView) userSessionView.style.display = "block";
+        if (authFormsContainer) authFormsContainer.style.display = "none";
+    } else {
+        if (userSessionView) userSessionView.style.display = "none";
+        if (authFormsContainer) authFormsContainer.style.display = "block";
+    }
+
+    if (modal) modal.classList.add("active");
+}
+
+function closeAuthModal() {
+    const modal = document.getElementById("authModal");
+    if (modal) modal.classList.remove("active");
+}
+
+function switchAuthTab(type) {
+    const loginForm = document.getElementById("loginForm");
+    const signupForm = document.getElementById("signupForm");
+    const tabLoginBtn = document.getElementById("tabLoginBtn");
+    const tabSignupBtn = document.getElementById("tabSignupBtn");
+
+    if (type === 'login') {
+        loginForm.style.display = "block";
+        signupForm.style.display = "none";
+        tabLoginBtn.style.background = "var(--primary-gradient)";
+        tabLoginBtn.style.color = "white";
+        tabSignupBtn.style.background = "transparent";
+        tabSignupBtn.style.color = "var(--muted)";
+    } else {
+        loginForm.style.display = "none";
+        signupForm.style.display = "block";
+        tabSignupBtn.style.background = "var(--primary-gradient)";
+        tabSignupBtn.style.color = "white";
+        tabLoginBtn.style.background = "transparent";
+        tabLoginBtn.style.color = "var(--muted)";
+    }
+}
+
+function switchLandingTab(type) {
+    const loginForm = document.getElementById("landingLoginForm");
+    const signupForm = document.getElementById("landingSignupForm");
+    const tabLoginBtn = document.getElementById("landingTabLogin");
+    const tabSignupBtn = document.getElementById("landingTabSignup");
+
+    if (!loginForm || !signupForm) return;
+
+    if (type === 'login') {
+        loginForm.style.display = "block";
+        signupForm.style.display = "none";
+        if (tabLoginBtn) { tabLoginBtn.style.background = "var(--primary-gradient)"; tabLoginBtn.style.color = "white"; }
+        if (tabSignupBtn) { tabSignupBtn.style.background = "transparent"; tabSignupBtn.style.color = "var(--muted)"; }
+    } else {
+        loginForm.style.display = "none";
+        signupForm.style.display = "block";
+        if (tabSignupBtn) { tabSignupBtn.style.background = "var(--primary-gradient)"; tabSignupBtn.style.color = "white"; }
+        if (tabLoginBtn) { tabLoginBtn.style.background = "transparent"; tabLoginBtn.style.color = "var(--muted)"; }
+    }
+}
+
+async function handleAuthSubmit(event, type) {
+    event.preventDefault();
+    const endpoint = type === 'login' ? `${API_BASE}/auth/login` : `${API_BASE}/auth/signup`;
+
+    let email = "";
+    let password = "";
+    let fullName = "";
+    let role = "student";
+
+    if (type === 'login') {
+        const lEmail = document.getElementById("loginEmail")?.value;
+        const ldEmail = document.getElementById("landingLoginEmail")?.value;
+        email = (lEmail || ldEmail || "").trim();
+
+        const lPass = document.getElementById("loginPassword")?.value;
+        const ldPass = document.getElementById("landingLoginPassword")?.value;
+        password = (lPass || ldPass || "").trim();
+    } else {
+        const sName = document.getElementById("signupName")?.value;
+        const ldName = document.getElementById("landingSignupName")?.value;
+        fullName = (sName || ldName || "").trim();
+
+        const sEmail = document.getElementById("signupEmail")?.value;
+        const ldEmail = document.getElementById("landingSignupEmail")?.value;
+        email = (sEmail || ldEmail || "").trim();
+
+        const sPass = document.getElementById("signupPassword")?.value;
+        const ldPass = document.getElementById("landingSignupPassword")?.value;
+        password = (sPass || ldPass || "").trim();
+
+        const sRole = document.getElementById("signupRole")?.value;
+        const ldRole = document.getElementById("landingSignupRole")?.value;
+        role = sRole || ldRole || "student";
+    }
+
+    const payload = type === 'login' ? { email, password } : { fullName, email, password, role };
+
+    try {
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (data.success && data.session) {
+            authToken = data.session.token || `token-${Date.now()}`;
+            localStorage.setItem("learniq_token", authToken);
+            currentUser = data.session.user;
+
+            updateUserUI(currentUser);
+            showToast(`✅ ${data.message}`);
+            closeAuthModal();
+            showPage("dashboard");
+
+            if (data.session.role === "teacher" && currentRole !== "teacher") {
+                toggleRole();
+            }
+        } else {
+            showToast(`❌ ${data.message || "Authentication failed."}`);
+        }
+    } catch (err) {
+        showToast("⚠️ Authentication server unreachable. Please check connection.");
+    }
+}
+
+// ==========================================
+// TEST ATTENDANCE & STREAK TRACKER
+// ==========================================
+let studentQuizHistory = JSON.parse(localStorage.getItem("learniq_quiz_history") || "[]");
+
+function logQuizAttendance(quiz, analysis) {
+    if (!quiz || !analysis) return;
+    const entry = {
+        id: `test-${Date.now()}`,
+        dateStr: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        timeStr: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        subject: quiz.subject || "Mathematics",
+        topic: quiz.title || "Assessment",
+        score: analysis.scorePercentage,
+        correctCount: analysis.correctCount,
+        totalQuestions: analysis.totalQuestions,
+        xpEarned: analysis.xpEarned
+    };
+    studentQuizHistory.unshift(entry);
+    localStorage.setItem("learniq_quiz_history", JSON.stringify(studentQuizHistory));
+
+    updateDailyStreak();
+    renderProfileTestHistory();
+}
+
+function updateDailyStreak() {
+    const today = new Date().toDateString();
+    const lastActive = localStorage.getItem("learniq_last_active_date");
+    let streak = parseInt(localStorage.getItem("learniq_streak_count") || "0");
+
+    if (lastActive !== today) {
+        streak += 1;
+        localStorage.setItem("learniq_streak_count", streak.toString());
+        localStorage.setItem("learniq_last_active_date", today);
+    }
+    studentProfile.streak = streak;
+
+    const streakElem = document.getElementById("dashboardStreakVal");
+    if (streakElem) streakElem.innerText = `${streak} ${streak === 1 ? 'Day' : 'Days'}`;
+}
+
+function renderProfileTestHistory() {
+    const counts = {
+        Mathematics: 0,
+        Physics: 0,
+        Chemistry: 0,
+        Biology: 0,
+        English: 0
+    };
+
+    studentQuizHistory.forEach(item => {
+        const sub = item.subject || "Mathematics";
+        if (counts[sub] !== undefined) counts[sub]++;
+        else counts["Mathematics"]++;
+    });
+
+    const mElem = document.getElementById("countMathTests");
+    const pElem = document.getElementById("countPhysicsTests");
+    const cElem = document.getElementById("countChemistryTests");
+    const bElem = document.getElementById("countBiologyTests");
+    const eElem = document.getElementById("countEnglishTests");
+
+    if (mElem) mElem.innerText = counts.Mathematics;
+    if (pElem) pElem.innerText = counts.Physics;
+    if (cElem) cElem.innerText = counts.Chemistry;
+    if (bElem) bElem.innerText = counts.Biology;
+    if (eElem) eElem.innerText = counts.English;
+
+    const container = document.getElementById("testHistoryLogContainer");
+    if (!container) return;
+
+    if (studentQuizHistory.length > 0) {
+        container.innerHTML = studentQuizHistory.map(item => `
+            <div style="background: rgba(7, 11, 20, 0.6); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 240, 255, 0.1); color: var(--cyan); display: grid; place-items: center; font-size: 16px;">
+                        <i class="fa-solid fa-file-signature"></i>
+                    </div>
+                    <div>
+                        <strong style="font-size: 14px; color: var(--text); display: block;">${item.topic} (${item.subject})</strong>
+                        <span style="font-size: 11px; color: var(--muted);"><i class="fa-regular fa-calendar-check" style="margin-right: 4px;"></i>${item.dateStr} at ${item.timeStr}</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <span class="badge-pill ${item.score >= 80 ? 'strong' : 'critical'}" style="font-size: 12px; padding: 4px 10px;">${item.score}% (${item.correctCount}/${item.totalQuestions})</span>
+                    <span style="color: var(--cyan); font-weight: 700; font-size: 13px;">+${item.xpEarned} XP</span>
+                </div>
+            </div>
+        `).join("");
+    } else {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: var(--muted);">
+                <i class="fa-solid fa-clipboard-list" style="font-size: 32px; color: var(--cyan); margin-bottom: 8px;"></i>
+                <p style="font-size: 13px;">No assessment history recorded yet. Complete an AI Quiz to track your attendance by subject & date!</p>
+            </div>
+        `;
+    }
 }
 
 // ==========================================
