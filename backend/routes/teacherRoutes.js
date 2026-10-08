@@ -48,12 +48,12 @@ router.get("/class-map", async (req, res) => {
 
 // POST /api/teachers/intervention
 router.post("/intervention", (req, res) => {
-    const { concept = "Linear Equations", className = "Class 10-B" } = req.body;
+        const { concept = "Linear Equations", className = "Class 10-B" } = req.body;
 
-    res.json({
-        success: true,
-        concept,
-        className,
+        res.json({
+            success: true,
+            concept,
+            className,
         aiInterventionPlan: {
             summary: `18 out of 32 students in ${className} stumbled on brackets expansion in Linear Equations.`,
             recommendedAction: "5-minute focused board review on distribution rule followed by 3 guided practice problems.",

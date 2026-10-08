@@ -1130,172 +1130,130 @@
      LEARNING INTELLIGENCE
      ========================================== -->
 
-<section id="intelligence"
-         class="page">
-
-
-    <div class="page-header">
-
+<section id="intelligence" class="page learning-page">
+    <div class="learning-header">
         <div>
-
-            <span class="eyebrow">
-                LEARNING INTELLIGENCE
-            </span>
-
-            <h1>
-                Understand How You Learn
-            </h1>
-
-            <p>
-                LearnIQ analyzes your performance to identify learning gaps.
-            </p>
-
+            <span class="eyebrow">MY LEARNING</span>
+            <h1>My Learning</h1>
+            <p>Track your progress, understand your mistakes, and know what to practice next.</p>
         </div>
-
+        <div class="learning-filters">
+            <label class="period-control">Subject
+                <select id="learningSubjectSelect" aria-label="Choose a subject" onchange="selectLearningSubject(this.value)">
+                    <option value="All Subjects">All Subjects</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Science">Science</option>
+                    <option value="English">English</option>
+                    <option value="Social Science">Social Science</option>
+                </select>
+            </label>
+            <label class="period-control period-placeholder">Period
+                <select aria-label="Learning snapshot period" disabled><option>This Week</option></select>
+            </label>
+        </div>
     </div>
 
-
-
-    <div class="concept-grid">
-
-
-        <div class="concept-card">
-
-            <span>Fractions</span>
-
-            <strong>92%</strong>
-
-            <div class="progress">
-                <div style="width:92%"></div>
-            </div>
-
-            <small>
-                Strong mastery
-            </small>
-
+    <section class="learning-snapshot" aria-labelledby="learningSnapshotTitle">
+        <div class="learning-section-heading snapshot-heading">
+            <div><span class="eyebrow">AT A GLANCE</span><h2 id="learningSnapshotTitle">Learning Snapshot</h2></div>
         </div>
-
-
-        <div class="concept-card">
-
-            <span>Algebra</span>
-
-            <strong>71%</strong>
-
-            <div class="progress">
-                <div style="width:71%"></div>
-            </div>
-
-            <small>
-                Developing
-            </small>
-
+        <div class="snapshot-grid">
+            <article class="snapshot-card">
+                <div class="snapshot-label"><i class="fa-solid fa-bullseye" aria-hidden="true"></i><span>Accuracy</span></div>
+                <strong id="learningAccuracy">--</strong>
+                <small>Across recorded quizzes</small>
+            </article>
+            <article class="snapshot-card">
+                <div class="snapshot-label"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Quizzes</span></div>
+                <strong id="learningQuizCount">--</strong>
+                <small>Completed on this device</small>
+            </article>
+            <article class="snapshot-card">
+                <div class="snapshot-label"><i class="fa-solid fa-fire" aria-hidden="true"></i><span>Streak</span></div>
+                <strong id="learningStreak">--</strong>
+                <small>Keep going!</small>
+            </article>
+            <article class="snapshot-card">
+                <div class="snapshot-label"><i class="fa-solid fa-star" aria-hidden="true"></i><span>XP</span></div>
+                <strong id="learningXp">--</strong>
+                <small>Available to spend</small>
+            </article>
         </div>
+    </section>
 
-
-        <div class="concept-card">
-
-            <span>Linear Equations</span>
-
-            <strong>54%</strong>
-
-            <div class="progress">
-                <div style="width:54%"></div>
+    <div class="learning-main-grid">
+        <section class="learning-panel topic-panel" aria-labelledby="topicMasteryTitle">
+            <div class="learning-section-heading">
+                <div><span class="eyebrow">YOUR SUBJECTS</span><h2 id="topicMasteryTitle">Learning Overview</h2><p id="topicMasteryDescription">See your progress across subjects. Choose a subject to explore its topics.</p></div>
             </div>
-
-            <small>
-                Learning gap detected
-            </small>
-
-        </div>
-
-
-        <div class="concept-card">
-
-            <span>Geometry</span>
-
-            <strong>84%</strong>
-
-            <div class="progress">
-                <div style="width:84%"></div>
+                <div id="learningSubjectOverview" class="subject-overview-grid"></div>
+                <div id="learningSubjectDetail" hidden>
+                <div class="subject-mastery-summary"><span id="selectedSubjectName">Mathematics</span><strong><span id="selectedSubjectMastery">--</span><small> overall mastery</small></strong></div>
+                <div class="learning-empty-inline" id="subjectTopicsEmpty" hidden>No topic results for this subject yet. Complete a quiz to see your mastery here.</div>
+                <div class="mastery-list" id="subjectTopicsList">
+                    <article class="mastery-row" data-topic="Fractions" data-mastery="92">
+                    <div class="mastery-topic"><strong>Fractions</strong><span class="mastery-status strong-status">Strong</span></div>
+                    <div class="mastery-progress"><div class="mastery-track" role="progressbar" aria-label="Fractions mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="92"><span style="width:92%"></span></div><span>92%</span></div>
+                    <button class="topic-practice-btn" onclick="practiceLearningTopic('Fractions')">Practice</button>
+                </article>
+                <article class="mastery-row" data-topic="Algebra" data-mastery="71">
+                    <div class="mastery-topic"><strong>Algebra</strong><span class="mastery-status developing-status">Developing</span></div>
+                    <div class="mastery-progress"><div class="mastery-track" role="progressbar" aria-label="Algebra mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="71"><span style="width:71%"></span></div><span>71%</span></div>
+                    <button class="topic-practice-btn" onclick="practiceLearningTopic('Algebra')">Practice</button>
+                </article>
+                <article class="mastery-row" data-topic="Linear Equations" data-mastery="54">
+                    <div class="mastery-topic"><strong>Linear Equations</strong><span class="mastery-status needs-practice-status">Needs Practice</span></div>
+                    <div class="mastery-progress"><div class="mastery-track" role="progressbar" aria-label="Linear Equations mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="54"><span style="width:54%"></span></div><span>54%</span></div>
+                    <button class="topic-practice-btn" onclick="practiceLearningTopic('Linear Equations')">Practice</button>
+                </article>
+                <article class="mastery-row" data-topic="Geometry" data-mastery="84">
+                    <div class="mastery-topic"><strong>Geometry</strong><span class="mastery-status strong-status">Strong</span></div>
+                    <div class="mastery-progress"><div class="mastery-track" role="progressbar" aria-label="Geometry mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="84"><span style="width:84%"></span></div><span>84%</span></div>
+                    <button class="topic-practice-btn" onclick="practiceLearningTopic('Geometry')">Practice</button>
+                </article>
             </div>
+            </div>
+        </section>
 
-            <small>
-                Strong mastery
-            </small>
-
-        </div>
-
+        <aside class="learning-support-column">
+            <section class="next-action-card" aria-labelledby="nextActionTitle">
+                <span class="next-action-kicker"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> YOUR NEXT BEST ACTION</span>
+                <h2 id="nextActionTitle">Practice Linear Equations</h2>
+                <p id="nextActionDescription">Your current mastery is <strong id="nextActionMastery">54%</strong>. You have the most room for improvement in this topic.</p>
+                <div class="focus-topics" id="nextActionFocus"><span>Focus on:</span><ul><li>Solving multi-step equations</li><li>Sign changes</li></ul></div>
+                <div class="practice-estimate" id="nextActionEstimate"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Estimated practice: <strong>10 questions</strong></div>
+                <button class="next-action-button" id="nextActionButton" onclick="startRecommendedPractice()">Practice Now <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                <p id="recommendationEmpty" class="recommendation-empty" hidden>No practice recommendation yet. Complete a quiz to get your next step.</p>
+            </section>
+        </aside>
     </div>
 
-
-
-    <div class="glass-card">
-
-        <div class="card-header">
-
-            <div>
-
-                <span class="eyebrow">
-                    MISTAKE INTELLIGENCE
-                </span>
-
-                <h2>
-                    Your Common Mistakes
-                </h2>
-
-            </div>
-
-            <i class="fa-solid fa-magnifying-glass-chart"></i>
-
+    <section class="mistakes-panel learning-panel" aria-labelledby="commonMistakesTitle">
+        <div class="learning-section-heading mistakes-heading">
+            <div><span class="eyebrow">LEARN FROM EACH TRY</span><h2 id="commonMistakesTitle">Common Mistakes</h2><p>Patterns in your recent answers.</p></div>
+            <button class="topic-practice-btn review-mistakes-btn" onclick="document.getElementById('mistakeCards').focus()">Review Mistakes</button>
         </div>
-
-
-        <div class="mistake-grid">
-
-
-            <div class="mistake-card">
-
-                <strong>
-                    Calculation Errors
-                </strong>
-
-                <span>
-                    4×
-                </span>
-
-            </div>
-
-
-            <div class="mistake-card">
-
-                <strong>
-                    Conceptual Errors
-                </strong>
-
-                <span>
-                    3×
-                </span>
-
-            </div>
-
-
-            <div class="mistake-card">
-
-                <strong>
-                    Misreading
-                </strong>
-
-                <span>
-                    2×
-                </span>
-
-            </div>
-
+        <div id="mistakeCards" class="learning-mistake-grid" tabindex="-1">
+            <article class="learning-mistake-card"><span class="mistake-card-icon calculation-icon"><i class="fa-solid fa-calculator" aria-hidden="true"></i></span><div><strong>Calculation Errors</strong><span>4 mistakes</span></div><small class="most-frequent-label">Most frequent</small></article>
+            <article class="learning-mistake-card"><span class="mistake-card-icon conceptual-icon"><i class="fa-solid fa-brain" aria-hidden="true"></i></span><div><strong>Conceptual Errors</strong><span>3 mistakes</span></div></article>
+            <article class="learning-mistake-card"><span class="mistake-card-icon reading-icon"><i class="fa-solid fa-eye" aria-hidden="true"></i></span><div><strong>Misreading Questions</strong><span>2 mistakes</span></div></article>
         </div>
+        <div id="mistakesEmpty" class="learning-empty-inline" hidden>No mistake patterns for this subject yet. Complete a quiz to see what to work on.</div>
+    </section>
 
-    </div>
-
+    <section class="learning-panel progress-insight-panel" aria-labelledby="learningProgressTitle">
+        <div class="learning-section-heading">
+            <div><span class="eyebrow">KEEP IT UP</span><h2 id="learningProgressTitle">Your Progress</h2></div>
+        </div>
+        <div id="learningProgressEmpty" class="learning-empty-state">
+            <span><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span>
+            <p>Your progress will appear here as you complete more quizzes.</p>
+        </div>
+        <div id="learningProgressChartWrap" class="learning-chart-wrap" hidden>
+            <canvas id="learningProgressChart" role="img" aria-label="Your quiz accuracy over time"></canvas>
+            <p id="learningChartSummary" class="chart-accessible-summary"></p>
+        </div>
+    </section>
 </section>
 
 

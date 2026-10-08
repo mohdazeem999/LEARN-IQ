@@ -26,7 +26,7 @@ flowchart TD
     end
 
     subgraph External ["External Services & APIs"]
-        GeminiSDK["Google Gemini AI (gemini-2.5-flash / gemini-1.5-flash)"]
+        GeminiSDK["Google Gemini AI (gemini-flash-lite-latest / gemini-3.5-flash / gemini-3.8-flash)"]
         SupabaseDB["Supabase Cloud PostgreSQL & Auth"]
     end
 
@@ -110,10 +110,10 @@ The AI service utilizes a multi-tier fallback architecture to ensure 100% quiz g
                                  Yes  No
                                  /     \
                                 v       v
-              ┌─────────────────────┐   ┌───────────────────────────┐
-              │ Google GenAI SDK    │   │ Offline Subject-Aligned   │
-              │ model: 2.5-flash    │   │ Template Engine Fallback  │
-              └──────────┬──────────┘   └───────────────────────────┘
+              ┌─────────────────────────────────────┐   ┌───────────────────────────┐
+              │ Google GenAI SDK                    │   │ Offline Subject-Aligned   │
+              │ model: gemini-flash-lite / 3.5-flash│   │ Template Engine Fallback  │
+              └──────────┬──────────────────────────┘   └───────────────────────────┘
                          │
                  Did SDK succeed?
                         / \
@@ -122,7 +122,7 @@ The AI service utilizes a multi-tier fallback architecture to ensure 100% quiz g
                      v       v
            ┌────────────┐  ┌───────────────────────────┐
            │ JSON Output│  │ Direct REST Endpoint      │
-           └────────────┘  │ model: 1.5-flash          │
+           └────────────┘  │ model: gemini-flash-lite  │
                            └───────────────────────────┘
 ```
 

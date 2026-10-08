@@ -3,7 +3,8 @@
  * Client Application Logic
  */
 
-const API_BASE = "http://localhost:5050/api";
+// Use the same origin as the frontend so local and deployed server ports stay in sync.
+const API_BASE = "/api";
 
 // Application State
 let currentRole = "student"; // "student" | "teacher"
@@ -119,6 +120,8 @@ function showPage(pageId) {
         loadLeaderboard();
     } else if (pageId === "profile") {
         renderProfileTestHistory();
+    } else if (pageId === "intelligence") {
+        renderLearningIntelligence();
     }
 }
 
@@ -642,6 +645,7 @@ async function fetchStudentProfile() {
         if (data.success && data.student) {
             studentProfile = data.student;
             updateXPDisplay(studentProfile.xp);
+            renderLearningIntelligence();
         }
     } catch (e) {
         updateXPDisplay(studentProfile.xp);
@@ -651,6 +655,7 @@ async function fetchStudentProfile() {
 function updateStudentXP(pointsGained) {
     studentProfile.xp += pointsGained;
     updateXPDisplay(studentProfile.xp);
+    renderLearningIntelligence();
 }
 
 function updateXPDisplay(xpValue) {
@@ -687,6 +692,158 @@ async function redeemReward(cost, title = "Reward Item") {
         showToast(`🎁 Successfully redeemed "${title}" for ${cost} XP!`);
     }
 }
+
+function practiceLearningTopic(topic) {
+    const subject = document.getElementById("genSubject");
+    const topicInput = document.getElementById("genTopic");
+    if (subject) {
+        subject.value = "Mathematics";
+        onSubjectChange();
+    }
+    if (topicInput) topicInput.value = topic;
+    showPage("generator");
+}
+
+function startLinearEquationsPractice() {
+    currentQuiz = defaultQuiz;
+    currentQuestionIdx = 0;
+    showPage("assessment");
+}
+
+function renderLearningIntelligence() {
+    const history = Array.isArray(studentQuizHistory) ? studentQuizHistory : [];
+    const scoreHistory = history
+        .filter(item => item.score !== null && item.score !== "" && Number.isFinite(Number(item.score)))
+        .slice(0, 7)
+        .reverse();
+    const scores = history
+        .filter(item => item.score !== null && item.score !== "")
+        .map(item => Number(item.score))
+        .filter(score => Number.isFinite(score));
+    const accuracy = document.getElementById("learningAccuracy");
+    const quizCount = document.getElementById("learningQuizCount");
+    const streak = document.getElementById("learningStreak");
+    const xp = document.getElementById("learningXp");
+
+    if (accuracy) {
+        accuracy.textContent = scores.length
+            ? `${Math.round(scores.reduce((total, score) => total + score, 0) / scores.length)}%`
+            : "--";
+    }
+    if (quizCount) quizCount.textContent = history.length.toLocaleString();
+    if (streak) {
+        const currentStreak = Number(studentProfile.streak);
+        streak.textContent = Number.isFinite(currentStreak)
+            ? `${currentStreak} ${currentStreak === 1 ? "day" : "days"}`
+            : "--";
+    }
+    if (xp) {
+        const currentXp = Number(studentProfile.xp);
+        xp.textContent = Number.isFinite(currentXp) ? currentXp.toLocaleString() : "--";
+    }
+
+    const topicRows = [...document.querySelectorAll("#intelligence .mastery-row")];
+    const weakestTopic = topicRows.reduce((weakest, row) => {
+        const mastery = Number(row.dataset.mastery);
+        return Number.isFinite(mastery) && (!weakest || mastery < weakest.mastery)
+            ? { name: row.dataset.topic, mastery }
+            : weakest;
+    }, null);
+    const recommendationTitle = document.getElementById("nextActionTitle");
+    const recommendationMastery = document.getElementById("nextActionMastery");
+    if (weakestTopic && recommendationTitle && recommendationMastery) {
+        recommendationTitle.textContent = `Practice ${weakestTopic.name}`;
+        recommendationMastery.textContent = `${weakestTopic.mastery}%`;
+    }
+
+    renderLearningProgressChart(scoreHistory);
+}
+
+function renderLearningProgressChart(history) {
+    const emptyState = document.getElementById("learningProgressEmpty");
+    const chartWrap = document.getElementById("learningProgressChartWrap");
+    const canvas = document.getElementById("learningProgressChart");
+    const summary = document.getElementById("learningChartSummary");
+    if (!emptyState || !chartWrap || !canvas || !summary) return;
+
+    if (!history.length) {
+        emptyState.hidden = false;
+        chartWrap.hidden = true;
+        return;
+    }
+
+    emptyState.hidden = true;
+    chartWrap.hidden = false;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const bounds = canvas.getBoundingClientRect();
+    const width = Math.max(bounds.width, 280);
+    const height = 190;
+    const pixelRatio = window.devicePixelRatio || 1;
+    canvas.width = width * pixelRatio;
+    canvas.height = height * pixelRatio;
+    context.scale(pixelRatio, pixelRatio);
+    context.clearRect(0, 0, width, height);
+
+    const left = 34;
+    const right = width - 12;
+    const top = 12;
+    const bottom = height - 28;
+    const chartHeight = bottom - top;
+    context.font = "10px Inter, sans-serif";
+    context.textBaseline = "middle";
+
+    [0, 50, 100].forEach(value => {
+        const y = bottom - chartHeight * value / 100;
+        context.strokeStyle = "rgba(255, 255, 255, 0.08)";
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(left, y);
+        context.lineTo(right, y);
+        context.stroke();
+        context.fillStyle = "#8e99ad";
+        context.textAlign = "right";
+        context.fillText(`${value}%`, left - 7, y);
+    });
+
+    const points = history.map((entry, index) => ({
+        x: history.length === 1
+            ? (left + right) / 2
+            : left + (right - left) * index / (history.length - 1),
+        y: bottom - chartHeight * Math.max(0, Math.min(100, Number(entry.score))) / 100
+    }));
+
+    if (points.length > 1) {
+        context.beginPath();
+        context.moveTo(points[0].x, points[0].y);
+        points.slice(1).forEach(point => context.lineTo(point.x, point.y));
+        context.strokeStyle = "#9b6cff";
+        context.lineWidth = 2.5;
+        context.lineJoin = "round";
+        context.stroke();
+    }
+
+    points.forEach((point, index) => {
+        context.beginPath();
+        context.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
+        context.fillStyle = "#39d9ff";
+        context.fill();
+        context.fillStyle = "#8e99ad";
+        context.textAlign = history.length === 1
+            ? "center"
+            : index === 0 ? "left" : index === points.length - 1 ? "right" : "center";
+        context.fillText((history[index].dateStr || "Quiz").split(",")[0], point.x, height - 12);
+    });
+
+    summary.textContent = `Recorded quiz accuracy: ${history.map(item => `${item.dateStr || "Quiz"} ${item.score}%`).join(", ")}.`;
+}
+
+window.addEventListener("resize", () => {
+    if (document.getElementById("intelligence")?.classList.contains("active")) {
+        renderLearningIntelligence();
+    }
+});
 
 function logout() {
     try {
@@ -983,6 +1140,7 @@ function logQuizAttendance(quiz, analysis) {
 
     updateDailyStreak();
     renderProfileTestHistory();
+    renderLearningIntelligence();
 }
 
 function updateDailyStreak() {

@@ -7,33 +7,69 @@ const https = require("https");
  * with direct REST fallback and robust subject-aligned pedagogical template engine fallback.
  */
 
+function cleanAndParseJSON(rawText) {
+    if (!rawText || typeof rawText !== "string") return null;
+    let cleaned = rawText.trim();
+    if (cleaned.startsWith("```json")) {
+        cleaned = cleaned.replace(/^```json\s*/i, "").replace(/\s*```$/, "");
+    } else if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+    }
+    try {
+        return JSON.parse(cleaned);
+    } catch (e) {
+        // Try extracting first JSON object/array
+        const jsonMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        throw e;
+    }
+}
+
 async function callGeminiAPI(promptText) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return null;
 
+    // Supported active models in order of speed and capability
+    const candidateModels = [
+        'gemini-flash-lite-latest',
+        'gemini-3.5-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-3.8-flash'
+    ];
+
     try {
         const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: promptText,
-            config: {
-                responseMimeType: "application/json"
-            }
-        });
+        for (const modelName of candidateModels) {
+            try {
+                const response = await ai.models.generateContent({
+                    model: modelName,
+                    contents: promptText,
+                    config: {
+                        responseMimeType: "application/json"
+                    }
+                });
 
-        if (response && response.text) {
-            return JSON.parse(response.text);
+                if (response && response.text) {
+                    const parsed = cleanAndParseJSON(response.text);
+                    if (parsed) return parsed;
+                }
+            } catch (modelErr) {
+                console.warn(`Gemini SDK model [${modelName}] notice:`, modelErr.message);
+                // Continue to next model candidate
+            }
         }
     } catch (err) {
-        console.warn("Gemini SDK notice:", err.message, "- Trying fallback REST endpoint...");
-        return callGeminiRestFallback(promptText, apiKey);
+        console.warn("Gemini SDK initialization notice:", err.message, "- Trying fallback REST endpoint...");
     }
-    return null;
+
+    return callGeminiRestFallback(promptText, apiKey);
 }
 
 function callGeminiRestFallback(promptText, apiKey) {
     return new Promise((resolve) => {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`;
         const data = JSON.stringify({
             contents: [{ parts: [{ text: promptText }] }],
             generationConfig: { responseMimeType: "application/json" }
@@ -54,7 +90,7 @@ function callGeminiRestFallback(promptText, apiKey) {
                     const parsed = JSON.parse(body);
                     const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (text) {
-                        resolve(JSON.parse(text));
+                        resolve(cleanAndParseJSON(text));
                     } else {
                         resolve(null);
                     }
@@ -74,6 +110,7 @@ function callGeminiRestFallback(promptText, apiKey) {
         req.end();
     });
 }
+
 
 /**
  * Generates dynamic questions strictly aligned with Subject, Topic, Class Level & Difficulty
@@ -475,7 +512,50 @@ async function analyzeQuizSubmission(quizData, userAnswers) {
     };
 }
 
+/**
+ * AI-guided Teacher Remedial Intervention Plan Generator
+ */
+async function generateInterventionPlan({ concept = "Linear Equations", className = "Class 10-B" } = {}) {
+    const prompt = `
+    You are an expert pedagogy and instructional design specialist for school classrooms.
+    A teacher needs an AI Remedial Intervention Plan for students struggling with the topic: "${concept}" in "${className}".
+
+    Respond ONLY with a valid JSON object matching this schema:
+    {
+      "summary": "Concise summary of student misconception or pattern on ${concept} in ${className}",
+      "recommendedAction": "Actionable, 5-10 min classroom remedial teaching strategy with pedagogical rationale",
+      "remedialQuiz": [
+        "Remedial practice question 1",
+        "Remedial practice question 2",
+        "Remedial practice question 3"
+      ]
+    }
+    `;
+
+    try {
+        const aiPlan = await callGeminiAPI(prompt);
+        if (aiPlan && aiPlan.summary && aiPlan.recommendedAction && Array.isArray(aiPlan.remedialQuiz)) {
+            return aiPlan;
+        }
+    } catch (e) {
+        console.warn("Gemini intervention plan notice:", e.message);
+    }
+
+    // Pedagogical fallback
+    return {
+        summary: `Targeted intervention recommended for students struggling with core mechanics in ${concept}.`,
+        recommendedAction: `Conduct a 5-minute interactive blackboard walk-through reviewing rules and common pitfalls for ${concept}, followed by paired practice.`,
+        remedialQuiz: [
+            `Foundational problem testing basic definitions in ${concept}`,
+            `Step-by-step guided application exercise for ${concept}`,
+            `Spot-the-mistake problem targeting common misconceptions in ${concept}`
+        ]
+    };
+}
+
 module.exports = {
     generateQuizQuestions,
-    analyzeQuizSubmission
+    analyzeQuizSubmission,
+    generateInterventionPlan
 };
+
