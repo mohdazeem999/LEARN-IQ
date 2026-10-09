@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+    <rect width="1440" height="900" fill="#f6f9fc"/><rect x="0" y="0" width="240" height="900" fill="#12233f"/>
+        <text x="30" y="55" font-family="Inter,Arial" font-size="25" font-weight="800" fill="white">LearnIQ</text>
+        <text x="30" y="80" font-family="Inter,Arial" font-size="12" fill="#b8c7dc">Learning Intelligence</text>
+        <text x="30" y="145" font-family="Inter,Arial" font-size="14" fill="#dbeafe">Dashboard</text>
+        <text x="30" y="190" font-family="Inter,Arial" font-size="14" fill="#dbeafe">Assessment</text>
+        <text x="30" y="235" font-family="Inter,Arial" font-size="14" fill="#dbeafe">Learning progress</text>
+        <text x="30" y="280" font-family="Inter,Arial" font-size="14" fill="#dbeafe">Profile</text>
+    <text x="280" y="70" font-family="Inter,Arial" font-size="28" font-weight="800" fill="#12233f">S08-teacher — Teacher Class Map</text>
+    <text x="280" y="100" font-family="Inter,Arial" font-size="14" fill="#64748b">Teacher-only class-level learning gaps</text>
+    <rect x="280" y="180" width="1120" height="110" rx="16" fill="#ffffff" stroke="#dbe5ef"/>
+        <text x="302" y="212" font-family="Inter,Arial" font-size="17" font-weight="700" fill="#12233f">Class 10-B</text>
+        <text x="302" y="240" font-family="Inter,Arial" font-size="13" fill="#64748b">32 students • Mathematics • Linear Equations</text><rect x="280" y="308" width="1120" height="110" rx="16" fill="#ffffff" stroke="#dbe5ef"/>
+        <text x="302" y="340" font-family="Inter,Arial" font-size="17" font-weight="700" fill="#12233f">Concept mastery</text>
+        <text x="302" y="368" font-family="Inter,Arial" font-size="13" fill="#64748b">Bracket expansion 62% • Sign rules 71% • Equations 84%</text><rect x="280" y="436" width="1120" height="110" rx="16" fill="#ffffff" stroke="#dbe5ef"/>
+        <text x="302" y="468" font-family="Inter,Arial" font-size="17" font-weight="700" fill="#12233f">Support needed</text>
+        <text x="302" y="496" font-family="Inter,Arial" font-size="13" fill="#64748b">8 students need targeted practice on sign rules.</text><rect x="280" y="564" width="1120" height="110" rx="16" fill="#ffffff" stroke="#dbe5ef"/>
+        <text x="302" y="596" font-family="Inter,Arial" font-size="17" font-weight="700" fill="#12233f">Loading / empty / error</text>
+        <text x="302" y="624" font-family="Inter,Arial" font-size="13" fill="#64748b">Show loading first; empty classes and retryable data errors are explicit.</text>
+    <rect x="280" y="692" width="190" height="46" rx="12" fill="#2563eb"/>
+    <text x="375" y="721" text-anchor="middle" font-family="Inter,Arial" font-size="14" font-weight="700" fill="white">View class detail</text>
+    </svg>
