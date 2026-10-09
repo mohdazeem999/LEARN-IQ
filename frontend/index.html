@@ -217,7 +217,7 @@
 
         <div class="topbar-right">
 
-            <button class="role-pill" id="rolePillBtn" onclick="toggleRole()">
+            <button class="role-pill" id="rolePillBtn" type="button" aria-label="Current account role">
                 <i class="fa-solid fa-graduation-cap"></i>
                 <span id="roleLabel">Mode: Student</span>
             </button>
@@ -246,7 +246,7 @@
 
                 <div>
 
-                    <strong id="userName">Guest</strong>
+                    <strong id="userName">Sign in</strong>
 
                     <span id="userSub">Class 10</span>
 
@@ -337,7 +337,7 @@
                 <form id="landingLoginForm" onsubmit="handleAuthSubmit(event, 'login')">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label style="font-size: 12px; color: var(--muted);">Email Address</label>
-                        <input type="email" id="landingLoginEmail" class="form-control" placeholder="student@learniq.edu" required style="font-size: 13px; padding: 10px;">
+                        <input type="email" id="landingLoginEmail" class="form-control" placeholder="you@example.com" required style="font-size: 13px; padding: 10px;">
                     </div>
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label style="font-size: 12px; color: var(--muted);">Password</label>
@@ -356,18 +356,11 @@
                     </div>
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; color: var(--muted);">Email Address</label>
-                        <input type="email" id="landingSignupEmail" class="form-control" placeholder="student@learniq.edu" required style="font-size: 13px; padding: 10px;">
+                        <input type="email" id="landingSignupEmail" class="form-control" placeholder="you@example.com" required style="font-size: 13px; padding: 10px;">
                     </div>
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; color: var(--muted);">Password</label>
                         <input type="password" id="landingSignupPassword" class="form-control" placeholder="••••••••" required style="font-size: 13px; padding: 10px;">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label style="font-size: 12px; color: var(--muted);">Role</label>
-                        <select id="landingSignupRole" class="form-control" style="font-size: 13px; padding: 10px;">
-                            <option value="student">Student</option>
-                            <option value="teacher">Teacher / Educator</option>
-                        </select>
                     </div>
                     <button type="submit" class="primary-btn" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
                         <i class="fa-solid fa-user-plus"></i> Create Account
@@ -637,7 +630,7 @@
             </span>
 
             <h1>
-                Welcome back, <span id="welcomeUserName">Guest</span> 👋
+                Welcome back, <span id="welcomeUserName">Learner</span> 👋
             </h1>
 
             <p>
@@ -1521,7 +1514,7 @@
 
         <div class="reward-card">
 
-            <i class="fa-solid fa-fire"></i>
+              <i class="fa-solid fa-fire"></i>
 
             <h3>
                 30 Day Streak
@@ -1567,7 +1560,7 @@
             </span>
 
             <h1>
-                <span id="profilePageName">Guest Student</span>
+                <span id="profilePageName">No profile</span>
             </h1>
 
             <p id="profileSubText">
@@ -1729,11 +1722,12 @@
                 <i class="fa-solid fa-award"></i>
             </div>
 
-            <span class="eyebrow">AI DIAGNOSIS COMPLETE</span>
+            <span class="eyebrow">QUIZ RESULTS &amp; LEARNING FEEDBACK</span>
 
             <h2 id="diagScoreTitle" style="font-size: 28px; margin-top: 4px;">Score: 80%</h2>
 
             <p id="diagSubTitle" style="color: var(--cyan); font-size: 14px; font-weight: 600; margin-top: 4px;">You earned +180 XP!</p>
+            <p id="diagSubjectTitle" class="diag-subject-title"></p>
 
         </div>
 
@@ -1757,13 +1751,25 @@
 
             <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--muted);">Mistake Intelligence Breakdown</h3>
 
-            <div id="diagMistakeContainer" class="mistake-grid">
-
-            </div>
+            <div id="diagMistakeContainer" class="mistake-grid"></div>
 
         </div>
 
+        <section class="diag-results-section" aria-labelledby="diagQuestionTitle">
+            <h3 id="diagQuestionTitle">Question-by-question feedback</h3>
+            <div id="diagQuestionFeedback" class="diag-question-list"></div>
+        </section>
+
+        <section class="diag-results-section" aria-labelledby="diagPlanTitle">
+            <h3 id="diagPlanTitle">Your next-step learning plan</h3>
+            <div id="diagImprovementPlan" class="diag-improvement-plan"></div>
+        </section>
+
         <div style="text-align: right; margin-top: 24px;">
+
+            <button id="practiseSimilarBtn" class="secondary-btn diag-practice-btn" onclick="startSimilarPractice()">
+                Practise Similar Questions <i class="fa-solid fa-arrow-right"></i>
+            </button>
 
             <button class="primary-btn" onclick="closeDiagnosisModal()">
                 Continue to Dashboard <i class="fa-solid fa-arrow-right"></i>
@@ -1914,7 +1920,7 @@ document.addEventListener(
                 U
             </div>
             <h3 id="modalUserName" style="font-size: 18px; color: var(--text); margin-bottom: 4px;">User Name</h3>
-            <p id="modalUserEmail" style="font-size: 13px; color: var(--muted); margin-bottom: 6px;">user@learniq.edu</p>
+            <p id="modalUserEmail" style="font-size: 13px; color: var(--muted); margin-bottom: 6px;">Account email</p>
             <span id="modalUserRoleBadge" class="badge-pill strong" style="display: inline-block; margin-bottom: 20px;">Student Mode</span>
 
             <button onclick="logout(); closeAuthModal();" class="primary-btn" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; padding: 12px; font-weight: 600;">
@@ -1938,7 +1944,7 @@ document.addEventListener(
             <form id="loginForm" onsubmit="handleAuthSubmit(event, 'login')">
                 <div class="form-group" style="margin-bottom: 14px;">
                     <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Email Address</label>
-                    <input type="email" id="loginEmail" class="form-control" placeholder="student@learniq.edu" required>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="you@example.com" required>
                 </div>
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Password</label>
@@ -1957,19 +1963,12 @@ document.addEventListener(
                 </div>
                 <div class="form-group" style="margin-bottom: 14px;">
                     <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Email Address</label>
-                    <input type="email" id="signupEmail" class="form-control" placeholder="student@learniq.edu" required>
+                    <input type="email" id="signupEmail" class="form-control" placeholder="you@example.com" required>
                 </div>
                 <div class="form-group" style="margin-bottom: 14px;">
                     <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Password</label>
                     <input type="password" id="signupPassword" class="form-control" placeholder="••••••••" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Role</label>
-                    <select id="signupRole" class="form-control">
-                        <option value="student">Student</option>
-                        <option value="teacher">Teacher / Educator</option>
-                    </select>
-                </div>
+                  </div>
                 <button type="submit" class="primary-btn" id="signupSubmitBtn" style="width: 100%; justify-content: center; padding: 12px;">
                     <i class="fa-solid fa-user-plus"></i> Create Account
                 </button>

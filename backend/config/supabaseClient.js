@@ -19,7 +19,7 @@ if (supabaseUrl && supabaseKey) {
     });
     console.log("⚡ Supabase Client initialized successfully.");
 } else {
-    console.log("ℹ️ Supabase credentials not set in .env. Running with local memory state.");
+    console.warn("Supabase credentials are not set. Authentication and database-backed routes are unavailable.");
 }
 
 module.exports = supabase;

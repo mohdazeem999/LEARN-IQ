@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabaseClient");
+const { authenticate, requireRole } = require("../middleware/auth");
+
+router.use(authenticate, requireRole("teacher", "admin"));
 
 // GET /api/teachers/class-map
 router.get("/class-map", async (req, res) => {
@@ -41,7 +44,7 @@ router.get("/class-map", async (req, res) => {
         topPerformers: [
             { name: "Aisha K.", score: "96%", xp: 3920 },
             { name: "Rahul M.", score: "92%", xp: 3680 },
-            { name: "Guest Student (You)", score: "88%", xp: 2480 }
+            { name: "Class Learner", score: "88%", xp: 2480 }
         ]
     });
 });
@@ -67,4 +70,3 @@ router.post("/intervention", (req, res) => {
 });
 
 module.exports = router;
-

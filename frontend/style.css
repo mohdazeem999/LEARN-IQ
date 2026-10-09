@@ -1917,6 +1917,89 @@ textarea.form-control {
     color: white;
 }
 
+.diag-subject-title {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.diag-results-section {
+    margin: 22px 0;
+}
+
+.diag-results-section > h3 {
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 12px;
+}
+
+.diag-question-list,
+.diag-improvement-plan {
+    display: grid;
+    gap: 10px;
+}
+
+.diag-question-card,
+.diag-improvement-plan {
+    background: rgba(7, 11, 20, 0.55);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.diag-question-card > summary {
+    cursor: pointer;
+    color: var(--text);
+    font-weight: 600;
+    padding: 14px 16px;
+}
+
+.diag-feedback-body {
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    padding: 14px 16px;
+    overflow-wrap: anywhere;
+}
+
+.diag-feedback-body p,
+.diag-improvement-plan p {
+    line-height: 1.6;
+    margin: 0 0 10px;
+}
+
+.diag-feedback-body strong,
+.diag-improvement-plan strong {
+    color: var(--text);
+}
+
+.diag-feedback-body ol {
+    padding-left: 22px;
+    margin: 8px 0 12px;
+    color: var(--muted);
+}
+
+.diag-feedback-body li {
+    padding: 2px 0;
+}
+
+.diag-improvement-plan {
+    padding: 14px 16px;
+}
+
+.diag-retry-btn {
+    margin-top: 8px;
+}
+
+.diag-practice-btn {
+    margin-right: 8px;
+}
+
+.diag-empty-state {
+    color: var(--muted);
+    font-size: 13px;
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
 .badge-pill {
     padding: 4px 10px;
     border-radius: 20px;

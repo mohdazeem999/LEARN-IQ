@@ -6,18 +6,20 @@
 // Use the same origin as the frontend so local and deployed server ports stay in sync.
 const API_BASE = "/api";
 
+localStorage.removeItem("learniq_token");
+
 // Application State
-let currentRole = "student"; // "student" | "teacher"
 let currentQuiz = null;
 let currentQuestionIdx = 0;
 let userAnswers = {};
 let quizTimerInterval = null;
 let quizSecondsLeft = 300; // 5 mins
+let quizSubmissionInProgress = false;
 let studentProfile = {
     xp: 0,
     streak: 0,
     rank: "-",
-    name: "Guest Student",
+    name: "Student",
     classLevel: "Class 10"
 };
 
@@ -76,10 +78,14 @@ const defaultQuiz = {
 // ==========================================
 document.addEventListener("DOMContentLoaded", async () => {
     await checkAuthSession();
-    fetchStudentProfile();
-    loadTeacherClassMap();
-    updateDailyStreak();
     if (currentUser && currentUser.email) {
+        if (["student", "admin"].includes(currentUser.role)) {
+            if (["student", "admin"].includes(currentUser.role)) {
+                fetchStudentProfile();
+                loadStudentHistory();
+            }
+        }
+        if (["teacher", "admin"].includes(currentUser.role)) loadTeacherClassMap();
         showPage("dashboard");
     } else {
         showPage("landing");
@@ -94,6 +100,10 @@ function showPage(pageId) {
         showToast("ℹ️ Sign in or create an account to unlock all LearnIQ features.");
         openAuthModal();
         pageId = 'landing';
+    }
+    if (pageId === "teacher-map" && !["teacher", "admin"].includes(currentUser?.role)) {
+        showToast("❌ This page is available to teachers and administrators.");
+        pageId = "dashboard";
     }
 
     const pages = document.querySelectorAll(".page");
@@ -133,47 +143,8 @@ function toggleSidebar() {
 }
 
 // ==========================================
-// ROLE SWITCHER (Student vs Teacher)
+// The authenticated profile determines the user's role.
 // ==========================================
-async function toggleRole() {
-    currentRole = currentRole === "student" ? "teacher" : "student";
-    const rolePillBtn = document.getElementById("rolePillBtn");
-    const roleLabel = document.getElementById("roleLabel");
-    const userName = document.getElementById("userName");
-    const userSub = document.getElementById("userSub");
-    const userAvatar = document.getElementById("userAvatar");
-
-    if (currentRole === "teacher") {
-        roleLabel.innerText = "Mode: Teacher";
-        rolePillBtn.style.borderColor = "var(--purple)";
-        rolePillBtn.style.color = "var(--purple)";
-        userName.innerText = "Prof. Sharma";
-        userSub.innerText = "Educator (Class 10-B)";
-        userAvatar.innerText = "P";
-        showToast("Switched to Teacher Mode! Accessible: Quiz Generator & Class Map.");
-        showPage("generator");
-    } else {
-        roleLabel.innerText = "Mode: Student";
-        rolePillBtn.style.borderColor = "var(--cyan)";
-        rolePillBtn.style.color = "var(--cyan)";
-        userName.innerText = studentProfile.name || "Guest Student";
-        userSub.innerText = studentProfile.classLevel || "Class 10";
-        userAvatar.innerText = "G";
-        showToast("Switched to Student Mode.");
-        showPage("dashboard");
-    }
-
-    try {
-        await fetch(`${API_BASE}/auth/switch-role`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ role: currentRole })
-        });
-    } catch (e) {
-        console.warn("Backend auth role switch endpoint unreachable, using client state.");
-    }
-}
-
 // ==========================================
 // AI QUIZ GENERATOR
 // ==========================================
@@ -359,6 +330,7 @@ function startQuiz(quiz) {
     currentQuiz = quiz || defaultQuiz;
     currentQuestionIdx = 0;
     userAnswers = {};
+    quizSubmissionInProgress = false;
 
     document.getElementById("quizTitle").innerText = currentQuiz.title || "Adaptive Assessment";
 
@@ -462,6 +434,8 @@ function nextQuestion() {
 }
 
 async function finishQuiz() {
+    if (quizSubmissionInProgress) return;
+    quizSubmissionInProgress = true;
     showToast("🧠 AI is analyzing your quiz responses...");
 
     try {
@@ -472,14 +446,31 @@ async function finishQuiz() {
         });
 
         const data = await response.json();
+        if (!response.ok) {
+            throw Object.assign(new Error(data.message || "Quiz submission could not be saved."), { status: response.status });
+        }
         if (data.success && data.analysis) {
             openDiagnosisModal(data.analysis);
-            updateStudentXP(data.analysis.xpEarned || 150);
+            if (data.submission) {
+                await fetchStudentProfile();
+            } else {
+                updateStudentXP(data.analysis.xpEarned || 150);
+            }
             logQuizAttendance(currentQuiz, data.analysis);
+            if (data.submission) await loadStudentHistory();
         } else {
             throw new Error("Invalid response");
         }
     } catch (e) {
+        if (Number.isInteger(e.status)) {
+            showToast(`❌ ${e.message}`);
+            if (e.status === 401) {
+                currentUser = null;
+                updateUserUI(null);
+                showPage("landing");
+            }
+            return;
+        }
         console.warn("API submit offline, calculating client-side analysis:", e);
         // Client side fallback calculation
         const total = currentQuiz.questions.length;
@@ -490,16 +481,76 @@ async function finishQuiz() {
         const scorePct = Math.round((correct / total) * 100);
         const xp = correct * 30 + (scorePct >= 80 ? 100 : 50);
 
+        const feedback = currentQuiz.questions.map((q, idx) => {
+            const answer = userAnswers[q.id || idx + 1];
+            const isAnswered = Number.isInteger(answer) && answer >= 0 &&
+                Array.isArray(q.options) && answer < q.options.length;
+            const isCorrect = isAnswered && answer === q.correctIndex;
+            return {
+                questionId: q.id || idx + 1,
+                question: q.question,
+                topic: q.concept || currentQuiz.title || "General",
+                selectedAnswer: isAnswered ? String(q.options[answer]) : "Not answered",
+                correctAnswer: Array.isArray(q.options) ? String(q.options[q.correctIndex] || "Not available") : "Not available",
+                isCorrect,
+                isAnswered,
+                errorCategory: isAnswered && !isCorrect ? "Mistake type not confidently identified." : null,
+                explanation: q.explanation || (isAnswered && isCorrect
+                    ? "Correct answer. Keep using the reasoning that helped you solve it."
+                    : "AI feedback is unavailable. Review the question and correct answer, then retry feedback when the service is available."),
+                stepByStepSolution: [],
+                whySelectedAnswerDoesNotWork: "",
+                practicalTip: "Read the question again and compare your answer with the key idea in the explanation.",
+                practiceActivity: `Try one more ${q.concept || currentQuiz.title || "topic"} question and explain your reasoning.`,
+                classificationConfidence: null,
+                status: isAnswered && !isCorrect ? "unavailable" : "complete",
+                retryAvailable: isAnswered && !isCorrect
+            };
+        });
+        const mistakeCategories = {
+            "Conceptual Error": 0,
+            "Calculation Error": 0,
+            "Misinterpretation": 0,
+            "Careless Error": 0,
+            "Mistake type not confidently identified.": feedback.filter(item => item.retryAvailable).length,
+            "Unanswered": feedback.filter(item => !item.isAnswered).length
+        };
+        const conceptStats = {};
+        feedback.forEach(item => {
+            const concept = item.topic || "General Concept";
+            conceptStats[concept] = conceptStats[concept] || { total: 0, answered: 0, correct: 0, incorrect: 0 };
+            conceptStats[concept].total++;
+            if (item.isAnswered) {
+                conceptStats[concept].answered++;
+                if (item.isCorrect) conceptStats[concept].correct++;
+                else conceptStats[concept].incorrect++;
+            }
+        });
         const mockAnalysis = {
             scorePercentage: scorePct,
             correctCount: correct,
             totalQuestions: total,
             xpEarned: xp,
-            aiInsight: scorePct >= 80 ? "Excellent mastery! You solved linear equation applications seamlessly." : "Good try! Strengthen equation distribution rules with practice.",
-            mistakeCategories: {
-                "Conceptual Error": scorePct < 100 ? 1 : 0,
-                "Calculation Error": scorePct < 80 ? 1 : 0,
-                "Misinterpretation": 0
+            aiInsight: "Your score is calculated from the quiz answer key. AI feedback is unavailable, so use the provided explanations and retry feedback when the service is available.",
+            mistakeCategories,
+            feedback,
+            conceptStats,
+            improvementPlan: {
+                understands: [],
+                needsRevision: feedback.filter(item => item.isAnswered && !item.isCorrect).map(item => ({
+                    concept: item.topic,
+                    affectedQuestions: 1,
+                    evidence: "Review this question; one response is not enough to confirm a pattern."
+                })),
+                unansweredTopics: feedback.filter(item => !item.isAnswered).map(item => ({
+                    topic: item.topic,
+                    questions: 1
+                })),
+                mistakePatterns: { "Mistake type not confidently identified.": mistakeCategories["Mistake type not confidently identified."] },
+                revisionActivities: feedback.filter(item => !item.isCorrect).map(item => item.practiceActivity),
+                recommendedPracticeQuestions: feedback.filter(item => !item.isCorrect).map(item => item.practiceActivity),
+                nextStep: "Review the explanations for any missed or unanswered questions, then try another practice set.",
+                evidenceNote: "A single question is a prompt to review, not proof of mastery or a long-term weakness."
             }
         };
 
@@ -513,38 +564,239 @@ async function finishQuiz() {
 // POST-QUIZ AI DIAGNOSIS MODAL
 // ==========================================
 function openDiagnosisModal(analysis) {
+    currentAnalysis = analysis;
     const modal = document.getElementById("diagnosisModal");
     const scoreTitle = document.getElementById("diagScoreTitle");
     const subTitle = document.getElementById("diagSubTitle");
     const insightHeader = document.getElementById("diagInsightHeader");
     const insightBody = document.getElementById("diagInsightBody");
     const mistakeContainer = document.getElementById("diagMistakeContainer");
+    const subjectTitle = document.getElementById("diagSubjectTitle");
 
     scoreTitle.innerText = `Score: ${analysis.scorePercentage}% (${analysis.correctCount}/${analysis.totalQuestions} Correct)`;
     subTitle.innerText = `🎉 You earned +${analysis.xpEarned} XP!`;
+    subjectTitle.innerText = `${currentQuiz.subject || "Quiz"} • ${currentQuiz.title || "Assessment"}`;
 
     if (analysis.scorePercentage >= 80) {
-        insightHeader.innerText = "Mastery Achieved!";
+        insightHeader.innerText = (analysis.improvementPlan?.understands || []).length
+            ? "Strong understanding across several questions"
+            : "Great quiz performance!";
         insightHeader.style.color = "var(--green)";
     } else if (analysis.scorePercentage >= 50) {
         insightHeader.innerText = "Developing Understanding";
         insightHeader.style.color = "var(--cyan)";
     } else {
-        insightHeader.innerText = "Learning Gap Detected";
-        insightHeader.style.color = "var(--red)";
+        insightHeader.innerText = "Let's build on this attempt";
+        insightHeader.style.color = "var(--cyan)";
     }
 
     insightBody.innerText = analysis.aiInsight;
 
     const mistakes = analysis.mistakeCategories || {};
-    mistakeContainer.innerHTML = Object.keys(mistakes).map(cat => `
-        <div class="mistake-card">
-            <strong>${cat}</strong>
-            <span style="color: ${mistakes[cat] > 0 ? 'var(--red)' : 'var(--green)'};">${mistakes[cat]}×</span>
-        </div>
-    `).join("");
+    mistakeContainer.replaceChildren();
+    Object.entries(mistakes).filter(([, count]) => count > 0).forEach(([category, count]) => {
+        const card = document.createElement("div");
+        card.className = "mistake-card";
+        const label = document.createElement("strong");
+        label.textContent = category;
+        const number = document.createElement("span");
+        number.textContent = `${count}×`;
+        number.style.color = "var(--orange)";
+        card.append(label, number);
+        mistakeContainer.appendChild(card);
+    });
+    if (!mistakeContainer.childElementCount) {
+        const message = document.createElement("p");
+        message.className = "diag-empty-state";
+        message.textContent = "No incorrect or unanswered questions. Great work!";
+        mistakeContainer.appendChild(message);
+    }
 
+    renderQuestionFeedback(analysis.feedback || []);
+    renderImprovementPlan(analysis.improvementPlan || {});
+    document.getElementById("practiseSimilarBtn").hidden =
+        !(analysis.feedback || []).some(item => !item.isCorrect);
     modal.classList.add("active");
+}
+
+let currentAnalysis = null;
+
+function appendFeedbackField(container, label, value) {
+    if (!value) return;
+    const paragraph = document.createElement("p");
+    const heading = document.createElement("strong");
+    heading.textContent = `${label}: `;
+    paragraph.append(heading, document.createTextNode(value));
+    container.appendChild(paragraph);
+}
+
+function renderQuestionFeedback(feedbackItems) {
+    const container = document.getElementById("diagQuestionFeedback");
+    container.replaceChildren();
+    feedbackItems.forEach((item, index) => {
+        const details = document.createElement("details");
+        details.className = "diag-question-card";
+        const summary = document.createElement("summary");
+        const state = item.isCorrect ? "Correct" : item.isAnswered ? "Review" : "Not answered";
+        summary.textContent = `Question ${index + 1} · ${item.topic || "General"} · ${state}`;
+        details.appendChild(summary);
+
+        const body = document.createElement("div");
+        body.className = "diag-feedback-body";
+        appendFeedbackField(body, "Question", item.question);
+        appendFeedbackField(body, "Your answer", item.selectedAnswer || "Not answered");
+        appendFeedbackField(body, "Correct answer", item.correctAnswer);
+        if (item.errorCategory) {
+            appendFeedbackField(body, "Mistake type", item.errorCategory);
+            if (typeof item.classificationConfidence === "number") {
+                appendFeedbackField(body, "Classification confidence", `${Math.round(item.classificationConfidence * 100)}%`);
+            }
+        }
+        appendFeedbackField(body, "Explanation", item.explanation);
+        if (Array.isArray(item.stepByStepSolution) && item.stepByStepSolution.length) {
+            const stepsTitle = document.createElement("strong");
+            stepsTitle.textContent = "Step-by-step solution";
+            body.appendChild(stepsTitle);
+            const steps = document.createElement("ol");
+            item.stepByStepSolution.forEach(step => {
+                const entry = document.createElement("li");
+                entry.textContent = step;
+                steps.appendChild(entry);
+            });
+            body.appendChild(steps);
+        }
+        appendFeedbackField(body, "Why your answer does not fit", item.whySelectedAnswerDoesNotWork);
+        appendFeedbackField(body, "Tip", item.practicalTip);
+        appendFeedbackField(body, "Try this", item.practiceActivity);
+
+        if (item.retryAvailable) {
+            const retry = document.createElement("button");
+            retry.type = "button";
+            retry.className = "secondary-btn diag-retry-btn";
+            retry.textContent = "Retry AI Feedback";
+            retry.addEventListener("click", () => retryQuestionFeedback(item.questionId, retry));
+            body.appendChild(retry);
+        }
+        details.appendChild(body);
+        container.appendChild(details);
+    });
+}
+
+function renderImprovementPlan(plan) {
+    const container = document.getElementById("diagImprovementPlan");
+    container.replaceChildren();
+    const sections = [
+        ["Concepts you understand", (plan.understands || []).join(", ") || "More questions will help confirm what you understand."],
+        ["Topics to review", (plan.needsRevision || []).map(item =>
+            `${item.concept} (${item.affectedQuestions} incorrect question${item.affectedQuestions === 1 ? "" : "s"}; ${item.evidence}; importance: ${item.importance || "not provided"})`
+        ).join("; ") || "No topics were flagged for review in this attempt."],
+        ["Unanswered questions", (plan.unansweredTopics || []).map(item =>
+            `${item.topic} (${item.questions} unanswered)`
+        ).join(", ") || "No questions were left unanswered."],
+        ["Revision activities", (plan.revisionActivities || []).join(" ") || "Try another question set to build more evidence."],
+        ["Recommended practice", (plan.recommendedPracticeQuestions || []).join(" ") || "Practise a few more questions from this quiz topic."],
+        ["Next step", plan.nextStep || "Review the feedback, then continue practising."]
+    ];
+    sections.forEach(([label, value]) => appendFeedbackField(container, label, value));
+    appendFeedbackField(container, "Evidence note", plan.evidenceNote);
+}
+
+async function retryQuestionFeedback(questionId, button) {
+    const item = currentAnalysis?.feedback?.find(feedback => String(feedback.questionId) === String(questionId));
+    const question = currentQuiz?.questions?.find((entry, index) =>
+        String(entry.id || index + 1) === String(questionId)
+    );
+    if (!item || !question) return;
+
+    button.disabled = true;
+    button.textContent = "Generating feedback…";
+    const questionIndex = currentQuiz.questions.indexOf(question);
+    const selectedIndex = userAnswers[question.id || questionIndex + 1];
+    try {
+        const response = await fetch(`${API_BASE}/assessments/feedback/retry`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                subject: question.subject || currentQuiz.subject || "Other",
+                classLevel: currentQuiz.classLevel || studentProfile.classLevel,
+                topic: question.concept || currentQuiz.title || "General",
+                difficulty: currentQuiz.difficulty || "",
+                questionType: question.questionType || question.type || "",
+                question: question.question,
+                options: question.options,
+                selectedIndex,
+                correctIndex: question.correctIndex,
+                explanation: question.explanation || "",
+                solution: question.solution || question.correctSolution || "",
+                rubric: question.rubric || "",
+                sourceText: question.passage || question.context || question.sourceText || ""
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.feedback) {
+            throw new Error(data.message || "AI feedback is temporarily unavailable.");
+        }
+        const previousCategory = item.errorCategory;
+        const nextCategory = data.feedback.errorCategory;
+        if (previousCategory && currentAnalysis.mistakeCategories[previousCategory] > 0) {
+            currentAnalysis.mistakeCategories[previousCategory]--;
+        }
+        if (nextCategory) {
+            currentAnalysis.mistakeCategories[nextCategory] =
+                (currentAnalysis.mistakeCategories[nextCategory] || 0) + 1;
+        }
+        Object.assign(item, data.feedback, {
+            questionId: item.questionId,
+            isCorrect: false,
+            isAnswered: true,
+            retryAvailable: false
+        });
+        openDiagnosisModal(currentAnalysis);
+    } catch (error) {
+        button.disabled = false;
+        button.textContent = "Retry AI Feedback";
+        showToast(error.message || "AI feedback is temporarily unavailable. Please try again.");
+    }
+}
+
+async function startSimilarPractice() {
+    const item = currentAnalysis?.feedback?.find(feedback => !feedback.isCorrect);
+    const question = item && currentQuiz?.questions?.find((entry, index) =>
+        String(entry.id || index + 1) === String(item.questionId)
+    );
+    const subject = question?.subject || currentQuiz?.subject || "Other";
+    const topic = question?.concept || currentQuiz?.title || "Foundational Concepts";
+    const button = document.getElementById("practiseSimilarBtn");
+    button.disabled = true;
+    button.textContent = "Preparing practice…";
+    try {
+        const response = await fetch(`${API_BASE}/assessments/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                subject,
+                topic,
+                classLevel: currentQuiz?.classLevel || studentProfile.classLevel,
+                difficulty: currentQuiz?.difficulty || "Medium",
+                questionCount: 3,
+                prompt: "Create fresh practice questions for this topic. Do not repeat the original question verbatim."
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.quiz) {
+            throw new Error(data.message || "Practice questions could not be prepared.");
+        }
+        currentQuiz = data.quiz;
+        currentQuestionIdx = 0;
+        showPage("assessment");
+        document.getElementById("diagnosisModal").classList.remove("active");
+        showToast(`Practice is ready for ${topic}.`);
+    } catch (error) {
+        showToast(error.message || "Practice questions could not be prepared. Please try again.");
+    } finally {
+        button.disabled = false;
+        button.innerHTML = `Practise Similar Questions <i class="fa-solid fa-arrow-right"></i>`;
+    }
 }
 
 function closeDiagnosisModal() {
@@ -645,10 +897,24 @@ async function fetchStudentProfile() {
         if (data.success && data.student) {
             studentProfile = data.student;
             updateXPDisplay(studentProfile.xp);
+            updateDailyStreak();
             renderLearningIntelligence();
         }
     } catch (e) {
         updateXPDisplay(studentProfile.xp);
+    }
+}
+
+async function loadStudentHistory() {
+    try {
+        const response = await fetch(`${API_BASE}/students/history`);
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || "Unable to load quiz history.");
+        studentQuizHistory = data.history || [];
+        renderProfileTestHistory();
+        renderLearningIntelligence();
+    } catch (error) {
+        console.warn("Quiz history could not be synchronized:", error.message);
     }
 }
 
@@ -679,17 +945,14 @@ async function redeemReward(cost, title = "Reward Item") {
             body: JSON.stringify({ rewardTitle: title, cost })
         });
         const data = await response.json();
-        if (data.success) {
-            studentProfile.xp = data.remainingXp;
-            updateXPDisplay(studentProfile.xp);
-            showToast(`🎁 ${data.message}`);
-        } else {
-            showToast(`❌ ${data.message}`);
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Reward redemption could not be completed.");
         }
-    } catch (e) {
-        studentProfile.xp -= cost;
+        studentProfile.xp = data.remainingXp;
         updateXPDisplay(studentProfile.xp);
-        showToast(`🎁 Successfully redeemed "${title}" for ${cost} XP!`);
+        showToast(`🎁 ${data.message}`);
+    } catch (e) {
+        showToast(`⚠️ ${e.message || "Reward redemption could not be confirmed. Please try again."}`);
     }
 }
 
@@ -845,39 +1108,42 @@ window.addEventListener("resize", () => {
     }
 });
 
-function logout() {
+async function logout() {
+    let signedOut = false;
     try {
-        fetch(`${API_BASE}/auth/logout`, { method: "POST" });
+        const response = await fetch(`${API_BASE}/auth/logout`, { method: "POST" });
+        const data = await response.json();
+        signedOut = response.ok && data.success;
+        if (!signedOut && data.message?.startsWith("Session cleared on this device")) {
+            signedOut = true;
+            showToast(data.message);
+        } else if (!signedOut) {
+            showToast(data.message || "Unable to confirm sign out.");
+            return;
+        }
     } catch (e) {
-        // ignore
+        showToast("⚠️ Could not reach the authentication service to sign out.");
+        return;
     }
-    localStorage.removeItem("learniq_token");
-    authToken = null;
     currentUser = null;
-
     updateUserUI(null);
 
-    showToast("👋 Successfully signed out of LearnIQ session.");
+    if (signedOut) showToast("👋 Successfully signed out of this device.");
     showPage("landing");
 }
 
 // ==========================================
 // AUTHENTICATION & SUPABASE AUTH MODAL
 // ==========================================
-let authToken = localStorage.getItem("learniq_token") || null;
 let currentUser = null;
 
 async function checkAuthSession() {
-    if (!authToken) return;
     try {
-        const response = await fetch(`${API_BASE}/auth/me`, {
-            headers: { "Authorization": `Bearer ${authToken}` }
-        });
+        const response = await fetch(`${API_BASE}/auth/session`, { credentials: "same-origin" });
         const data = await response.json();
-        if (data.success && data.user) {
-            currentUser = data.user;
-            updateUserUI(data.user);
-        }
+        if (!response.ok || !data.success) throw new Error(data.message || "Unable to restore session.");
+        currentUser = data.user || null;
+        if (currentUser) updateUserUI(currentUser);
     } catch (e) {
         console.warn("Auth check failed:", e.message);
     }
@@ -893,11 +1159,11 @@ function updateUserUI(user) {
     const topbarLogoutBtn = document.getElementById("topbarLogoutBtn");
 
     if (user) {
-        const name = user.name || "Guest Student";
+        const name = user.name || "User";
         if (userNameElem) userNameElem.innerText = name;
         if (welcomeUserName) welcomeUserName.innerText = name;
         if (profilePageName) profilePageName.innerText = name;
-        if (userSubElem) userSubElem.innerText = user.class || (user.role === "teacher" ? "Educator" : "Student");
+        if (userSubElem) userSubElem.innerText = user.class || (user.role === "teacher" ? "Educator" : user.role === "admin" ? "Administrator" : "Student");
         if (userAvatarElem) userAvatarElem.innerText = name.charAt(0).toUpperCase();
         if (authBtnLabel) authBtnLabel.innerText = "Account";
         if (topbarLogoutBtn) topbarLogoutBtn.style.display = "inline-flex";
@@ -914,20 +1180,26 @@ function updateUserUI(user) {
 
         if (modalUserAvatar) modalUserAvatar.innerText = name.charAt(0).toUpperCase();
         if (modalUserName) modalUserName.innerText = name;
-        if (modalUserEmail) modalUserEmail.innerText = user.email || "student@learniq.edu";
-        if (modalUserRoleBadge) modalUserRoleBadge.innerText = user.role === "teacher" ? "Teacher Mode" : "Student Mode";
+        if (modalUserEmail) modalUserEmail.innerText = user.email || "";
+        if (modalUserRoleBadge) modalUserRoleBadge.innerText = user.role === "teacher" ? "Teacher" : user.role === "admin" ? "Administrator" : "Student";
     } else {
-        if (userNameElem) userNameElem.innerText = "Guest";
-        if (welcomeUserName) welcomeUserName.innerText = "Guest";
-        if (profilePageName) profilePageName.innerText = "Guest Student";
-        if (userSubElem) userSubElem.innerText = "Class 10";
-        if (userAvatarElem) userAvatarElem.innerText = "G";
+        if (userNameElem) userNameElem.innerText = "Sign in";
+        if (welcomeUserName) welcomeUserName.innerText = "Learner";
+        if (profilePageName) profilePageName.innerText = "No profile";
+        if (userSubElem) userSubElem.innerText = "Not signed in";
+        if (userAvatarElem) userAvatarElem.innerText = "-";
         if (authBtnLabel) authBtnLabel.innerText = "Sign In";
         if (topbarLogoutBtn) topbarLogoutBtn.style.display = "none";
 
         studentProfile.xp = 0;
         updateXPDisplay(0);
     }
+    const roleLabel = document.getElementById("roleLabel");
+    if (roleLabel) roleLabel.innerText = user
+        ? `Mode: ${user.role === "teacher" ? "Teacher" : user.role === "admin" ? "Admin" : "Student"}`
+        : "Mode: Sign in";
+    const teacherNavigation = document.querySelector("[onclick=\"showPage('teacher-map')\"]");
+    if (teacherNavigation) teacherNavigation.style.display = ["teacher", "admin"].includes(user?.role) ? "" : "none";
     loadLeaderboard();
 }
 
@@ -1058,7 +1330,6 @@ async function handleAuthSubmit(event, type) {
     let email = "";
     let password = "";
     let fullName = "";
-    let role = "student";
 
     if (type === 'login') {
         const lEmail = document.getElementById("loginEmail")?.value;
@@ -1067,7 +1338,7 @@ async function handleAuthSubmit(event, type) {
 
         const lPass = document.getElementById("loginPassword")?.value;
         const ldPass = document.getElementById("landingLoginPassword")?.value;
-        password = (lPass || ldPass || "").trim();
+        password = lPass || ldPass || "";
     } else {
         const sName = document.getElementById("signupName")?.value;
         const ldName = document.getElementById("landingSignupName")?.value;
@@ -1079,14 +1350,10 @@ async function handleAuthSubmit(event, type) {
 
         const sPass = document.getElementById("signupPassword")?.value;
         const ldPass = document.getElementById("landingSignupPassword")?.value;
-        password = (sPass || ldPass || "").trim();
-
-        const sRole = document.getElementById("signupRole")?.value;
-        const ldRole = document.getElementById("landingSignupRole")?.value;
-        role = sRole || ldRole || "student";
+        password = sPass || ldPass || "";
     }
 
-    const payload = type === 'login' ? { email, password } : { fullName, email, password, role };
+    const payload = type === 'login' ? { email, password } : { fullName, email, password };
 
     try {
         const response = await fetch(endpoint, {
@@ -1096,19 +1363,19 @@ async function handleAuthSubmit(event, type) {
         });
 
         const data = await response.json();
-        if (data.success && data.session) {
-            authToken = data.session.token || `token-${Date.now()}`;
-            localStorage.setItem("learniq_token", authToken);
+        if (data.success && data.requiresEmailConfirmation) {
+            showToast(`✅ ${data.message}`);
+            switchLandingTab("login");
+            switchAuthTab("login");
+        } else if (data.success && data.session) {
             currentUser = data.session.user;
-
             updateUserUI(currentUser);
             showToast(`✅ ${data.message}`);
             closeAuthModal();
             showPage("dashboard");
-
-            if (data.session.role === "teacher" && currentRole !== "teacher") {
-                toggleRole();
-            }
+            fetchStudentProfile();
+            loadStudentHistory();
+            if (["teacher", "admin"].includes(currentUser.role)) loadTeacherClassMap();
         } else {
             showToast(`❌ ${data.message || "Authentication failed."}`);
         }
@@ -1120,7 +1387,7 @@ async function handleAuthSubmit(event, type) {
 // ==========================================
 // TEST ATTENDANCE & STREAK TRACKER
 // ==========================================
-let studentQuizHistory = JSON.parse(localStorage.getItem("learniq_quiz_history") || "[]");
+let studentQuizHistory = [];
 
 function logQuizAttendance(quiz, analysis) {
     if (!quiz || !analysis) return;
@@ -1136,7 +1403,6 @@ function logQuizAttendance(quiz, analysis) {
         xpEarned: analysis.xpEarned
     };
     studentQuizHistory.unshift(entry);
-    localStorage.setItem("learniq_quiz_history", JSON.stringify(studentQuizHistory));
 
     updateDailyStreak();
     renderProfileTestHistory();
@@ -1144,16 +1410,7 @@ function logQuizAttendance(quiz, analysis) {
 }
 
 function updateDailyStreak() {
-    const today = new Date().toDateString();
-    const lastActive = localStorage.getItem("learniq_last_active_date");
-    let streak = parseInt(localStorage.getItem("learniq_streak_count") || "0");
-
-    if (lastActive !== today) {
-        streak += 1;
-        localStorage.setItem("learniq_streak_count", streak.toString());
-        localStorage.setItem("learniq_last_active_date", today);
-    }
-    studentProfile.streak = streak;
+    const streak = Number(studentProfile.streak) || 0;
 
     const streakElem = document.getElementById("dashboardStreakVal");
     if (streakElem) streakElem.innerText = `${streak} ${streak === 1 ? 'Day' : 'Days'}`;

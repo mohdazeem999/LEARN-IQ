@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT UNIQUE NOT NULL,
     full_name TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'student', -- 'student' | 'teacher'
+    role TEXT NOT NULL DEFAULT 'student', -- 'student' | 'teacher' | 'admin'
     class_level TEXT DEFAULT 'Class 10',
     xp_points INT DEFAULT 2480,
     streak_days INT DEFAULT 12,
