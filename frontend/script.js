@@ -14,6 +14,9 @@ let currentQuestionIdx = 0;
 let userAnswers = {};
 let quizTimerInterval = null;
 let quizSecondsLeft = 300; // 5 mins
+let quizTimerMode = "overall"; // "overall" | "question"
+let questionSecondsLeft = 45;
+let questionTimerInterval = null;
 let quizSubmissionInProgress = false;
 let studentProfile = {
     xp: 0,
@@ -22,6 +25,11 @@ let studentProfile = {
     name: "Student",
     classLevel: "Class 10"
 };
+
+// Push Your Daily Challenges State
+let currentDailyChallenges = [];
+let selectedChallengeTask = null;
+let selectedChallengeOption = null;
 
 // Default fallback quiz if backend server is unreachable
 const defaultQuiz = {
@@ -79,14 +87,18 @@ const defaultQuiz = {
 document.addEventListener("DOMContentLoaded", async () => {
     await checkAuthSession();
     if (currentUser && currentUser.email) {
-        if (["student", "admin"].includes(currentUser.role)) {
-            if (["student", "admin"].includes(currentUser.role)) {
-                fetchStudentProfile();
-                loadStudentHistory();
-            }
+        if (currentUser.role === "admin") {
+            showPage("admin-dashboard");
+            loadAdminOverview();
+        } else if (currentUser.role === "teacher") {
+            showPage("teacher-map");
+            loadTeacherClassMap();
+        } else {
+            await fetchStudentProfile();
+            fetchDailyChallenges();
+            loadStudentHistory();
+            showPage("dashboard");
         }
-        if (["teacher", "admin"].includes(currentUser.role)) loadTeacherClassMap();
-        showPage("dashboard");
     } else {
         showPage("landing");
     }
@@ -100,6 +112,10 @@ function showPage(pageId) {
         showToast("ℹ️ Sign in or create an account to unlock all LearnIQ features.");
         openAuthModal();
         pageId = 'landing';
+    }
+    if (pageId === "admin-dashboard" && currentUser?.role !== "admin") {
+        showToast("❌ Access denied. Administrator privileges are required.");
+        pageId = currentUser?.role === "teacher" ? "teacher-map" : "dashboard";
     }
     if (pageId === "teacher-map" && !["teacher", "admin"].includes(currentUser?.role)) {
         showToast("❌ This page is available to teachers and administrators.");
@@ -124,8 +140,12 @@ function showPage(pageId) {
 
     if (pageId === "assessment" && (!currentQuiz || currentQuestionIdx === 0)) {
         startQuiz(currentQuiz || defaultQuiz);
+    } else if (pageId === "admin-dashboard") {
+        loadAdminOverview();
     } else if (pageId === "teacher-map") {
         loadTeacherClassMap();
+    } else if (pageId === "challenges") {
+        fetchDailyChallenges();
     } else if (pageId === "rankings") {
         loadLeaderboard();
     } else if (pageId === "profile") {
@@ -324,39 +344,120 @@ function startGeneratedQuiz() {
 }
 
 // ==========================================
-// INTERACTIVE QUIZ ENGINE
+// INTERACTIVE QUIZ ENGINE & DUAL TIMER MODES
 // ==========================================
+function setQuizTimerMode(mode) {
+    quizTimerMode = mode;
+    const btnOverall = document.getElementById("btnTimerModeOverall");
+    const btnQuestion = document.getElementById("btnTimerModeQuestion");
+    const modeBadge = document.getElementById("quizTimerModeBadge");
+
+    if (btnOverall && btnQuestion) {
+        if (mode === "overall") {
+            btnOverall.classList.add("active");
+            btnOverall.style.background = "var(--primary-gradient)";
+            btnOverall.style.color = "white";
+            btnQuestion.classList.remove("active");
+            btnQuestion.style.background = "transparent";
+            btnQuestion.style.color = "var(--muted)";
+            if (modeBadge) {
+                modeBadge.innerText = "Overall";
+                modeBadge.style.background = "rgba(0, 240, 255, 0.2)";
+                modeBadge.style.color = "var(--cyan)";
+            }
+            clearInterval(questionTimerInterval);
+            updateTimerDisplay();
+        } else {
+            btnQuestion.classList.add("active");
+            btnQuestion.style.background = "var(--primary-gradient)";
+            btnQuestion.style.color = "white";
+            btnOverall.classList.remove("active");
+            btnOverall.style.background = "transparent";
+            btnOverall.style.color = "var(--muted)";
+            if (modeBadge) {
+                modeBadge.innerText = "Per Question";
+                modeBadge.style.background = "rgba(168, 85, 247, 0.25)";
+                modeBadge.style.color = "var(--purple)";
+            }
+            startQuestionTimer(45);
+        }
+    }
+}
+
 function startQuiz(quiz) {
     currentQuiz = quiz || defaultQuiz;
     currentQuestionIdx = 0;
     userAnswers = {};
     quizSubmissionInProgress = false;
 
-    document.getElementById("quizTitle").innerText = currentQuiz.title || "Adaptive Assessment";
+    const quizTitleElem = document.getElementById("quizTitle");
+    if (quizTitleElem) quizTitleElem.innerText = currentQuiz.title || "Adaptive Assessment";
 
-    startTimer(300); // 5 minutes timer
+    startTimer(300); // 5 minutes overall timer
     renderCurrentQuestion();
 }
 
 function startTimer(seconds) {
     clearInterval(quizTimerInterval);
     quizSecondsLeft = seconds;
-    updateTimerDisplay();
+    if (quizTimerMode === "overall") updateTimerDisplay();
 
     quizTimerInterval = setInterval(() => {
         quizSecondsLeft--;
-        updateTimerDisplay();
+        if (quizTimerMode === "overall") updateTimerDisplay();
         if (quizSecondsLeft <= 0) {
             clearInterval(quizTimerInterval);
-            showToast("⏳ Time's up! Submitting answers...");
+            clearInterval(questionTimerInterval);
+            showToast("⏳ Quiz time's up! Submitting answers...");
             finishQuiz();
         }
     }, 1000);
 }
 
+function startQuestionTimer(seconds = 45) {
+    clearInterval(questionTimerInterval);
+    questionSecondsLeft = seconds;
+    updateQuestionTimerDisplay();
+
+    questionTimerInterval = setInterval(() => {
+        questionSecondsLeft--;
+        updateQuestionTimerDisplay();
+        if (questionSecondsLeft <= 0) {
+            clearInterval(questionTimerInterval);
+            showToast("⏱️ Question timer expired! Moving to next question...");
+            autoAdvanceQuestion();
+        }
+    }, 1000);
+}
+
+function updateQuestionTimerDisplay() {
+    const timerElem = document.getElementById("quizTimer");
+    if (timerElem && quizTimerMode === "question") {
+        const secs = Math.max(0, questionSecondsLeft);
+        timerElem.innerText = `00:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+function autoAdvanceQuestion() {
+    if (!currentQuiz) return;
+    const q = currentQuiz.questions[currentQuestionIdx];
+    if (userAnswers[q.id || currentQuestionIdx + 1] === undefined) {
+        userAnswers[q.id || currentQuestionIdx + 1] = -1;
+    }
+    if (currentQuestionIdx < currentQuiz.questions.length - 1) {
+        currentQuestionIdx++;
+        renderCurrentQuestion();
+    } else {
+        clearInterval(quizTimerInterval);
+        clearInterval(questionTimerInterval);
+        finishQuiz();
+    }
+}
+
 function updateTimerDisplay() {
-    const mins = Math.floor(quizSecondsLeft / 60);
-    const secs = quizSecondsLeft % 60;
+    if (quizTimerMode !== "overall") return;
+    const mins = Math.floor(Math.max(0, quizSecondsLeft) / 60);
+    const secs = Math.max(0, quizSecondsLeft) % 60;
     const timerElem = document.getElementById("quizTimer");
     if (timerElem) {
         timerElem.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -368,27 +469,33 @@ function renderCurrentQuestion() {
     const questions = currentQuiz.questions;
     const q = questions[currentQuestionIdx];
 
-    document.getElementById("questionIndex").innerText = (currentQuestionIdx + 1).toString().padStart(2, '0');
-    document.getElementById("questionNumber").innerText = `Question ${currentQuestionIdx + 1} of ${questions.length}`;
-    document.getElementById("questionText").innerText = q.question;
+    const idxElem = document.getElementById("questionIndex");
+    const numElem = document.getElementById("questionNumber");
+    const txtElem = document.getElementById("questionText");
+    const progressFill = document.getElementById("quizProgressFill");
+
+    if (idxElem) idxElem.innerText = (currentQuestionIdx + 1).toString().padStart(2, '0');
+    if (numElem) numElem.innerText = `Question ${currentQuestionIdx + 1} of ${questions.length}`;
+    if (txtElem) txtElem.innerText = q.question;
 
     const progressPct = Math.round(((currentQuestionIdx + 1) / questions.length) * 100);
-    document.getElementById("quizProgressFill").style.width = `${progressPct}%`;
+    if (progressFill) progressFill.style.width = `${progressPct}%`;
 
     const answerContainer = document.getElementById("answerContainer");
+    if (!answerContainer) return;
     answerContainer.innerHTML = "";
 
-    const letters = ["A", "B", "C", "D"];
     q.options.forEach((optText, optIdx) => {
         const optionBtn = document.createElement("button");
+        optionBtn.type = "button";
         optionBtn.className = "answer-option";
         if (userAnswers[q.id || currentQuestionIdx + 1] === optIdx) {
             optionBtn.classList.add("selected");
         }
 
         optionBtn.innerHTML = `
-            <strong style="width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.06); display: inline-grid; place-items: center; font-size: 12px; color: var(--cyan);">${letters[optIdx]}</strong>
-            <span>${optText}</span>
+            <span class="option-num-badge">${optIdx + 1}</span>
+            <span style="font-size: 13.5px; line-height: 1.4; color: var(--text);">${escapeHtml(optText)}</span>
         `;
         optionBtn.onclick = () => selectOption(optIdx);
         answerContainer.appendChild(optionBtn);
@@ -396,7 +503,11 @@ function renderCurrentQuestion() {
 
     const adaptiveMsg = document.getElementById("adaptiveMessage");
     if (adaptiveMsg) {
-        adaptiveMsg.innerText = `Concept: ${q.concept || "General"} • Choose an answer to adapt difficulty.`;
+        adaptiveMsg.innerText = `Concept: ${q.concept || "Curriculum"} • Select an option (1, 2, 3, or 4).`;
+    }
+
+    if (quizTimerMode === "question") {
+        startQuestionTimer(45);
     }
 }
 
@@ -405,7 +516,7 @@ function selectOption(optIdx) {
     const q = currentQuiz.questions[currentQuestionIdx];
     userAnswers[q.id || currentQuestionIdx + 1] = optIdx;
 
-    const options = document.querySelectorAll(".answer-option");
+    const options = document.querySelectorAll("#answerContainer .answer-option");
     options.forEach((opt, i) => {
         if (i === optIdx) {
             opt.classList.add("selected");
@@ -424,6 +535,8 @@ function nextQuestion() {
         return;
     }
 
+    clearInterval(questionTimerInterval);
+
     if (currentQuestionIdx < currentQuiz.questions.length - 1) {
         currentQuestionIdx++;
         renderCurrentQuestion();
@@ -436,6 +549,8 @@ function nextQuestion() {
 async function finishQuiz() {
     if (quizSubmissionInProgress) return;
     quizSubmissionInProgress = true;
+    clearInterval(quizTimerInterval);
+    clearInterval(questionTimerInterval);
     showToast("🧠 AI is analyzing your quiz responses...");
 
     try {
@@ -451,10 +566,18 @@ async function finishQuiz() {
         }
         if (data.success && data.analysis) {
             openDiagnosisModal(data.analysis);
+
+            // Reusable Gamification & XP System update
+            const earnedXp = data.gamification?.earnedXp || data.analysis.xpEarned || 100;
+            const totalXp = data.gamification?.totalXp !== undefined ? data.gamification.totalXp : ((studentProfile.xp || 0) + earnedXp);
+            studentProfile.xp = totalXp;
+            updateXPDisplay(totalXp);
+
+            const lvl = calculateClientLevel(totalXp);
+            showToast(`+${earnedXp} XP 🎉 → Quiz Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+
             if (data.submission) {
                 await fetchStudentProfile();
-            } else {
-                updateStudentXP(data.analysis.xpEarned || 150);
             }
             logQuizAttendance(currentQuiz, data.analysis);
             if (data.submission) await loadStudentHistory();
@@ -557,6 +680,8 @@ async function finishQuiz() {
         openDiagnosisModal(mockAnalysis);
         updateStudentXP(xp);
         logQuizAttendance(currentQuiz, mockAnalysis);
+    } finally {
+        quizSubmissionInProgress = false;
     }
 }
 
@@ -808,30 +933,30 @@ function closeDiagnosisModal() {
 // ==========================================
 // TEACHER CLASS MAP & GAP DETECTION
 // ==========================================
-async function loadTeacherClassMap() {
+async function onTeacherClassChanged(classNum) {
+    await loadTeacherClassMap(classNum);
+}
+
+async function loadTeacherClassMap(classNum) {
+    if (!["teacher", "admin"].includes(currentUser?.role)) return;
+    const selectElem = document.getElementById("teacherClassSelect");
+    const targetClass = classNum || selectElem?.value || "10";
+    if (selectElem && selectElem.value !== String(targetClass)) {
+        selectElem.value = String(targetClass);
+    }
+    const subtitle = document.getElementById("teacherMapSubtitle");
+    if (subtitle) {
+        subtitle.innerText = `Real-time concept mastery trends and automated intervention plans for Class ${targetClass}.`;
+    }
     try {
-        const response = await fetch(`${API_BASE}/teachers/class-map`);
+        const response = await fetch(`${API_BASE}/teachers/class-map?classLevel=${targetClass}`);
         const data = await response.json();
 
-        if (data.success) {
-            renderTeacherClassMap(data);
+        if (data.success && data.learningMap) {
+            renderTeacherClassMap(data.learningMap);
         }
     } catch (e) {
-        console.warn("API class-map offline, using local data.");
-        renderTeacherClassMap({
-            className: "Class 10 - Section B",
-            concepts: [
-                { name: "Fractions & Decimals", mastery: 88, status: "Strong" },
-                { name: "Linear Equations in 1 Variable", mastery: 54, status: "Critical Learning Gap" },
-                { name: "Algebraic Bracket Expansion", mastery: 61, status: "Needs Practice" },
-                { name: "Geometry & Pythagorean Theorem", mastery: 82, status: "Strong" }
-            ],
-            studentsRequiringSupport: [
-                { name: "Rohan V.", weakConcept: "Linear Equations", score: "42%" },
-                { name: "Sneha M.", weakConcept: "Algebraic Expansion", score: "48%" },
-                { name: "Priya S.", weakConcept: "Linear Equations", score: "50%" }
-            ]
-        });
+        console.warn("API class-map offline, using fallback:", e);
     }
 }
 
@@ -843,7 +968,7 @@ function renderTeacherClassMap(data) {
         barsContainer.innerHTML = data.concepts.map(c => `
             <div class="dna-item">
                 <div>
-                    <span>${c.name}</span>
+                    <span>${escapeHtml(c.name)}</span>
                     <strong style="color: ${c.mastery < 60 ? 'var(--red)' : 'var(--cyan)'};">${c.mastery}%</strong>
                 </div>
                 <div class="progress">
@@ -857,21 +982,22 @@ function renderTeacherClassMap(data) {
         supportContainer.innerHTML = data.studentsRequiringSupport.map(s => `
             <div style="background: rgba(7, 11, 20, 0.6); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <strong style="color: var(--text);">${s.name}</strong>
-                    <div style="font-size: 12px; color: var(--muted);">${s.weakConcept}</div>
+                    <strong style="color: var(--text);">${escapeHtml(s.name)}</strong>
+                    <div style="font-size: 12px; color: var(--muted);">${escapeHtml(s.weakConcept)}</div>
                 </div>
-                <span class="badge-pill critical">${s.score}</span>
+                <span class="badge-pill critical">${escapeHtml(String(s.score))}</span>
             </div>
         `).join("");
     }
 }
 
 async function generateIntervention() {
+    const targetClass = document.getElementById("teacherClassSelect")?.value || "10";
     try {
         const response = await fetch(`${API_BASE}/teachers/intervention`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ concept: "Linear Equations", className: "Class 10-B" })
+            body: JSON.stringify({ concept: "Linear Equations", className: `Class ${targetClass}` })
         });
         const data = await response.json();
         if (data.success && data.aiInterventionPlan) {
@@ -881,22 +1007,92 @@ async function generateIntervention() {
             showToast("💡 AI Teacher Intervention Plan generated!");
         }
     } catch (e) {
-        document.getElementById("interventTitle").innerText = "18 of 32 students in Class 10-B need bracket expansion review";
-        document.getElementById("interventDesc").innerText = "Recommended Action: Spend 5 minutes on bracket multiplication rules, then assign 3 targeted practice questions.";
+        document.getElementById("interventTitle").innerText = `Targeted intervention recommended for Class ${targetClass}`;
+        document.getElementById("interventDesc").innerText = "Recommended Action: Spend 5 minutes on foundational rules, then assign targeted practice questions.";
         showToast("💡 AI Teacher Intervention Plan loaded!");
     }
 }
 
 // ==========================================
-// GAMIFICATION & REWARDS
+// SCALABLE GAMIFICATION & LEVELS SYSTEM
 // ==========================================
+const GAMIFICATION_LEVELS = [
+    { level: 1, title: "Explorer", icon: "🌱", minXp: 0 },
+    { level: 2, title: "Learner", icon: "📚", minXp: 100 },
+    { level: 3, title: "Problem Solver", icon: "🧩", minXp: 250 },
+    { level: 4, title: "Achiever", icon: "⭐", minXp: 450 },
+    { level: 5, title: "Knowledge Builder", icon: "🏗️", minXp: 700 },
+    { level: 6, title: "Master Thinker", icon: "🎯", minXp: 1000 },
+    { level: 7, title: "Logic Master", icon: "⚡", minXp: 1350 },
+    { level: 8, title: "Intellect Champion", icon: "🏆", minXp: 1750 },
+    { level: 9, title: "Scholar", icon: "📜", minXp: 2200 },
+    { level: 10, title: "Grand Scholar", icon: "🎓", minXp: 2700 },
+    { level: 11, title: "Polymath", icon: "🔬", minXp: 3250 },
+    { level: 12, title: "Genius", icon: "💡", minXp: 3850 },
+    { level: 13, title: "Luminary", icon: "🌟", minXp: 4500 },
+    { level: 14, title: "Prodigy", icon: "👑", minXp: 5200 },
+    { level: 15, title: "Grandmaster", icon: "💎", minXp: 6000 }
+];
+
+function calculateClientLevel(totalXp) {
+    const xp = Math.max(0, Number(totalXp) || 0);
+    let current = GAMIFICATION_LEVELS[0];
+    let next = GAMIFICATION_LEVELS[1];
+
+    for (let i = 0; i < GAMIFICATION_LEVELS.length; i++) {
+        if (xp >= GAMIFICATION_LEVELS[i].minXp) {
+            current = GAMIFICATION_LEVELS[i];
+            next = GAMIFICATION_LEVELS[i + 1] || null;
+        } else {
+            break;
+        }
+    }
+
+    if (!next) {
+        const extraLevels = Math.floor((xp - current.minXp) / 1000);
+        const lvlNum = 15 + extraLevels;
+        const currentTierBase = current.minXp + (extraLevels * 1000);
+        const nextTierBase = currentTierBase + 1000;
+        const needed = nextTierBase - xp;
+        const progress = Math.min(100, Math.floor(((xp - currentTierBase) / 1000) * 100));
+        return {
+            level: lvlNum,
+            title: extraLevels > 0 ? `Ascendant ${extraLevels}` : current.title,
+            icon: "🌌",
+            minXp: currentTierBase,
+            nextLevelXp: nextTierBase,
+            xpNeededForNext: needed,
+            progressPercent: progress
+        };
+    }
+
+    const range = next.minXp - current.minXp;
+    const progress = Math.min(100, Math.max(0, Math.floor(((xp - current.minXp) / range) * 100)));
+    const needed = Math.max(0, next.minXp - xp);
+
+    return {
+        level: current.level,
+        title: current.title,
+        icon: current.icon,
+        minXp: current.minXp,
+        nextLevelXp: next.minXp,
+        xpNeededForNext: needed,
+        progressPercent: progress
+    };
+}
+
 async function fetchStudentProfile() {
     try {
         const response = await fetch(`${API_BASE}/students/profile`);
         const data = await response.json();
         if (data.success && data.student) {
-            studentProfile = data.student;
-            updateXPDisplay(studentProfile.xp);
+            const rawXp = data.student.xp !== undefined ? data.student.xp : (data.student.totalXp !== undefined ? data.student.totalXp : 0);
+            studentProfile = {
+                ...studentProfile,
+                ...data.student,
+                xp: rawXp
+            };
+            updateXPDisplay(rawXp);
             updateDailyStreak();
             renderLearningIntelligence();
         }
@@ -905,31 +1101,266 @@ async function fetchStudentProfile() {
     }
 }
 
-async function loadStudentHistory() {
-    try {
-        const response = await fetch(`${API_BASE}/students/history`);
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.message || "Unable to load quiz history.");
-        studentQuizHistory = data.history || [];
-        renderProfileTestHistory();
-        renderLearningIntelligence();
-    } catch (error) {
-        console.warn("Quiz history could not be synchronized:", error.message);
-    }
-}
-
 function updateStudentXP(pointsGained) {
-    studentProfile.xp += pointsGained;
+    studentProfile.xp = (studentProfile.xp || 0) + pointsGained;
     updateXPDisplay(studentProfile.xp);
     renderLearningIntelligence();
 }
 
 function updateXPDisplay(xpValue) {
-    const val = typeof xpValue === 'number' ? xpValue : (studentProfile.xp || 0);
+    const val = Math.max(0, typeof xpValue === 'number' ? xpValue : (studentProfile.xp || 0));
+    studentProfile.xp = val;
+
     const xpElements = document.querySelectorAll(".xp-value");
     xpElements.forEach(el => {
         el.innerText = val.toLocaleString();
     });
+
+    const lvl = calculateClientLevel(val);
+
+    const sidebarLevelName = document.getElementById("sidebarLevelName");
+    if (sidebarLevelName) {
+        sidebarLevelName.innerText = `Lvl ${lvl.level} • ${lvl.title}`;
+    }
+    const sidebarLevelProgressText = document.getElementById("sidebarLevelProgressText");
+    if (sidebarLevelProgressText) {
+        sidebarLevelProgressText.innerText = `${lvl.progressPercent}% (${lvl.xpNeededForNext} XP to Lvl ${lvl.level + 1})`;
+    }
+    const sidebarLevelProgressFill = document.getElementById("sidebarLevelProgressFill");
+    if (sidebarLevelProgressFill) {
+        sidebarLevelProgressFill.style.width = `${lvl.progressPercent}%`;
+    }
+
+    const topbarLevelIcon = document.getElementById("topbarLevelIcon");
+    if (topbarLevelIcon) topbarLevelIcon.innerText = lvl.icon;
+    const topbarLevelText = document.getElementById("topbarLevelText");
+    if (topbarLevelText) topbarLevelText.innerText = `Lvl ${lvl.level} • ${lvl.title}`;
+    const topbarLevelBadge = document.getElementById("topbarLevelBadge");
+    if (topbarLevelBadge && currentUser && currentUser.role === "student") {
+        topbarLevelBadge.style.display = "flex";
+    }
+
+    const dashLevelText = document.getElementById("dashLevelText");
+    if (dashLevelText) dashLevelText.innerText = `Level ${lvl.level} — ${lvl.title}`;
+    const dashLevelProgress = document.getElementById("dashLevelProgress");
+    if (dashLevelProgress) dashLevelProgress.innerText = `${lvl.xpNeededForNext} XP needed to reach Level ${lvl.level + 1}`;
+    const dashLevelFill = document.getElementById("dashLevelFill");
+    if (dashLevelFill) dashLevelFill.style.width = `${lvl.progressPercent}%`;
+}
+
+// ==========================================
+// PUSH YOUR CHALLENGES CONTROLLER
+// ==========================================
+async function fetchDailyChallenges() {
+    const grid = document.getElementById("dailyChallengesGrid");
+    if (!grid) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/students/challenges`);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.challenges)) {
+            currentDailyChallenges = data.challenges;
+
+            // Update Overview Card
+            const classLevel = data.classLevel || 10;
+            const streak = data.streak || 1;
+            const completedCount = currentDailyChallenges.filter(c => c.completed).length;
+            const totalCount = currentDailyChallenges.length;
+            const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+            const totalAvailableXp = currentDailyChallenges.reduce((sum, c) => sum + (c.xp || 0), 0);
+
+            const overviewClassBadge = document.getElementById("overviewClassBadge");
+            if (overviewClassBadge) overviewClassBadge.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> Class ${classLevel} Quests`;
+
+            const challengesClassSubtitle = document.getElementById("challengesClassSubtitle");
+            if (challengesClassSubtitle) challengesClassSubtitle.innerText = `Age-appropriate, subject-specific daily quests designed for Class ${classLevel}.`;
+
+            const overviewTotalXp = document.getElementById("overviewTotalXpAvailable");
+            if (overviewTotalXp) overviewTotalXp.innerText = `+${totalAvailableXp} XP`;
+
+            const overviewStreak = document.getElementById("overviewStreakDays");
+            if (overviewStreak) overviewStreak.innerText = `${streak} ${streak === 1 ? 'Day' : 'Days'}`;
+
+            const progressLabel = document.getElementById("overviewProgressPercent");
+            if (progressLabel) progressLabel.innerText = `${completedCount} / ${totalCount} Complete (${pct}%)`;
+
+            const progressBar = document.getElementById("overviewProgressBar");
+            if (progressBar) progressBar.style.width = `${pct}%`;
+
+            // Render Challenges Grid
+            if (currentDailyChallenges.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--muted);"><i class="fa-solid fa-trophy" style="font-size: 32px; color: var(--cyan); margin-bottom: 12px;"></i><p>All daily challenges complete for today! Check back tomorrow for fresh quests.</p></div>`;
+            } else {
+                grid.innerHTML = currentDailyChallenges.map(c => {
+                    const isCompleted = Boolean(c.completed);
+                    return `
+                        <div class="challenge-card-v2 ${isCompleted ? 'completed' : ''}">
+                            <div class="challenge-top-meta">
+                                <span class="challenge-badge">${escapeHtml(c.category || c.subject || 'Mission')}</span>
+                                <span class="challenge-xp-badge">+${c.xp} XP</span>
+                            </div>
+                            <h4>${escapeHtml(c.title)}</h4>
+                            <p>${escapeHtml(c.description)}</p>
+                            <div style="margin-top: auto;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 11.5px;">
+                                    <span style="color: var(--muted);">${escapeHtml(c.subject)} • Class ${c.classLevel}</span>
+                                    <span class="badge-pill ${isCompleted ? 'strong' : ''}" style="${isCompleted ? '' : 'color: var(--cyan); background: rgba(0,240,255,0.08);'}">
+                                        <i class="fa-solid ${isCompleted ? 'fa-circle-check' : 'fa-hourglass-start'}"></i> ${isCompleted ? 'Completed' : 'Ready'}
+                                    </span>
+                                </div>
+                                ${isCompleted
+                                    ? `<button class="challenge-claim-btn" disabled><i class="fa-solid fa-check-double"></i> Claimed (+${c.xp} XP)</button>`
+                                    : `<button class="challenge-claim-btn" onclick="openChallengeTask('${c.id}')"><i class="fa-solid fa-play"></i> Solve Challenge (+${c.xp} XP)</button>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+            }
+        }
+    } catch (err) {
+        console.error("Failed to load daily challenges:", err);
+    }
+}
+
+function openChallengeTask(challengeId) {
+    const c = currentDailyChallenges.find(x => x.id === challengeId);
+    if (!c || c.completed) return;
+
+    selectedChallengeTask = c;
+    selectedChallengeOption = null;
+
+    const modal = document.getElementById("challengeTaskModal");
+    const badge = document.getElementById("modalChallengeBadge");
+    const title = document.getElementById("modalChallengeTitle");
+    const desc = document.getElementById("modalChallengeDesc");
+    const interactiveArea = document.getElementById("modalChallengeInteractiveArea");
+    const feedback = document.getElementById("modalChallengeFeedback");
+    const submitBtn = document.getElementById("modalChallengeSubmitBtn");
+
+    if (badge) badge.innerText = `${c.category || c.subject} • Class ${c.classLevel}`;
+    if (title) title.innerText = c.title;
+    if (desc) desc.innerText = c.description;
+
+    if (feedback) {
+        feedback.style.display = "none";
+        feedback.innerText = "";
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xp} XP`;
+    }
+
+    if (interactiveArea && c.problem) {
+        interactiveArea.innerHTML = `
+            <div style="font-size: 14.5px; font-weight: 600; color: var(--text); margin-bottom: 14px; line-height: 1.5;">
+                <i class="fa-solid fa-circle-question" style="color: var(--cyan); margin-right: 8px;"></i>${escapeHtml(c.problem.question)}
+            </div>
+            <div class="answer-grid" style="grid-template-columns: 1fr; gap: 8px;">
+                ${c.problem.options.map((opt, idx) => `
+                    <button type="button" class="answer-option" id="challengeOptBtn_${idx}" onclick="selectChallengeTaskOption(${idx})" style="padding: 10px 14px; text-align: left;">
+                        <span class="option-num-badge">${idx + 1}</span>
+                        <span style="font-size: 13px; color: var(--text);">${escapeHtml(opt)}</span>
+                    </button>
+                `).join("")}
+            </div>
+        `;
+    }
+
+    if (modal) modal.classList.add("active");
+}
+
+function selectChallengeTaskOption(idx) {
+    selectedChallengeOption = idx;
+    const options = document.querySelectorAll("#modalChallengeInteractiveArea .answer-option");
+    options.forEach((btn, i) => {
+        if (i === idx) btn.classList.add("selected");
+        else btn.classList.remove("selected");
+    });
+}
+
+function closeChallengeTaskModal() {
+    const modal = document.getElementById("challengeTaskModal");
+    if (modal) modal.classList.remove("active");
+    selectedChallengeTask = null;
+    selectedChallengeOption = null;
+}
+
+async function verifyAndClaimChallenge() {
+    if (!selectedChallengeTask) return;
+    const c = selectedChallengeTask;
+    const feedback = document.getElementById("modalChallengeFeedback");
+    const submitBtn = document.getElementById("modalChallengeSubmitBtn");
+
+    if (c.problem && selectedChallengeOption === null) {
+        showToast("⚠️ Please select an answer option first.");
+        return;
+    }
+
+    // Check correctness
+    if (c.problem && selectedChallengeOption !== c.problem.correctIndex) {
+        if (feedback) {
+            feedback.style.display = "block";
+            feedback.style.background = "rgba(239, 68, 68, 0.15)";
+            feedback.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+            feedback.style.color = "#ef4444";
+            feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i> Not quite right! Review the problem and try another option.`;
+        }
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying & Claiming...`;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/students/challenges/claim`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ challengeId: c.id })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            const earnedXp = data.earnedXp || c.xp;
+            const totalXp = data.totalXp !== undefined ? data.totalXp : ((studentProfile.xp || 0) + earnedXp);
+            studentProfile.xp = totalXp;
+            updateXPDisplay(totalXp);
+
+            const lvl = calculateClientLevel(totalXp);
+
+            if (feedback) {
+                feedback.style.display = "block";
+                feedback.style.background = "rgba(34, 197, 94, 0.15)";
+                feedback.style.border = "1px solid rgba(34, 197, 94, 0.3)";
+                feedback.style.color = "#22c55e";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> Correct! ${escapeHtml(c.problem?.explanation || '')}<br><strong style="color: var(--cyan); margin-top: 4px; display: inline-block;">+${earnedXp} XP Awarded! 🎉</strong>`;
+            }
+
+            showToast(`+${earnedXp} XP 🎉 → Challenge Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+
+            c.completed = true;
+            fetchDailyChallenges();
+
+            setTimeout(() => {
+                closeChallengeTaskModal();
+            }, 1400);
+        } else {
+            showToast(`❌ ${data.message || 'Could not complete challenge.'}`);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xp} XP`;
+            }
+        }
+    } catch (err) {
+        showToast("⚠️ Could not reach server to claim challenge.");
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xp} XP`;
+        }
+    }
 }
 
 async function redeemReward(cost, title = "Reward Item") {
@@ -1149,6 +1580,24 @@ async function checkAuthSession() {
     }
 }
 
+function toggleUserDropdown() {
+    const dropdown = document.getElementById("userMenuDropdown");
+    if (!dropdown) return;
+    dropdown.classList.toggle("open");
+}
+
+function closeUserDropdown() {
+    const dropdown = document.getElementById("userMenuDropdown");
+    if (dropdown) dropdown.classList.remove("open");
+}
+
+document.addEventListener("click", (e) => {
+    const userWrap = document.querySelector(".topbar-user-wrap");
+    if (userWrap && !userWrap.contains(e.target)) {
+        closeUserDropdown();
+    }
+});
+
 function updateUserUI(user) {
     const userNameElem = document.getElementById("userName");
     const userSubElem = document.getElementById("userSub");
@@ -1156,22 +1605,93 @@ function updateUserUI(user) {
     const authBtnLabel = document.getElementById("authBtnLabel");
     const welcomeUserName = document.getElementById("welcomeUserName");
     const profilePageName = document.getElementById("profilePageName");
-    const topbarLogoutBtn = document.getElementById("topbarLogoutBtn");
+    const sidebarLogoutBtn = document.getElementById("sidebarLogoutBtn");
+    const topbarCoinsBadge = document.getElementById("topbarCoinsBadge");
+    const topbarLevelBadge = document.getElementById("topbarLevelBadge");
+
+    // Dropdown elements
+    const dropdownUserName = document.getElementById("dropdownUserName");
+    const dropdownUserEmail = document.getElementById("dropdownUserEmail");
+    const dropdownUserAvatar = document.getElementById("dropdownUserAvatar");
+    const dropdownUserRoleBadge = document.getElementById("dropdownUserRoleBadge");
+    const dropdownUserClassBadge = document.getElementById("dropdownUserClassBadge");
+
+    // Nav elements
+    const navDashboard = document.getElementById("navDashboard");
+    const navChallenges = document.getElementById("navChallenges");
+    const navAssessment = document.getElementById("navAssessment");
+    const navTeacherMap = document.getElementById("navTeacherMap");
+    const navAdminDashboard = document.getElementById("navAdminDashboard");
+    const navRewards = document.getElementById("navRewards");
 
     if (user) {
         const name = user.name || "User";
         if (userNameElem) userNameElem.innerText = name;
         if (welcomeUserName) welcomeUserName.innerText = name;
         if (profilePageName) profilePageName.innerText = name;
-        if (userSubElem) userSubElem.innerText = user.class || (user.role === "teacher" ? "Educator" : user.role === "admin" ? "Administrator" : "Student");
+        if (userSubElem) {
+            userSubElem.innerText = user.role === "teacher"
+                ? "Educator"
+                : user.role === "admin"
+                    ? "Administrator"
+                    : (user.class ? `Class ${user.class}` : "Student");
+        }
         if (userAvatarElem) userAvatarElem.innerText = name.charAt(0).toUpperCase();
         if (authBtnLabel) authBtnLabel.innerText = "Account";
-        if (topbarLogoutBtn) topbarLogoutBtn.style.display = "inline-flex";
+        if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = "flex";
+
+        // Dropdown
+        if (dropdownUserName) dropdownUserName.innerText = name;
+        if (dropdownUserEmail) dropdownUserEmail.innerText = user.email || "";
+        if (dropdownUserAvatar) dropdownUserAvatar.innerText = name.charAt(0).toUpperCase();
+        if (dropdownUserRoleBadge) {
+            dropdownUserRoleBadge.innerText = user.role === "teacher" ? "Educator" : user.role === "admin" ? "Admin" : "Student";
+            dropdownUserRoleBadge.style.color = user.role === "teacher" ? "var(--purple)" : user.role === "admin" ? "#f59e0b" : "var(--cyan)";
+        }
+        if (dropdownUserClassBadge) {
+            if (user.role === "student" && user.class) {
+                dropdownUserClassBadge.style.display = "inline-block";
+                dropdownUserClassBadge.innerText = `Class ${user.class}`;
+            } else {
+                dropdownUserClassBadge.style.display = "none";
+            }
+        }
 
         studentProfile.name = name;
-        studentProfile.classLevel = user.class || studentProfile.classLevel;
-        studentProfile.xp = user.xp !== undefined ? user.xp : 0;
+        studentProfile.classLevel = user.class ? `Class ${user.class}` : studentProfile.classLevel;
+        studentProfile.xp = user.xp !== undefined ? user.xp : (studentProfile.xp || 0);
         updateXPDisplay(studentProfile.xp);
+
+        // Sidebar navigation visibility based on role
+        if (user.role === "teacher") {
+            if (navDashboard) navDashboard.style.display = "none";
+            if (navChallenges) navChallenges.style.display = "none";
+            if (navAssessment) navAssessment.style.display = "none";
+            if (navTeacherMap) navTeacherMap.style.display = "flex";
+            if (navAdminDashboard) navAdminDashboard.style.display = "none";
+            if (navRewards) navRewards.style.display = "none";
+            if (topbarCoinsBadge) topbarCoinsBadge.style.display = "none";
+            if (topbarLevelBadge) topbarLevelBadge.style.display = "none";
+        } else if (user.role === "admin") {
+            if (navDashboard) navDashboard.style.display = "none";
+            if (navChallenges) navChallenges.style.display = "none";
+            if (navAssessment) navAssessment.style.display = "none";
+            if (navTeacherMap) navTeacherMap.style.display = "flex";
+            if (navAdminDashboard) navAdminDashboard.style.display = "flex";
+            if (navRewards) navRewards.style.display = "none";
+            if (topbarCoinsBadge) topbarCoinsBadge.style.display = "none";
+            if (topbarLevelBadge) topbarLevelBadge.style.display = "none";
+        } else {
+            // Student
+            if (navDashboard) navDashboard.style.display = "flex";
+            if (navChallenges) navChallenges.style.display = "flex";
+            if (navAssessment) navAssessment.style.display = "flex";
+            if (navTeacherMap) navTeacherMap.style.display = "none";
+            if (navAdminDashboard) navAdminDashboard.style.display = "none";
+            if (navRewards) navRewards.style.display = "flex";
+            if (topbarCoinsBadge) topbarCoinsBadge.style.display = "flex";
+            if (topbarLevelBadge) topbarLevelBadge.style.display = "flex";
+        }
 
         const modalUserAvatar = document.getElementById("modalUserAvatar");
         const modalUserName = document.getElementById("modalUserName");
@@ -1181,7 +1701,7 @@ function updateUserUI(user) {
         if (modalUserAvatar) modalUserAvatar.innerText = name.charAt(0).toUpperCase();
         if (modalUserName) modalUserName.innerText = name;
         if (modalUserEmail) modalUserEmail.innerText = user.email || "";
-        if (modalUserRoleBadge) modalUserRoleBadge.innerText = user.role === "teacher" ? "Teacher" : user.role === "admin" ? "Administrator" : "Student";
+        if (modalUserRoleBadge) modalUserRoleBadge.innerText = user.role === "teacher" ? "Educator Mode" : user.role === "admin" ? "Administrator Mode" : `Student Mode (${user.class ? 'Class ' + user.class : 'Class 10'})`;
     } else {
         if (userNameElem) userNameElem.innerText = "Sign in";
         if (welcomeUserName) welcomeUserName.innerText = "Learner";
@@ -1189,17 +1709,26 @@ function updateUserUI(user) {
         if (userSubElem) userSubElem.innerText = "Not signed in";
         if (userAvatarElem) userAvatarElem.innerText = "-";
         if (authBtnLabel) authBtnLabel.innerText = "Sign In";
-        if (topbarLogoutBtn) topbarLogoutBtn.style.display = "none";
+        if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = "none";
+        if (topbarCoinsBadge) topbarCoinsBadge.style.display = "none";
+        if (topbarLevelBadge) topbarLevelBadge.style.display = "none";
+
+        if (navDashboard) navDashboard.style.display = "flex";
+        if (navChallenges) navChallenges.style.display = "flex";
+        if (navAssessment) navAssessment.style.display = "flex";
+        if (navTeacherMap) navTeacherMap.style.display = "none";
+        if (navAdminDashboard) navAdminDashboard.style.display = "none";
 
         studentProfile.xp = 0;
         updateXPDisplay(0);
     }
+
     const roleLabel = document.getElementById("roleLabel");
-    if (roleLabel) roleLabel.innerText = user
-        ? `Mode: ${user.role === "teacher" ? "Teacher" : user.role === "admin" ? "Admin" : "Student"}`
-        : "Mode: Sign in";
-    const teacherNavigation = document.querySelector("[onclick=\"showPage('teacher-map')\"]");
-    if (teacherNavigation) teacherNavigation.style.display = ["teacher", "admin"].includes(user?.role) ? "" : "none";
+    if (roleLabel) {
+        roleLabel.innerText = user
+            ? `Mode: ${user.role === "teacher" ? "Teacher" : user.role === "admin" ? "Admin" : "Student"}`
+            : "Mode: Sign in";
+    }
     loadLeaderboard();
 }
 
@@ -1223,8 +1752,8 @@ async function loadLeaderboard() {
                     <div class="ranking-row ${isCurrentUser ? 'you' : ''}">
                         <span>#${item.rank}</span>
                         <div class="avatar">${initial}</div>
-                        <strong>${item.name} ${isCurrentUser ? '(You)' : ''}</strong>
-                        <span class="badge-pill" style="font-size: 11px; margin-left: auto; margin-right: 12px; background: rgba(255,255,255,0.05);">${item.class || 'Class 10'}</span>
+                        <strong>${escapeHtml(item.name)} ${isCurrentUser ? '(You)' : ''}</strong>
+                        <span class="badge-pill" style="font-size: 11px; margin-left: auto; margin-right: 12px; background: rgba(255,255,255,0.05);">${item.class ? 'Class ' + item.class : 'Class 10'}</span>
                         <span style="color: var(--cyan); font-weight: 700;">${(item.xp || 0).toLocaleString()} XP</span>
                     </div>
                 `;
@@ -1235,8 +1764,8 @@ async function loadLeaderboard() {
                     <div class="ranking-row you">
                         <span>#1</span>
                         <div class="avatar">${(currentUser.name || "U").charAt(0).toUpperCase()}</div>
-                        <strong>${currentUser.name} (You)</strong>
-                        <span class="badge-pill" style="font-size: 11px; margin-left: auto; margin-right: 12px; background: rgba(0,240,255,0.1); color: var(--cyan);">${currentUser.class || 'Class 10'}</span>
+                        <strong>${escapeHtml(currentUser.name)} (You)</strong>
+                        <span class="badge-pill" style="font-size: 11px; margin-left: auto; margin-right: 12px; background: rgba(0,240,255,0.1); color: var(--cyan);">${currentUser.class ? 'Class ' + currentUser.class : 'Class 10'}</span>
                         <span style="color: var(--cyan); font-weight: 700;">${(studentProfile.xp || 0).toLocaleString()} XP</span>
                     </div>
                 `;
@@ -1277,6 +1806,124 @@ function openAuthModal() {
 function closeAuthModal() {
     const modal = document.getElementById("authModal");
     if (modal) modal.classList.remove("active");
+}
+
+function selectLandingRole(role) {
+    const studentBtn = document.getElementById("landingRoleStudent");
+    const teacherBtn = document.getElementById("landingRoleTeacher");
+    const adminBtn = document.getElementById("landingRoleAdmin");
+    const loginRoleInput = document.getElementById("landingLoginRole");
+    const signupRoleInput = document.getElementById("landingSignupRole");
+    const classGroup = document.getElementById("landingSignupClassGroup");
+    const deptGroup = document.getElementById("landingSignupDepartmentGroup");
+    const notice = document.getElementById("landingRoleContextText");
+    const loginBtnText = document.getElementById("landingLoginBtnText");
+    const signupBtnText = document.getElementById("landingSignupBtnText");
+    const emailInput = document.getElementById("landingLoginEmail");
+    const tabsRow = document.getElementById("landingAuthTabsRow");
+
+    [studentBtn, teacherBtn, adminBtn].forEach(b => {
+        if (b) {
+            b.classList.remove("active");
+            b.style.background = "transparent";
+            b.style.color = "var(--muted)";
+        }
+    });
+
+    const activeBtn = role === "teacher" ? teacherBtn : role === "admin" ? adminBtn : studentBtn;
+    if (activeBtn) {
+        activeBtn.classList.add("active");
+        activeBtn.style.background = "var(--primary-gradient)";
+        activeBtn.style.color = "white";
+    }
+
+    if (loginRoleInput) loginRoleInput.value = role;
+    if (signupRoleInput) signupRoleInput.value = role;
+
+    if (role === "student") {
+        if (classGroup) classGroup.style.display = "block";
+        if (deptGroup) deptGroup.style.display = "none";
+        if (tabsRow) tabsRow.style.display = "flex";
+        if (notice) notice.innerText = "Student Portal: Access class-specific curriculum, daily quests & XP.";
+        if (loginBtnText) loginBtnText.innerText = "Sign In as Student";
+        if (signupBtnText) signupBtnText.innerText = "Create Student Account";
+        if (emailInput) emailInput.placeholder = "student@example.com";
+    } else if (role === "teacher") {
+        if (classGroup) classGroup.style.display = "none";
+        if (deptGroup) deptGroup.style.display = "block";
+        if (tabsRow) tabsRow.style.display = "flex";
+        if (notice) notice.innerText = "Teacher Portal: Manage classes, track student mastery & review gap intelligence.";
+        if (loginBtnText) loginBtnText.innerText = "Sign In as Teacher";
+        if (signupBtnText) signupBtnText.innerText = "Create Teacher Account";
+        if (emailInput) emailInput.placeholder = "teacher@school.org";
+    } else if (role === "admin") {
+        if (classGroup) classGroup.style.display = "none";
+        if (deptGroup) deptGroup.style.display = "none";
+        if (tabsRow) tabsRow.style.display = "none";
+        switchLandingTab("login");
+        if (notice) notice.innerText = "Admin Portal: System governance, user account roles & platform management.";
+        if (loginBtnText) loginBtnText.innerText = "Sign In as Administrator";
+        if (emailInput) emailInput.placeholder = "admin@learniq.local";
+    }
+}
+
+function selectAuthModalRole(role) {
+    const studentBtn = document.getElementById("modalRoleStudent");
+    const teacherBtn = document.getElementById("modalRoleTeacher");
+    const adminBtn = document.getElementById("modalRoleAdmin");
+    const loginRoleInput = document.getElementById("loginRole");
+    const signupRoleInput = document.getElementById("signupRole");
+    const classGroup = document.getElementById("modalSignupClassGroup");
+    const deptGroup = document.getElementById("modalSignupDepartmentGroup");
+    const notice = document.getElementById("modalRoleContextText");
+    const loginBtnText = document.getElementById("modalLoginBtnText");
+    const signupBtnText = document.getElementById("modalSignupBtnText");
+    const emailInput = document.getElementById("loginEmail");
+    const tabsRow = document.getElementById("modalAuthTabsRow");
+
+    [studentBtn, teacherBtn, adminBtn].forEach(b => {
+        if (b) {
+            b.classList.remove("active");
+            b.style.background = "transparent";
+            b.style.color = "var(--muted)";
+        }
+    });
+
+    const activeBtn = role === "teacher" ? teacherBtn : role === "admin" ? adminBtn : studentBtn;
+    if (activeBtn) {
+        activeBtn.classList.add("active");
+        activeBtn.style.background = "var(--primary-gradient)";
+        activeBtn.style.color = "white";
+    }
+
+    if (loginRoleInput) loginRoleInput.value = role;
+    if (signupRoleInput) signupRoleInput.value = role;
+
+    if (role === "student") {
+        if (classGroup) classGroup.style.display = "block";
+        if (deptGroup) deptGroup.style.display = "none";
+        if (tabsRow) tabsRow.style.display = "flex";
+        if (notice) notice.innerText = "Student Portal: Access class-specific learning missions & quizzes.";
+        if (loginBtnText) loginBtnText.innerText = "Sign In as Student";
+        if (signupBtnText) signupBtnText.innerText = "Create Student Account";
+        if (emailInput) emailInput.placeholder = "student@example.com";
+    } else if (role === "teacher") {
+        if (classGroup) classGroup.style.display = "none";
+        if (deptGroup) deptGroup.style.display = "block";
+        if (tabsRow) tabsRow.style.display = "flex";
+        if (notice) notice.innerText = "Teacher Portal: Access classes & track student concept mastery.";
+        if (loginBtnText) loginBtnText.innerText = "Sign In as Teacher";
+        if (signupBtnText) signupBtnText.innerText = "Create Teacher Account";
+        if (emailInput) emailInput.placeholder = "teacher@school.org";
+    } else if (role === "admin") {
+        if (classGroup) classGroup.style.display = "none";
+        if (deptGroup) deptGroup.style.display = "none";
+        if (tabsRow) tabsRow.style.display = "none";
+        switchAuthTab("login");
+        if (notice) notice.innerText = "Admin Portal: System administration & user roles.";
+        if (loginBtnText) loginBtnText.innerText = "Sign In as Administrator";
+        if (emailInput) emailInput.placeholder = "admin@learniq.local";
+    }
 }
 
 function switchAuthTab(type) {
@@ -1325,44 +1972,51 @@ function switchLandingTab(type) {
 
 async function handleAuthSubmit(event, type) {
     event.preventDefault();
-    const endpoint = type === 'login' ? `${API_BASE}/auth/login` : `${API_BASE}/auth/signup`;
+    const form = event.currentTarget;
+    if (form.dataset.authSubmitting === "true") return;
 
-    let email = "";
-    let password = "";
-    let fullName = "";
-
-    if (type === 'login') {
-        const lEmail = document.getElementById("loginEmail")?.value;
-        const ldEmail = document.getElementById("landingLoginEmail")?.value;
-        email = (lEmail || ldEmail || "").trim();
-
-        const lPass = document.getElementById("loginPassword")?.value;
-        const ldPass = document.getElementById("landingLoginPassword")?.value;
-        password = lPass || ldPass || "";
-    } else {
-        const sName = document.getElementById("signupName")?.value;
-        const ldName = document.getElementById("landingSignupName")?.value;
-        fullName = (sName || ldName || "").trim();
-
-        const sEmail = document.getElementById("signupEmail")?.value;
-        const ldEmail = document.getElementById("landingSignupEmail")?.value;
-        email = (sEmail || ldEmail || "").trim();
-
-        const sPass = document.getElementById("signupPassword")?.value;
-        const ldPass = document.getElementById("landingSignupPassword")?.value;
-        password = sPass || ldPass || "";
+    const submitButton = form.querySelector('[type="submit"]');
+    const originalButtonHtml = submitButton?.innerHTML;
+    form.dataset.authSubmitting = "true";
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = type === "login" ? "Signing in..." : "Creating account...";
     }
 
-    const payload = type === 'login' ? { email, password } : { fullName, email, password };
-
+    const endpoint = type === 'login' ? `${API_BASE}/auth/login` : `${API_BASE}/auth/signup`;
     try {
+        const email = form.querySelector('input[type="email"]')?.value.trim() || "";
+        const password = form.querySelector('input[type="password"]')?.value || "";
+        const role = form.querySelector('input[type="hidden"]')?.value || "student";
+
+        let payload = { email, password };
+        if (type === "signup") {
+            const fullName = form.querySelector('input[type="text"]')?.value.trim() || "";
+            let classLevel = null;
+            if (role === "student") {
+                const classSelect = form.querySelector('select');
+                classLevel = classSelect?.value || "";
+                if (!classLevel) {
+                    showToast("⚠️ Please select your Class / Grade level (Required for students).");
+                    form.dataset.authSubmitting = "false";
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalButtonHtml;
+                    }
+                    return;
+                }
+            }
+            payload = { fullName, email, password, role, classLevel };
+        }
+
         const response = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
             body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         if (data.success && data.requiresEmailConfirmation) {
             showToast(`✅ ${data.message}`);
             switchLandingTab("login");
@@ -1372,15 +2026,29 @@ async function handleAuthSubmit(event, type) {
             updateUserUI(currentUser);
             showToast(`✅ ${data.message}`);
             closeAuthModal();
-            showPage("dashboard");
-            fetchStudentProfile();
-            loadStudentHistory();
-            if (["teacher", "admin"].includes(currentUser.role)) loadTeacherClassMap();
+            if (currentUser.role === "admin") {
+                showPage("admin-dashboard");
+                loadAdminOverview();
+            } else if (currentUser.role === "teacher") {
+                showPage("teacher-map");
+                loadTeacherClassMap();
+            } else {
+                showPage("dashboard");
+                await fetchStudentProfile();
+                fetchDailyChallenges();
+                loadStudentHistory();
+            }
         } else {
-            showToast(`❌ ${data.message || "Authentication failed."}`);
+            showToast(`❌ ${data.message || (response.ok ? "Authentication failed." : "Unable to authenticate. Please try again.")}`);
         }
     } catch (err) {
-        showToast("⚠️ Authentication server unreachable. Please check connection.");
+        showToast("⚠️ Could not reach the authentication service. Check your connection and try again.");
+    } finally {
+        form.dataset.authSubmitting = "false";
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonHtml;
+        }
     }
 }
 
@@ -1491,3 +2159,84 @@ function showToast(message) {
         }, 300);
     }, 3500);
 }
+
+// ==========================================
+// ADMIN DASHBOARD CONTROLLER
+// ==========================================
+function escapeHtml(str) {
+    if (typeof str !== "string") return "";
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+async function loadAdminOverview() {
+    if (currentUser?.role !== "admin") return;
+    try {
+        const response = await fetch(`${API_BASE}/admin/overview`, { credentials: "same-origin" });
+        const data = await response.json();
+        if (data.success && data.summary) {
+            const totalUsersElem = document.getElementById("adminTotalUsers");
+            const studentsCountElem = document.getElementById("adminStudentsCount");
+            const teachersCountElem = document.getElementById("adminTeachersCount");
+            const adminsCountElem = document.getElementById("adminAdminsCount");
+            const tableUserCount = document.getElementById("adminTableUserCount");
+            if (totalUsersElem) totalUsersElem.innerText = data.summary.totalUsers;
+            if (studentsCountElem) studentsCountElem.innerText = data.summary.students;
+            if (teachersCountElem) teachersCountElem.innerText = data.summary.teachers;
+            if (adminsCountElem) adminsCountElem.innerText = data.summary.admins;
+            if (tableUserCount) tableUserCount.innerText = `${data.summary.totalUsers} registered users`;
+        }
+
+        const usersRes = await fetch(`${API_BASE}/admin/users`, { credentials: "same-origin" });
+        const usersData = await usersRes.json();
+        const tbody = document.getElementById("adminUserTableBody");
+        if (tbody && usersData.success && Array.isArray(usersData.users)) {
+            if (usersData.users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--muted);">No users found.</td></tr>`;
+            } else {
+                tbody.innerHTML = usersData.users.map(u => {
+                    const roleColor = u.role === "admin" ? "#f59e0b" : u.role === "teacher" ? "var(--purple)" : "var(--cyan)";
+                    const roleBadge = `<span class="badge-pill" style="background: rgba(255,255,255,0.06); color: ${roleColor}; border: 1px solid ${roleColor}40; text-transform: capitalize;">${escapeHtml(u.role)}</span>`;
+                    return `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                            <td style="padding: 12px 10px; font-weight: 600; color: var(--text);">${escapeHtml(u.name || "User")}</td>
+                            <td style="padding: 12px 10px; color: var(--muted);">${escapeHtml(u.email || "-")}</td>
+                            <td style="padding: 12px 10px;">${roleBadge}</td>
+                            <td style="padding: 12px 10px; color: var(--muted);">${u.class ? "Class " + u.class : "Class 10"}</td>
+                            <td style="padding: 12px 10px; color: var(--cyan);">${(u.xp || 0).toLocaleString()} XP / ${u.streak || 0}d</td>
+                            <td style="padding: 12px 10px; text-align: right;">
+                                <select onchange="updateUserRole('${u.user_id || u.id}', this.value)" style="background: #1e293b; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: 12px;">
+                                    <option value="student" ${u.role === "student" ? "selected" : ""}>Student</option>
+                                    <option value="teacher" ${u.role === "teacher" ? "selected" : ""}>Teacher</option>
+                                    <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option>
+                                </select>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+            }
+        }
+    } catch (err) {
+        console.error("Failed to load admin overview:", err);
+    }
+}
+
+async function updateUserRole(userId, newRole) {
+    try {
+        const res = await fetch(`${API_BASE}/admin/role`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ userId, role: newRole })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`✅ ${data.message}`);
+            loadAdminOverview();
+        } else {
+            showToast(`❌ ${data.message || "Failed to update role."}`);
+        }
+    } catch (err) {
+        showToast("⚠️ Could not contact server to update role.");
+    }
+}
+

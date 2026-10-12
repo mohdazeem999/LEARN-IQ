@@ -2,9 +2,9 @@ const express = require("express");
 const supabase = require("../config/supabaseClient");
 const {
     clearSessionCookies,
+    ensureProfile,
     getAuthClient,
     getCookie,
-    getProfile,
     resolveSession,
     setSessionCookies
 } = require("../middleware/auth");
@@ -13,6 +13,53 @@ const router = express.Router();
 
 function presentSession(session) {
     return session ? { user: session.user } : null;
+}
+
+function presentUser(authUser, profile) {
+    const role = ["student", "teacher", "admin"].includes(profile?.role) ? profile.role : "student";
+    const name = profile?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || (role === "teacher" ? "Educator" : "User");
+    const isStudent = role === "student";
+    const classStr = isStudent && profile?.class ? `Class ${profile.class}` : null;
+    return {
+        id: authUser.id,
+        email: authUser.email,
+        name,
+        role,
+        roleName: role === "teacher" ? "Teacher / Educator" : role === "admin" ? "Admin" : "Student",
+        class: classStr,
+        classNumber: isStudent ? (profile?.class || null) : null,
+        xp: isStudent ? (profile?.xp ?? 0) : 0,
+        streak: isStudent ? (profile?.streak ?? 0) : 0,
+        rank: isStudent ? (profile?.rank ?? "-") : "-"
+    };
+}
+
+function authErrorResponse(error) {
+    const code = String(error.code || "").toLowerCase();
+    const message = String(error.message || "").toLowerCase();
+    if (code === "invalid_credentials" || code === "user_not_found" ||
+        /invalid login credentials|invalid credentials|user not found/.test(message)) {
+        return { status: 401, message: "Invalid email or password." };
+    }
+    if (code === "email_not_confirmed" || /email not confirmed/.test(message)) {
+        return { status: 403, message: "Please confirm your email address before signing in." };
+    }
+    if (error.status === 429) {
+        return { status: 429, message: "Too many sign-in attempts. Please wait a few minutes and try again." };
+    }
+
+    if (error.status >= 500 || error.status === 401 || !Number.isFinite(error.status)) {
+        console.error("Supabase authentication request failed:", {
+            status: error.status || null,
+            code: error.code || error.name || "unknown"
+        });
+        return { status: 503, message: "Authentication is temporarily unavailable. Please try again shortly." };
+    }
+
+    return {
+        status: 400,
+        message: "Unable to sign in with those details. Check your credentials and account status."
+    };
 }
 
 async function readSession(req, res) {
@@ -30,7 +77,7 @@ router.get("/me", readSession);
 
 router.post("/signup", async (req, res) => {
     try {
-        const { email, password, fullName, classLevel = "Class 10" } = req.body;
+        const { email, password, fullName, role = "student", classLevel } = req.body;
         if (typeof email !== "string" || !email.trim() ||
             typeof password !== "string" || password.length < 6 ||
             typeof fullName !== "string" || !fullName.trim()) {
@@ -39,69 +86,114 @@ router.post("/signup", async (req, res) => {
                 message: "A valid email, a password of at least 6 characters, and full name are required."
             });
         }
+
+        const normalizedRole = role === "teacher" ? "teacher" : "student";
+        if (normalizedRole === "student" && (!classLevel || !String(classLevel).trim())) {
+            return res.status(400).json({
+                success: false,
+                message: "Please select your Class / Standard (Class 5 to 12). Class is mandatory for student registration."
+            });
+        }
+
         if (!supabase) {
             return res.status(503).json({ success: false, message: "Authentication service is not configured." });
         }
 
         const authClient = getAuthClient();
-        const { data, error } = await authClient.auth.signUp({
+        let authResult = await authClient.auth.signUp({
             email: email.trim(),
             password,
-            options: { data: { full_name: fullName.trim(), class_level: classLevel } }
+            options: { data: { full_name: fullName.trim(), role: normalizedRole, class_level: normalizedRole === "student" ? classLevel : null } }
         });
+
+        // If provider email rate limit is exceeded (e.g. Supabase free tier email limit) and admin API is available,
+        // create the user directly with email pre-confirmed so registration doesn't fail.
+        if (authResult.error && (authResult.error.status === 429 || /rate limit|email/i.test(authResult.error.message)) && supabase?.auth?.admin) {
+            const adminCreate = await supabase.auth.admin.createUser({
+                email: email.trim(),
+                password,
+                email_confirm: true,
+                user_metadata: { full_name: fullName.trim(), class_level: normalizedRole === "student" ? classLevel : null, role: normalizedRole }
+            });
+            if (adminCreate.error) {
+                authResult.error = adminCreate.error;
+            } else {
+                const signInRes = await authClient.auth.signInWithPassword({
+                    email: email.trim(),
+                    password
+                });
+                if (!signInRes.error && signInRes.data.session) {
+                    authResult = signInRes;
+                } else {
+                    authResult = { data: { user: adminCreate.data.user, session: null }, error: null };
+                }
+            }
+        }
+
+        const { data, error } = authResult;
         if (error) {
             const duplicate = /already|registered|exists/i.test(error.message);
-            return res.status(duplicate ? 409 : 400).json({
+            if (duplicate) {
+                return res.status(409).json({
+                    success: false,
+                    message: "An account with this email already exists."
+                });
+            }
+            const mappedError = authErrorResponse(error);
+            return res.status(mappedError.status).json({
                 success: false,
-                message: duplicate ? "An account with this email already exists." : error.message
+                message: mappedError.message
             });
         }
         if (!data.user || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) {
             return res.status(409).json({ success: false, message: "An account with this email already exists." });
         }
 
-        const { error: profileError } = await supabase.from("profiles").upsert({
-            user_id: data.user.id,
-            full_name: fullName.trim(),
-            role: "student",
-            class_level: typeof classLevel === "string" && classLevel.trim() ? classLevel.trim() : "Class 10",
-            xp_points: 0,
-            streak_days: 0,
-            rank_position: 1
-        }, { onConflict: "user_id" });
-        if (profileError) {
+        let profile;
+        try {
+            profile = await ensureProfile(data.user, {
+                fullName: fullName.trim(),
+                role: normalizedRole,
+                classLevel: normalizedRole === "student" ? classLevel : null
+            });
+        } catch (profileError) {
             console.error("Unable to create account profile:", profileError.message);
             return res.status(500).json({ success: false, message: "Account was created, but its profile could not be saved. Please contact support." });
         }
 
-        if (!data.session) {
+        let session = data.session;
+        if (!session && supabase?.auth?.admin && data.user) {
+            try {
+                await supabase.auth.admin.updateUserById(data.user.id, { email_confirm: true });
+                const autoLogin = await authClient.auth.signInWithPassword({
+                    email: email.trim(),
+                    password
+                });
+                if (!autoLogin.error && autoLogin.data.session) {
+                    session = autoLogin.data.session;
+                }
+            } catch (confirmErr) {
+                console.warn("Auto-confirm failed on signup:", confirmErr.message);
+            }
+        }
+
+        if (!session) {
             return res.json({
                 success: true,
                 requiresEmailConfirmation: true,
-                message: "Account created. Confirm your email, then sign in."
+                message: "Account created. Please sign in."
             });
         }
 
-        setSessionCookies(req, res, data.session);
-        const profile = await getProfile(data.user.id);
-        const user = {
-            id: data.user.id,
-            email: data.user.email,
-            name: profile?.full_name || fullName.trim(),
-            role: "student",
-            roleName: "Student",
-            class: profile?.class_level || "Class 10",
-            xp: profile?.xp_points ?? 0,
-            streak: profile?.streak_days ?? 0,
-            rank: profile?.rank_position ?? "-"
-        };
+        setSessionCookies(req, res, session);
+        const user = presentUser(data.user, profile);
         return res.status(201).json({
             success: true,
-            message: "Successfully created account and logged in!",
+            message: `Successfully created ${normalizedRole === "teacher" ? "teacher" : "student"} account and logged in!`,
             session: { user }
         });
     } catch (error) {
-        console.error("Signup failed:", error.message);
+        console.error("Signup failed:", { name: error.name, code: error.code || null });
         return res.status(503).json({ success: false, message: "Unable to create account right now." });
     }
 });
@@ -114,32 +206,43 @@ router.post("/login", async (req, res) => {
             return res.status(400).json({ success: false, message: "Email and password are required." });
         }
         const authClient = getAuthClient();
-        const { data, error } = await authClient.auth.signInWithPassword({
+        let { data, error } = await authClient.auth.signInWithPassword({
             email: email.trim(),
             password
         });
-        if (error || !data.session || !data.user) {
-            return res.status(401).json({ success: false, message: "Invalid email or password." });
+        if (error && (/email not confirmed/i.test(error.message) || error.code === "email_not_confirmed") && supabase?.auth?.admin) {
+            try {
+                const { data: usersData } = await supabase.auth.admin.listUsers();
+                const targetUser = usersData?.users?.find(u => u.email?.toLowerCase() === email.trim().toLowerCase());
+                if (targetUser) {
+                    await supabase.auth.admin.updateUserById(targetUser.id, { email_confirm: true });
+                    const retry = await authClient.auth.signInWithPassword({
+                        email: email.trim(),
+                        password
+                    });
+                    if (!retry.error) {
+                        data = retry.data;
+                        error = null;
+                    }
+                }
+            } catch (autoConfirmErr) {
+                console.warn("Auto-confirm on login failed:", autoConfirmErr.message);
+            }
+        }
+        if (error) {
+            const mappedError = authErrorResponse(error);
+            return res.status(mappedError.status).json({ success: false, message: mappedError.message });
+        }
+        if (!data.session || !data.user) {
+            return res.status(503).json({ success: false, message: "Authentication did not return a valid session. Please try again." });
         }
 
-        const profile = await getProfile(data.user.id);
+        const profile = await ensureProfile(data.user);
         setSessionCookies(req, res, data.session);
-        const role = ["student", "teacher", "admin"].includes(profile?.role) ? profile.role : "student";
-        const name = profile?.full_name || data.user.user_metadata?.full_name || email.split("@")[0];
-        const user = {
-            id: data.user.id,
-            email: data.user.email,
-            name,
-            role,
-            roleName: role === "teacher" ? "Teacher / Educator" : role === "admin" ? "Admin" : "Student",
-            class: profile?.class_level || "Class 10",
-            xp: profile?.xp_points ?? 0,
-            streak: profile?.streak_days ?? 0,
-            rank: profile?.rank_position ?? "-"
-        };
-        return res.json({ success: true, message: `Welcome back, ${name}!`, session: { user } });
+        const user = presentUser(data.user, profile);
+        return res.json({ success: true, message: `Welcome back, ${user.name}!`, session: { user } });
     } catch (error) {
-        console.error("Login failed:", error.message);
+        console.error("Login failed:", { name: error.name, code: error.code || null });
         return res.status(503).json({ success: false, message: "Unable to sign in right now." });
     }
 });

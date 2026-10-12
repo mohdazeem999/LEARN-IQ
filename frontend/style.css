@@ -2643,3 +2643,697 @@ textarea.form-control {
         font-size: 9px;
     }
 }
+
+/* ========================================================
+   STUDENT GAMIFICATION & REWARDS DESIGN SYSTEM
+   ======================================================== */
+
+.level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: linear-gradient(135deg, rgba(57, 217, 255, 0.15), rgba(155, 108, 255, 0.2));
+    border: 1px solid rgba(57, 217, 255, 0.3);
+    color: var(--cyan);
+}
+
+.level-progress-container {
+    width: 100%;
+    margin-top: 6px;
+}
+
+.level-progress-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+}
+
+.level-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 10px rgba(57, 217, 255, 0.5);
+}
+
+.coins-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Weekday Activity Tracker */
+.weekday-tracker {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.weekday-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 2px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 10px;
+    color: var(--muted);
+    transition: all 0.2s ease;
+}
+
+.weekday-item.active {
+    background: rgba(255, 107, 122, 0.12);
+    border-color: rgba(255, 107, 122, 0.35);
+    color: var(--orange);
+    font-weight: 700;
+}
+
+.weekday-item.today {
+    box-shadow: 0 0 8px rgba(57, 217, 255, 0.3);
+    border-color: var(--cyan);
+}
+
+.weekday-icon {
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+/* Tab Navigation for Rewards Hub */
+.gamification-nav-tabs {
+    display: flex;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.gamification-tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.gamification-tab-btn:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.gamification-tab-btn.active {
+    color: white;
+    background: linear-gradient(135deg, rgba(57, 217, 255, 0.2), rgba(155, 108, 255, 0.2));
+    border: 1px solid rgba(57, 217, 255, 0.3);
+}
+
+/* Achievement Cards */
+.achievement-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.achievement-card {
+    background: rgba(15, 22, 38, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.achievement-card.unlocked {
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(20, 30, 55, 0.8));
+    border-color: rgba(57, 217, 255, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(57, 217, 255, 0.08);
+}
+
+.achievement-card.unlocked::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--cyan), var(--purple));
+}
+
+.achievement-card.locked {
+    opacity: 0.65;
+    filter: grayscale(0.6);
+    border-style: dashed;
+}
+
+.achievement-card.locked:hover {
+    opacity: 0.85;
+    filter: grayscale(0.2);
+}
+
+.achievement-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.achievement-card.unlocked .achievement-icon-box {
+    background: linear-gradient(135deg, rgba(57, 217, 255, 0.2), rgba(155, 108, 255, 0.2));
+    border-color: rgba(57, 217, 255, 0.3);
+}
+
+/* Avatar Cards */
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+}
+
+.avatar-card {
+    background: rgba(15, 22, 38, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 16px;
+    text-align: center;
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.avatar-card.current {
+    border-color: var(--cyan);
+    box-shadow: 0 0 20px rgba(57, 217, 255, 0.2);
+    background: rgba(15, 23, 42, 0.9);
+}
+
+.avatar-preview-box {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 34px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border);
+    position: relative;
+}
+
+.avatar-card.current .avatar-preview-box {
+    border-color: var(--cyan);
+    box-shadow: 0 0 15px rgba(57, 217, 255, 0.4);
+}
+
+/* Reward Shop Items */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.shop-card {
+    background: rgba(15, 22, 38, 0.75);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.shop-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+/* Learning Journey Milestones */
+.journey-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    padding-left: 28px;
+}
+
+.journey-timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.journey-node {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(15, 22, 38, 0.6);
+    border: 1px solid var(--border);
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.journey-node::before {
+    content: '';
+    position: absolute;
+    left: -23px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #334155;
+    border: 2px solid #0f172a;
+}
+
+.journey-node.completed {
+    border-color: rgba(70, 230, 165, 0.3);
+    background: rgba(70, 230, 165, 0.05);
+}
+
+.journey-node.completed::before {
+    background: var(--green);
+    box-shadow: 0 0 8px rgba(70, 230, 165, 0.6);
+}
+
+.journey-node.current {
+    border-color: var(--cyan);
+    background: linear-gradient(135deg, rgba(57, 217, 255, 0.1), rgba(155, 108, 255, 0.1));
+    box-shadow: 0 0 20px rgba(57, 217, 255, 0.15);
+}
+
+.journey-node.current::before {
+    background: var(--cyan);
+    box-shadow: 0 0 12px rgba(57, 217, 255, 0.8);
+    transform: scale(1.2);
+}
+
+/* Avatar Frames customization */
+.frame-neon {
+    border: 3px solid #39d9ff !important;
+    box-shadow: 0 0 15px rgba(57, 217, 255, 0.6), inset 0 0 10px rgba(57, 217, 255, 0.4) !important;
+}
+
+.frame-gold {
+    border: 3px solid #f59e0b !important;
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.6), inset 0 0 10px rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Profile Theme Styles */
+.profile-theme-matrix {
+    background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 70%),
+                rgba(11, 20, 26, 0.95) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.profile-theme-nebula {
+    background: radial-gradient(circle at top right, rgba(155, 108, 255, 0.25), transparent 70%),
+                radial-gradient(circle at bottom left, rgba(57, 217, 255, 0.15), transparent 70%),
+                rgba(15, 23, 42, 0.95) !important;
+    border-color: rgba(155, 108, 255, 0.3) !important;
+}
+
+/* Post-Quiz Celebration Banner */
+.celebration-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 16px 0 20px 0;
+}
+
+.celebration-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.celebration-pill.xp {
+    background: linear-gradient(135deg, rgba(57, 217, 255, 0.2), rgba(155, 108, 255, 0.25));
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+}
+
+.celebration-pill.coins {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #fbbf24;
+    color: #fbbf24;
+}
+
+.celebration-pill.streak {
+    background: rgba(255, 107, 122, 0.2);
+    border: 1px solid var(--orange);
+    color: var(--orange);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ========================================================
+   ENHANCED QUIZ OPTIONS & ANSWER GRID (COMPACT & RESPONSIVE)
+   ======================================================== */
+.answer-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-top: 16px !important;
+}
+
+@media (max-width: 680px) {
+    .answer-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+}
+
+.answer-option {
+    background: rgba(15, 23, 42, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 10px 14px !important;
+    border-radius: 12px !important;
+    color: var(--text) !important;
+    font-size: 13.5px !important;
+    text-align: left !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 48px !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.answer-option:hover {
+    border-color: var(--cyan) !important;
+    background: rgba(57, 217, 255, 0.08) !important;
+    transform: translateY(-1px);
+}
+
+.answer-option.selected {
+    border-color: var(--cyan) !important;
+    background: rgba(57, 217, 255, 0.16) !important;
+    box-shadow: 0 0 16px rgba(57, 217, 255, 0.2) !important;
+    font-weight: 600 !important;
+}
+
+.answer-option .option-num-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cyan);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.answer-option.selected .option-num-badge {
+    background: var(--cyan);
+    color: #0b1120;
+    border-color: var(--cyan);
+}
+
+/* Timer Mode Selection Controls */
+.timer-mode-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 12px;
+}
+
+.timer-mode-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 6px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.timer-mode-btn.active {
+    background: rgba(57, 217, 255, 0.15);
+    color: var(--cyan);
+    border: 1px solid rgba(57, 217, 255, 0.3);
+}
+
+.timer-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text);
+}
+
+/* ========================================================
+   PUSH YOUR CHALLENGES (MODERN EDUCATIONAL GRID)
+   ======================================================== */
+.challenge-overview-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.85));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.challenge-overview-stats {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.challenge-stat-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.challenge-stat-box .stat-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+}
+
+.challenge-grid-v2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+    margin-bottom: 30px;
+}
+
+.challenge-card-v2 {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.challenge-card-v2:hover {
+    border-color: rgba(57, 217, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.challenge-card-v2.completed {
+    border-color: rgba(70, 230, 165, 0.4);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(6, 78, 59, 0.2));
+}
+
+.challenge-meta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.challenge-subject-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(57, 217, 255, 0.1);
+    color: var(--cyan);
+    border: 1px solid rgba(57, 217, 255, 0.2);
+}
+
+.challenge-xp-tag {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fbbf24;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.challenge-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.35;
+}
+
+.challenge-card-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.45;
+    margin-bottom: 16px;
+    flex-grow: 1;
+}
+
+.challenge-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* User Profile Dropdown Navigation */
+.user-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 250px;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: none;
+    animation: popIn 0.2s ease;
+}
+
+.user-menu-dropdown.show {
+    display: block;
+}
+
+.user-dropdown-signout-btn {
+    width: 100%;
+    margin-top: 12px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.user-dropdown-signout-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: white;
+}
+
+.sidebar-signout-btn {
+    margin-top: auto;
+    background: transparent;
+    border: none;
+    color: #f87171;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 12px 18px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-signout-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: white;
+}
+
+

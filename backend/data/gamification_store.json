@@ -1,0 +1,619 @@
+{
+  "students": {
+    "test_student_shop_789": {
+      "coins": 50,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
+    },
+    "test_student_avatar_001": {
+      "coins": 50,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
+    },
+    "27171240-0dac-472b-96b9-6f5e1b06d035": {
+      "coins": 130,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer",
+        "avatar_scientist"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0,
+      "xp": 165,
+      "recentXpGained": 0
+    },
+    "b639be23-9e83-43df-a8ae-03136cf3355c": {
+      "xp": 75,
+      "recentXpGained": 75,
+      "coins": 80,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
+    },
+    "5407f0dd-17fe-4f8b-9866-53ed703beaa2": {
+      "xp": 195,
+      "recentXpGained": 120,
+      "coins": 145,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer",
+        "avatar_scientist"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
+    },
+    "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0": {
+      "xp": 195,
+      "recentXpGained": 120,
+      "coins": 145,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer",
+        "avatar_scientist"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
+    },
+    "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b": {
+      "xp": 195,
+      "recentXpGained": 120,
+      "coins": 145,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer",
+        "avatar_scientist"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
+    }
+  },
+  "submissions": [
+    {
+      "id": "e97d7838-e2f0-4320-a857-afa989315fd5",
+      "studentId": "27171240-0dac-472b-96b9-6f5e1b06d035",
+      "quizId": "79e906ff-e5e2-494d-a7a1-96536cc80589",
+      "title": "addition ,subtraction (Mathematics)",
+      "subject": "Mathematics",
+      "topic": "addition ,subtraction (Mathematics)",
+      "classLevel": "Class 5",
+      "scorePercentage": 100,
+      "correctCount": 5,
+      "totalQuestions": 5,
+      "xpEarned": 165,
+      "coinsEarned": 80,
+      "aiInsight": "Good effort. Review the question feedback below and use the practice activities to strengthen your understanding.",
+      "submittedAt": "2026-10-12T16:18:39.337Z"
+    },
+    {
+      "id": "c60cee7d-008d-4984-a36c-4b80026d7483",
+      "studentId": "5407f0dd-17fe-4f8b-9866-53ed703beaa2",
+      "quizId": "276253b1-2879-4b6a-95ef-3667c3a7b5fa",
+      "title": "Class 7 Integers & Fractions Assessment",
+      "subject": "Mathematics",
+      "topic": "Class 7 Integers & Fractions Assessment",
+      "classLevel": "Class 7",
+      "scorePercentage": 100,
+      "correctCount": 2,
+      "totalQuestions": 2,
+      "xpEarned": 120,
+      "coinsEarned": 65,
+      "aiInsight": "Good effort. Review the question feedback below and use the practice activities to strengthen your understanding.",
+      "submittedAt": "2026-10-12T17:36:53.690Z"
+    },
+    {
+      "id": "1fad1697-89c5-4c63-96e1-3d1f21d408c5",
+      "studentId": "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0",
+      "quizId": "e41b8563-768c-4b1f-bee3-cb86ad342a03",
+      "title": "Class 7 Integers & Fractions Assessment",
+      "subject": "Mathematics",
+      "topic": "Class 7 Integers & Fractions Assessment",
+      "classLevel": "Class 7",
+      "scorePercentage": 100,
+      "correctCount": 2,
+      "totalQuestions": 2,
+      "xpEarned": 120,
+      "coinsEarned": 65,
+      "aiInsight": "Good effort. Review the question feedback below and use the practice activities to strengthen your understanding.",
+      "submittedAt": "2026-10-12T17:38:07.369Z"
+    },
+    {
+      "id": "60063dbb-0c03-420e-bb5d-4e4c9f61fca4",
+      "studentId": "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b",
+      "quizId": "55edfd7e-df79-4076-9b74-4f8df5b247b2",
+      "title": "Class 7 Integers & Fractions Assessment",
+      "subject": "Mathematics",
+      "topic": "Class 7 Integers & Fractions Assessment",
+      "classLevel": "Class 7",
+      "scorePercentage": 100,
+      "correctCount": 2,
+      "totalQuestions": 2,
+      "xpEarned": 120,
+      "coinsEarned": 65,
+      "aiInsight": "Good effort. Review the question feedback below and use the practice activities to strengthen your understanding.",
+      "submittedAt": "2026-10-12T17:38:58.277Z"
+    }
+  ],
+  "xp_transactions": [
+    {
+      "id": "a18de016-f044-4d38-aa7b-52f7c32e0ea9",
+      "studentId": "27171240-0dac-472b-96b9-6f5e1b06d035",
+      "amount": 165,
+      "source": "quiz_submission",
+      "referenceId": "e97d7838-e2f0-4320-a857-afa989315fd5",
+      "createdAt": "2026-10-12T16:18:39.337Z"
+    },
+    {
+      "id": "58171627-d0ba-489e-bb24-0546952438c7",
+      "studentId": "b639be23-9e83-43df-a8ae-03136cf3355c",
+      "amount": 75,
+      "source": "daily_challenge",
+      "referenceId": "c7_math_integers",
+      "createdAt": "2026-10-12T17:29:52.054Z"
+    },
+    {
+      "id": "4ddff970-c703-42fd-9114-fc8057802a7d",
+      "studentId": "5407f0dd-17fe-4f8b-9866-53ed703beaa2",
+      "amount": 75,
+      "source": "daily_challenge",
+      "referenceId": "c7_math_integers",
+      "createdAt": "2026-10-12T17:36:52.458Z"
+    },
+    {
+      "id": "df9f7cd4-72f1-4150-9b27-7f5638c22660",
+      "studentId": "5407f0dd-17fe-4f8b-9866-53ed703beaa2",
+      "amount": 120,
+      "source": "quiz_submission",
+      "referenceId": "c60cee7d-008d-4984-a36c-4b80026d7483",
+      "createdAt": "2026-10-12T17:36:53.690Z"
+    },
+    {
+      "id": "99a36cbb-6749-49d8-b84d-da468cbe7670",
+      "studentId": "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0",
+      "amount": 75,
+      "source": "daily_challenge",
+      "referenceId": "c7_math_integers",
+      "createdAt": "2026-10-12T17:38:06.163Z"
+    },
+    {
+      "id": "22bbbeae-39d2-4c53-be9f-2ded56f6777b",
+      "studentId": "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0",
+      "amount": 120,
+      "source": "quiz_submission",
+      "referenceId": "1fad1697-89c5-4c63-96e1-3d1f21d408c5",
+      "createdAt": "2026-10-12T17:38:07.369Z"
+    },
+    {
+      "id": "2536639e-e354-4f67-817b-0caa819a11ae",
+      "studentId": "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b",
+      "amount": 75,
+      "source": "daily_challenge",
+      "referenceId": "c7_math_integers",
+      "createdAt": "2026-10-12T17:38:57.135Z"
+    },
+    {
+      "id": "9dcc635e-9f0a-4573-8b2a-68ccde10a0d7",
+      "studentId": "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b",
+      "amount": 120,
+      "source": "quiz_submission",
+      "referenceId": "60063dbb-0c03-420e-bb5d-4e4c9f61fca4",
+      "createdAt": "2026-10-12T17:38:58.277Z"
+    }
+  ],
+  "coin_transactions": [
+    {
+      "id": "416290b0-9515-4ec5-b0d8-940b5aa8712c",
+      "studentId": "27171240-0dac-472b-96b9-6f5e1b06d035",
+      "amount": 80,
+      "source": "quiz_submission",
+      "referenceId": "e97d7838-e2f0-4320-a857-afa989315fd5",
+      "createdAt": "2026-10-12T16:18:39.337Z"
+    },
+    {
+      "id": "11df2c74-a3d1-4165-9e54-f65b16692384",
+      "studentId": "5407f0dd-17fe-4f8b-9866-53ed703beaa2",
+      "amount": 65,
+      "source": "quiz_submission",
+      "referenceId": "c60cee7d-008d-4984-a36c-4b80026d7483",
+      "createdAt": "2026-10-12T17:36:53.690Z"
+    },
+    {
+      "id": "4d81a227-f6f3-43f9-9b98-a42c1a0ff766",
+      "studentId": "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0",
+      "amount": 65,
+      "source": "quiz_submission",
+      "referenceId": "1fad1697-89c5-4c63-96e1-3d1f21d408c5",
+      "createdAt": "2026-10-12T17:38:07.369Z"
+    },
+    {
+      "id": "cee44c15-1c9d-49f6-92a5-811685b13d1d",
+      "studentId": "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b",
+      "amount": 65,
+      "source": "quiz_submission",
+      "referenceId": "60063dbb-0c03-420e-bb5d-4e4c9f61fca4",
+      "createdAt": "2026-10-12T17:38:58.277Z"
+    }
+  ],
+  "student_achievements": {
+    "27171240-0dac-472b-96b9-6f5e1b06d035": [
+      {
+        "achievementId": "first_step",
+        "unlockedAt": "2026-10-12T16:18:40.330Z"
+      },
+      {
+        "achievementId": "perfect_score",
+        "unlockedAt": "2026-10-12T16:18:40.330Z"
+      },
+      {
+        "achievementId": "mastery_unlocked",
+        "unlockedAt": "2026-10-12T16:18:40.330Z"
+      }
+    ],
+    "5407f0dd-17fe-4f8b-9866-53ed703beaa2": [
+      {
+        "achievementId": "first_step",
+        "unlockedAt": "2026-10-12T17:36:54.281Z"
+      },
+      {
+        "achievementId": "perfect_score",
+        "unlockedAt": "2026-10-12T17:36:54.281Z"
+      },
+      {
+        "achievementId": "mastery_unlocked",
+        "unlockedAt": "2026-10-12T17:36:54.281Z"
+      }
+    ],
+    "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0": [
+      {
+        "achievementId": "first_step",
+        "unlockedAt": "2026-10-12T17:38:07.710Z"
+      },
+      {
+        "achievementId": "perfect_score",
+        "unlockedAt": "2026-10-12T17:38:07.710Z"
+      },
+      {
+        "achievementId": "mastery_unlocked",
+        "unlockedAt": "2026-10-12T17:38:07.710Z"
+      }
+    ],
+    "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b": [
+      {
+        "achievementId": "first_step",
+        "unlockedAt": "2026-10-12T17:38:58.545Z"
+      },
+      {
+        "achievementId": "perfect_score",
+        "unlockedAt": "2026-10-12T17:38:58.545Z"
+      },
+      {
+        "achievementId": "mastery_unlocked",
+        "unlockedAt": "2026-10-12T17:38:58.545Z"
+      }
+    ]
+  },
+  "daily_missions": {
+    "2026-10-10": {
+      "test_student_missions_123": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ]
+    },
+    "2026-10-12": {
+      "27171240-0dac-472b-96b9-6f5e1b06d035": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 4,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ],
+      "5407f0dd-17fe-4f8b-9866-53ed703beaa2": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 2,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ],
+      "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 2,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ],
+      "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 2,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ]
+    }
+  },
+  "submission_timestamps": {
+    "27171240-0dac-472b-96b9-6f5e1b06d035": 1791821918895,
+    "5407f0dd-17fe-4f8b-9866-53ed703beaa2": 1791826613188,
+    "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0": 1791826687062,
+    "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b": 1791826738053
+  },
+  "student_challenges": {
+    "2026-10-12": {
+      "b639be23-9e83-43df-a8ae-03136cf3355c": {
+        "c7_math_integers": {
+          "completed": true,
+          "claimed": true,
+          "current": 6,
+          "completedAt": "2026-10-12T17:29:51.801Z"
+        }
+      },
+      "5407f0dd-17fe-4f8b-9866-53ed703beaa2": {
+        "c7_math_integers": {
+          "completed": true,
+          "claimed": true,
+          "current": 6,
+          "completedAt": "2026-10-12T17:36:52.157Z"
+        }
+      },
+      "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0": {
+        "c7_math_integers": {
+          "completed": true,
+          "claimed": true,
+          "current": 6,
+          "completedAt": "2026-10-12T17:38:05.433Z"
+        }
+      },
+      "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b": {
+        "c7_math_integers": {
+          "completed": true,
+          "claimed": true,
+          "current": 6,
+          "completedAt": "2026-10-12T17:38:56.631Z"
+        }
+      },
+      "27171240-0dac-472b-96b9-6f5e1b06d035": {}
+    }
+  }
+}

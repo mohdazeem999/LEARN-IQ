@@ -6,15 +6,32 @@
 -- 1. Profiles Table (Students and Teachers)
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT UNIQUE NOT NULL,
-    full_name TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'student', -- 'student' | 'teacher' | 'admin'
-    class_level TEXT DEFAULT 'Class 10',
-    xp_points INT DEFAULT 2480,
-    streak_days INT DEFAULT 12,
-    rank_position INT DEFAULT 7,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    email TEXT,
+    role TEXT NOT NULL DEFAULT 'student',
+    class INT DEFAULT 10,
+    xp INT DEFAULT 0,
+    streak INT DEFAULT 0,
+    rank INT DEFAULT 1,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Link legacy profile rows to their existing Supabase Auth users without deleting data.
+ALTER TABLE public.profiles
+    ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+
+UPDATE public.profiles AS profile
+SET user_id = auth_user.id
+FROM auth.users AS auth_user
+WHERE profile.user_id IS NULL
+  AND profile.email IS NOT NULL
+  AND lower(profile.email) = lower(auth_user.email);
+
+CREATE UNIQUE INDEX IF NOT EXISTS profiles_user_id_unique
+    ON public.profiles (user_id);
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- 2. Quizzes Table (AI Generated Quizzes)
 CREATE TABLE IF NOT EXISTS public.quizzes (

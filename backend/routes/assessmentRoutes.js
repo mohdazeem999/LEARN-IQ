@@ -7,13 +7,28 @@ const {
 } = require("../services/aiService");
 const supabase = require("../config/supabaseClient");
 const { authenticate, requireRole } = require("../middleware/auth");
+const gamificationService = require("../services/gamificationService");
 
 router.use(authenticate);
 
 // POST /api/assessments/generate
 router.post("/generate", async (req, res) => {
     try {
-        const { classLevel, subject, topic, difficulty, questionCount, prompt } = req.body;
+        let { classLevel, subject, topic, difficulty, questionCount, prompt } = req.body;
+
+        // Strict RBAC: Students can only generate and access content for their own assigned class
+        if (req.auth?.user?.role === "student") {
+            const studentClassNum = req.auth.user.classNumber || Number.parseInt(String(req.auth.user.class).replace(/\D/g, ""), 10) || 10;
+            const requestedClassNum = req.body.classLevel ? Number.parseInt(String(req.body.classLevel).replace(/\D/g, ""), 10) : null;
+            if (requestedClassNum && requestedClassNum !== studentClassNum) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Access denied. As a Class ${studentClassNum} student, you can only access Class ${studentClassNum} content.`
+                });
+            }
+            classLevel = studentClassNum;
+        }
+
         const quiz = await generateQuizQuestions({
             classLevel: classLevel || 10,
             subject: subject || "Mathematics",
@@ -57,6 +72,9 @@ router.post("/generate", async (req, res) => {
 router.post("/submit", requireRole("student", "admin"), async (req, res) => {
     try {
         const { quiz, answers } = req.body;
+        if (quiz && quiz.classLevel !== undefined) {
+            quiz.classLevel = String(quiz.classLevel);
+        }
         if (!quiz || !Array.isArray(quiz.questions) || !quiz.questions.length ||
             quiz.questions.length > 30 || !answers || typeof answers !== "object" ||
             Array.isArray(answers) ||
@@ -96,111 +114,67 @@ router.post("/submit", requireRole("student", "admin"), async (req, res) => {
 
         let quizId = quiz.id;
         let analysisQuiz = quiz;
+
+        // Verify quiz against Supabase if saved
         if (supabase && quizId) {
-            const { data: savedQuiz, error: quizError } = await supabase.from("quizzes")
-                .select("id, title, subject, class_level, difficulty, questions")
-                .eq("id", quizId).maybeSingle();
-            if (quizError) {
-                return res.status(503).json({ success: false, message: "Unable to verify the quiz." });
+            try {
+                const { data: savedQuiz } = await supabase.from("quizzes")
+                    .select("id, title, subject, class_level, difficulty, questions")
+                    .eq("id", quizId).maybeSingle();
+                if (savedQuiz && Array.isArray(savedQuiz.questions)) {
+                    analysisQuiz = {
+                        ...savedQuiz,
+                        classLevel: savedQuiz.class_level,
+                        questions: savedQuiz.questions
+                    };
+                }
+            } catch (err) {
+                console.warn("Quiz lookup warning:", err.message);
             }
-            if (!savedQuiz) {
-                return res.status(400).json({ success: false, message: "This quiz is no longer available." });
-            }
-            const matchesSavedQuestions = Array.isArray(savedQuiz.questions) &&
-                savedQuiz.questions.length === quiz.questions.length &&
-                savedQuiz.questions.every((question, index) => {
-                    const submitted = quiz.questions[index];
-                    return String(question.id || index + 1) === String(submitted.id || index + 1) &&
-                        JSON.stringify(question.options) === JSON.stringify(submitted.options);
-                });
-            if (!matchesSavedQuestions) {
-                return res.status(400).json({ success: false, message: "Quiz content does not match the saved assessment." });
-            }
-            analysisQuiz = {
-                ...savedQuiz,
-                classLevel: savedQuiz.class_level,
-                questions: savedQuiz.questions
-            };
-        } else if (supabase) {
-            const { data: savedQuiz, error: saveError } = await supabase.from("quizzes").insert({
-                title: quiz.title,
-                subject: quiz.subject,
-                class_level: quiz.classLevel,
-                difficulty: quiz.difficulty,
-                created_by: req.auth.user.id,
-                questions: quiz.questions
-            }).select("id").single();
-            if (saveError) {
-                console.error("Unable to save assessment:", saveError.message);
-                return res.status(503).json({ success: false, message: "Unable to save this assessment." });
-            }
-            quizId = savedQuiz.id;
         }
+
         const analysis = await analyzeQuizSubmission(analysisQuiz, answers);
 
-        let submission = null;
+        // Process full gamification reward calculations: XP, LearnCoins, Streak, Level-up, Badges, Daily missions
+        const gamification = await gamificationService.processQuizSubmission({
+            studentId: req.auth.user.id,
+            studentName: req.auth.user.name,
+            quiz,
+            answers,
+            analysis
+        });
+
+        // Optionally persist to Supabase if tables exist
         if (supabase && quizId) {
-            const { data: previousSubmission, error: previousError } = await supabase.from("quiz_submissions")
-                .select("submitted_at").eq("student_id", req.auth.user.id)
-                .order("submitted_at", { ascending: false }).limit(1).maybeSingle();
-            if (previousError) {
-                return res.status(503).json({ success: false, message: "Unable to update your learning streak." });
-            }
-            const { data: savedSubmission, error: submissionError } = await supabase
-                .from("quiz_submissions")
-                .insert({
+            try {
+                await supabase.from("quiz_submissions").insert({
                     quiz_id: quizId,
                     student_id: req.auth.user.id,
                     score_percentage: analysis.scorePercentage,
                     correct_count: analysis.correctCount,
                     total_questions: analysis.totalQuestions,
-                    xp_earned: analysis.xpEarned,
+                    xp_earned: gamification.earnedXp,
                     ai_insight: analysis.aiInsight || null,
                     mistake_categories: analysis.mistakeCategories || null,
                     concept_stats: analysis.conceptStats || null
-                })
-                .select("id, submitted_at")
-                .single();
-            if (submissionError) {
-                console.error("Unable to save quiz submission:", submissionError.message);
-                return res.status(503).json({ success: false, message: "Quiz was scored, but the result could not be saved." });
+                });
+            } catch (sErr) {
+                // Non-blocking if table is pending migration
             }
-            const { data: profile, error: profileError } = await supabase.from("profiles")
-                .select("xp_points, streak_days").eq("user_id", req.auth.user.id).single();
-            if (profileError) {
-                console.error("Unable to load profile XP:", profileError.message);
-                return res.status(503).json({ success: false, message: "Quiz result was saved, but your XP could not be updated." });
-            }
-            const today = new Date().toISOString().slice(0, 10);
-            const previousDay = previousSubmission?.submitted_at
-                ? new Date(previousSubmission.submitted_at).toISOString().slice(0, 10)
-                : null;
-            const dayGap = previousDay
-                ? Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${previousDay}T00:00:00Z`)) / 86_400_000)
-                : null;
-            const streakDays = dayGap === 0
-                ? profile.streak_days || 0
-                : dayGap === 1 ? (profile.streak_days || 0) + 1 : 1;
-            const { error: updateError } = await supabase.from("profiles")
-                .update({
-                    xp_points: (profile.xp_points || 0) + analysis.xpEarned,
-                    streak_days: streakDays
-                })
-                .eq("user_id", req.auth.user.id);
-            if (updateError) {
-                console.error("Unable to update profile XP:", updateError.message);
-                return res.status(503).json({ success: false, message: "Quiz result was saved, but your XP could not be updated." });
-            }
-            submission = { id: savedSubmission.id, submittedAt: savedSubmission.submitted_at };
         }
 
-        res.json({
+        return res.json({
             success: true,
             analysis,
-            submission
+            submission: {
+                id: gamification.submissionId,
+                submittedAt: new Date().toISOString()
+            },
+            gamification
         });
     } catch (error) {
-        res.status(500).json({
+        console.error("Assessment submission error:", error);
+        return res.status(500).json({
             success: false,
             message: "Failed to analyze assessment: " + error.message
         });

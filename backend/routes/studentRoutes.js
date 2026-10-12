@@ -2,130 +2,202 @@ const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabaseClient");
 const { authenticate, requireRole } = require("../middleware/auth");
+const gamificationService = require("../services/gamificationService");
 
-// GET /api/students/profile
-router.get("/profile", authenticate, requireRole("student", "admin"), async (req, res) => {
-    const { data, error } = await supabase.from("profiles").select("*")
-        .eq("user_id", req.auth.user.id).maybeSingle();
-    if (error) {
-        return res.status(503).json({ success: false, message: "Unable to load your profile." });
-    }
-    res.json({
-        success: true,
-        student: {
-            id: req.auth.user.id,
-            name: data?.full_name || req.auth.user.name,
-            classLevel: data?.class_level || "Class 10",
-            xp: data?.xp_points ?? 0,
-            streak: data?.streak_days ?? 0,
-            rank: data?.rank_position ?? "-",
-            overallProgress: 0,
-            dnaScores: { conceptMastery: 0, problemSolving: 0, consistency: 0, improvement: 0 },
-            redeemedRewards: []
-        }
-    });
-});
-
+// Public or Semi-Public Leaderboard
 // GET /api/students/leaderboard
 router.get("/leaderboard", async (req, res) => {
-    if (!supabase) {
-        return res.status(503).json({ success: false, message: "Leaderboard service is not configured." });
+    try {
+        let profilesData = [];
+        if (supabase) {
+            const { data } = await supabase.from("profiles")
+                .select("user_id, id, name, xp, streak, class, role")
+                .eq("role", "student")
+                .order("xp", { ascending: false })
+                .limit(25);
+            if (data) profilesData = data;
+        }
+
+        const leaderboard = profilesData.map((profile, index) => {
+            const lvl = gamificationService.calculateLevel(profile.xp || 0);
+            return {
+                rank: index + 1,
+                userId: profile.user_id || profile.id,
+                name: profile.name || "Student",
+                xp: profile.xp || 0,
+                level: lvl.levelNumber,
+                levelTitle: lvl.title,
+                class: profile.class ? `Class ${profile.class}` : "Class 10",
+                streak: profile.streak || 0,
+                role: profile.role
+            };
+        });
+
+        res.json({
+            success: true,
+            leaderboard
+        });
+    } catch (err) {
+        console.error("Leaderboard error:", err.message);
+        res.status(500).json({ success: false, message: "Unable to load the leaderboard." });
     }
-    const { data, error } = await supabase.from("profiles")
-        .select("user_id, full_name, xp_points, streak_days, class_level, role")
-        .eq("role", "student")
-        .order("xp_points", { ascending: false })
-        .limit(20);
-    if (error) {
-        return res.status(503).json({ success: false, message: "Unable to load the leaderboard." });
-    }
-    res.json({
-        success: true,
-        leaderboard: data.map((profile, index) => ({
-            rank: index + 1,
-            userId: profile.user_id,
-            name: profile.full_name || "Student",
-            xp: profile.xp_points || 0,
-            class: profile.class_level || "Class 10",
-            streak: profile.streak_days || 0,
-            role: profile.role
-        }))
-    });
 });
 
+// Protect all remaining student routes
 router.use(authenticate, requireRole("student", "admin"));
+
+// GET /api/students/profile
+router.get("/profile", async (req, res) => {
+    try {
+        const studentGamification = await gamificationService.getStudentGamificationProfile(
+            req.auth.user.id,
+            req.auth.user
+        );
+
+        res.json({
+            success: true,
+            student: studentGamification
+        });
+    } catch (error) {
+        console.error("Student profile error:", error.message);
+        res.status(500).json({ success: false, message: "Unable to load your profile." });
+    }
+});
+
+// GET /api/students/gamification
+router.get("/gamification", async (req, res) => {
+    try {
+        const studentGamification = await gamificationService.getStudentGamificationProfile(
+            req.auth.user.id,
+            req.auth.user
+        );
+
+        res.json({
+            success: true,
+            gamification: studentGamification
+        });
+    } catch (error) {
+        console.error("Gamification fetch error:", error.message);
+        res.status(500).json({ success: false, message: "Unable to load gamification data." });
+    }
+});
 
 // GET /api/students/history
 router.get("/history", async (req, res) => {
-    const { data, error } = await supabase.from("quiz_submissions")
-        .select("id, score_percentage, correct_count, total_questions, xp_earned, submitted_at, quizzes(title, subject)")
-        .eq("student_id", req.auth.user.id)
-        .order("submitted_at", { ascending: false })
-        .limit(100);
-    if (error) {
-        return res.status(503).json({ success: false, message: "Unable to load your quiz history." });
+    try {
+        const gamificationProfile = await gamificationService.getStudentGamificationProfile(
+            req.auth.user.id,
+            req.auth.user
+        );
+
+        const historyItems = (gamificationProfile.recentHistory || []).map(submission => {
+            const dateObj = new Date(submission.submittedAt);
+            return {
+                id: submission.id,
+                dateStr: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                timeStr: dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+                subject: submission.subject || "Mathematics",
+                topic: submission.topic || submission.title || "Assessment",
+                score: submission.scorePercentage,
+                correctCount: submission.correctCount,
+                totalQuestions: submission.totalQuestions,
+                xpEarned: submission.xpEarned,
+                coinsEarned: submission.coinsEarned || 10
+            };
+        });
+
+        return res.json({
+            success: true,
+            history: historyItems
+        });
+    } catch (error) {
+        console.error("History fetch error:", error.message);
+        return res.status(500).json({ success: false, message: "Unable to load assessment history." });
     }
-    return res.json({
-        success: true,
-        history: data.map(submission => ({
-            id: submission.id,
-            dateStr: new Date(submission.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-            timeStr: new Date(submission.submitted_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-            subject: submission.quizzes?.subject || "Mathematics",
-            topic: submission.quizzes?.title || "Assessment",
-            score: submission.score_percentage,
-            correctCount: submission.correct_count,
-            totalQuestions: submission.total_questions,
-            xpEarned: submission.xp_earned
-        }))
-    });
+});
+
+// POST /api/students/avatar/select
+router.post("/avatar/select", (req, res) => {
+    try {
+        const { avatarId } = req.body;
+        if (!avatarId || typeof avatarId !== "string") {
+            return res.status(400).json({ success: false, message: "Avatar identifier is required." });
+        }
+
+        const result = gamificationService.selectActiveAvatar(req.auth.user.id, avatarId);
+        res.json({
+            success: true,
+            message: `Avatar successfully updated to ${result.activeAvatar.name}!`,
+            activeAvatar: result.activeAvatar
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
 });
 
 // POST /api/students/rewards/redeem
 router.post("/rewards/redeem", async (req, res) => {
-    const { rewardTitle, cost } = req.body;
-    if (typeof rewardTitle !== "string" || !rewardTitle || !Number.isInteger(cost) || cost <= 0) {
-        return res.status(400).json({ success: false, message: "Reward title and cost are required." });
-    }
-    const { data: reward, error: rewardError } = await supabase.from("rewards")
-        .select("title, cost_xp").eq("title", rewardTitle).maybeSingle();
-    if (rewardError) {
-        return res.status(503).json({ success: false, message: "Unable to verify reward." });
-    }
-    if (!reward || reward.cost_xp !== cost) {
-        return res.status(400).json({ success: false, message: "The selected reward is not available at that cost." });
-    }
-    const { data: profile, error: profileError } = await supabase.from("profiles")
-        .select("xp_points").eq("user_id", req.auth.user.id).single();
-    if (profileError) {
-        return res.status(503).json({ success: false, message: "Unable to load your reward balance." });
-    }
-    if ((profile.xp_points || 0) < cost) {
-        return res.status(400).json({
-            success: false,
-            message: `Insufficient XP. You need ${cost} XP but only have ${profile.xp_points || 0} XP.`
+    try {
+        const { itemId, rewardTitle, cost } = req.body;
+        const targetItemId = itemId || (
+            rewardTitle && rewardTitle.toLowerCase().includes("gold") ? "frame_gold" :
+            rewardTitle && rewardTitle.toLowerCase().includes("neon") ? "frame_neon" :
+            rewardTitle && rewardTitle.toLowerCase().includes("math") ? "title_math" :
+            rewardTitle && rewardTitle.toLowerCase().includes("matrix") ? "theme_matrix" :
+            "frame_neon"
+        );
+
+        const result = gamificationService.redeemShopItem(req.auth.user.id, targetItemId);
+
+        res.json({
+            success: true,
+            message: `🎉 Successfully unlocked ${result.item.name}!`,
+            item: result.item,
+            remainingCoins: result.remainingCoins,
+            equipped: result.equipped
         });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
     }
-    const remainingXp = profile.xp_points - cost;
-    const { error: updateError } = await supabase.from("profiles")
-        .update({ xp_points: remainingXp }).eq("user_id", req.auth.user.id);
-    if (updateError) {
-        return res.status(503).json({ success: false, message: "Unable to update your reward balance." });
+});
+
+// GET /api/students/challenges
+router.get("/challenges", async (req, res) => {
+    try {
+        const student = req.auth.user;
+        const classNum = student.classNumber || Number.parseInt(String(student.class).replace(/\D/g, ""), 10) || 10;
+        const challengesData = gamificationService.getStudentDailyChallenges(student.id, classNum);
+
+        res.json({
+            success: true,
+            ...challengesData
+        });
+    } catch (error) {
+        console.error("Challenges fetch error:", error.message);
+        res.status(500).json({ success: false, message: "Unable to load daily challenges." });
     }
-    const { error: redemptionError } = await supabase.from("reward_redemptions").insert({
-        student_id: req.auth.user.id,
-        reward_title: rewardTitle,
-        cost_xp: cost,
-        status: "approved"
-    });
-    if (redemptionError) {
-        return res.status(503).json({ success: false, message: "Balance was updated, but the redemption could not be saved." });
+});
+
+// POST /api/students/challenges/claim
+router.post("/challenges/claim", async (req, res) => {
+    try {
+        const { challengeId } = req.body;
+        if (!challengeId || typeof challengeId !== "string") {
+            return res.status(400).json({ success: false, message: "Valid challengeId is required." });
+        }
+
+        const student = req.auth.user;
+        const classNum = student.classNumber || Number.parseInt(String(student.class).replace(/\D/g, ""), 10) || 10;
+        const result = await gamificationService.completeDailyChallenge(student.id, challengeId, classNum);
+
+        res.json({
+            success: true,
+            ...result
+        });
+    } catch (error) {
+        console.error("Challenge claim error:", error.message);
+        res.status(400).json({ success: false, message: error.message });
     }
-    res.json({
-        success: true,
-        message: `Successfully redeemed "${rewardTitle}"!`,
-        remainingXp
-    });
 });
 
 module.exports = router;

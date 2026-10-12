@@ -60,123 +60,118 @@
     <nav class="navigation">
 
         <button class="nav-item active"
+                id="navStudentDashboard"
                 onclick="showPage('dashboard')">
-
             <i class="fa-solid fa-grid-2"></i>
-
             <span>Dashboard</span>
-
         </button>
 
-
         <button class="nav-item"
-                onclick="showPage('generator')">
-
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-
-            <span>AI Quiz Generator</span>
-
-        </button>
-
-
-        <button class="nav-item"
-                onclick="showPage('assessment')">
-
-            <i class="fa-solid fa-brain"></i>
-
-            <span>Adaptive Quiz Taker</span>
-
-        </button>
-
-
-        <button class="nav-item"
-                onclick="showPage('intelligence')">
-
-            <i class="fa-solid fa-chart-line"></i>
-
-            <span>Learning Intelligence</span>
-
-        </button>
-
-
-        <button class="nav-item"
-                onclick="showPage('teacher-map')">
-
-            <i class="fa-solid fa-chalkboard-user"></i>
-
-            <span>Class Learning Map</span>
-
-        </button>
-
-
-        <button class="nav-item"
+                id="navChallenges"
                 onclick="showPage('challenges')">
-
             <i class="fa-solid fa-bolt"></i>
-
-            <span>Challenges</span>
-
+            <span>Daily Challenges</span>
         </button>
 
+        <button class="nav-item"
+                id="navAssessment"
+                onclick="showPage('assessment')">
+            <i class="fa-solid fa-brain"></i>
+            <span>Adaptive Quiz</span>
+        </button>
 
         <button class="nav-item"
+                id="navIntelligence"
+                onclick="showPage('intelligence')">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Learning Intelligence</span>
+        </button>
+
+        <button class="nav-item"
+                id="navTeacherMap"
+                onclick="showPage('teacher-map')"
+                style="display: none;">
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <span>Class Learning Map</span>
+        </button>
+
+        <button class="nav-item"
+                id="adminNavBtn"
+                onclick="showPage('admin-dashboard')"
+                style="display: none;">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Admin Dashboard</span>
+        </button>
+
+        <button class="nav-item"
+                id="navGenerator"
+                onclick="showPage('generator')">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>AI Quiz Generator</span>
+        </button>
+
+        <button class="nav-item"
+                id="navRankings"
                 onclick="showPage('rankings')">
-
             <i class="fa-solid fa-ranking-star"></i>
-
             <span>Rankings</span>
-
         </button>
 
-
         <button class="nav-item"
+                id="navRewards"
                 onclick="showPage('rewards')">
-
             <i class="fa-solid fa-trophy"></i>
-
             <span>Rewards</span>
-
         </button>
 
-
         <button class="nav-item"
+                id="navProfile"
                 onclick="showPage('profile')">
-
             <i class="fa-solid fa-user"></i>
-
             <span>Profile</span>
-
         </button>
 
-
         <button class="nav-item"
+                id="navSettings"
                 onclick="showPage('settings')">
-
             <i class="fa-solid fa-gear"></i>
-
             <span>Settings</span>
+        </button>
 
+        <!-- Aligned Sidebar Sign Out Button (authenticated only) -->
+        <button class="sidebar-signout-btn"
+                id="sidebarLogoutBtn"
+                onclick="logout()"
+                style="display: none;">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Sign Out</span>
         </button>
 
     </nav>
 
 
-    <!-- XP Card -->
+    <!-- XP & Level Card -->
 
     <div class="xp-card">
 
-        <div class="xp-icon">
-            <i class="fa-solid fa-star"></i>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <div class="xp-icon">
+                <i class="fa-solid fa-star"></i>
+            </div>
+            <div>
+                <span>Total XP</span>
+                <strong class="xp-value" id="sidebarXpVal">0</strong>
+            </div>
         </div>
 
-        <div>
-
-            <span>Total XP</span>
-
-            <strong class="xp-value">
-                0
-            </strong>
-
+        <div class="level-progress-container">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                <span id="sidebarLevelName" style="color: var(--cyan); font-weight: 700;">Lvl 1 • Explorer</span>
+                <span id="sidebarLevelProgressText" style="color: var(--muted);">0%</span>
+            </div>
+            <div class="level-progress-track">
+                <div class="level-progress-fill" id="sidebarLevelProgressFill" style="width: 0%;"></div>
+            </div>
         </div>
 
     </div>
@@ -199,23 +194,28 @@
 
         <button class="mobile-menu"
                 onclick="toggleSidebar()">
-
             <i class="fa-solid fa-bars"></i>
-
         </button>
 
 
         <div class="search-box">
-
             <i class="fa-solid fa-search"></i>
-
             <input type="text"
                    placeholder="Search LearnIQ...">
-
         </div>
 
 
         <div class="topbar-right">
+
+            <div class="coins-badge" id="topbarCoinsBadge" onclick="showPage('rewards')" style="cursor: pointer; display: none;" title="Your LearnCoins Balance">
+                <i class="fa-solid fa-coins"></i>
+                <span id="topbarCoinsCount">50</span>
+            </div>
+
+            <div class="level-badge" id="topbarLevelBadge" onclick="showPage('rewards')" style="cursor: pointer; display: none;" title="Current Learning Level">
+                <span id="topbarLevelIcon">🌱</span>
+                <span id="topbarLevelText">Lvl 1 • Explorer</span>
+            </div>
 
             <button class="role-pill" id="rolePillBtn" type="button" aria-label="Current account role">
                 <i class="fa-solid fa-graduation-cap"></i>
@@ -227,31 +227,40 @@
                 <span id="authBtnLabel">Sign In</span>
             </button>
 
-            <button class="icon-button" id="topbarLogoutBtn" onclick="logout()" title="Sign Out / Logout" style="color: var(--red); border-color: rgba(255, 68, 68, 0.3); background: rgba(255, 68, 68, 0.1); display: none;">
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
-
             <button class="icon-button">
-
                 <i class="fa-regular fa-bell"></i>
-
             </button>
 
-
-            <div class="user-profile" onclick="openAuthModal()" style="cursor: pointer;">
-
-                <div class="avatar" id="userAvatar">
-                    G
+            <!-- Authenticated User Profile & Dropdown with Aligned Sign Out -->
+            <div class="topbar-user-wrap" style="position: relative;">
+                <div class="user-profile" id="topbarUserProfile" onclick="toggleUserDropdown()" style="cursor: pointer;">
+                    <div class="avatar" id="userAvatar">🌱</div>
+                    <div>
+                        <strong id="userName">Sign in</strong>
+                        <span id="userSub">Student Mode</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down" style="font-size: 10px; color: var(--muted); margin-left: 4px;"></i>
                 </div>
 
-                <div>
-
-                    <strong id="userName">Sign in</strong>
-
-                    <span id="userSub">Class 10</span>
-
+                <div class="user-menu-dropdown" id="userMenuDropdown">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                        <div class="avatar" id="dropdownUserAvatar" style="width: 36px; height: 36px; font-size: 16px;">🌱</div>
+                        <div style="overflow: hidden;">
+                            <strong id="dropdownUserName" style="display: block; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User</strong>
+                            <span id="dropdownUserEmail" style="font-size: 11px; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis;">user@example.com</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px; display: flex; gap: 6px; align-items: center;">
+                        <span id="dropdownUserRoleBadge" class="badge-pill strong" style="font-size: 11px;">Student</span>
+                        <span id="dropdownUserClassBadge" class="badge-pill" style="font-size: 11px; background: rgba(57,217,255,0.1); color: var(--cyan);">Class 10</span>
+                    </div>
+                    <button class="nav-item" onclick="showPage('profile'); closeUserDropdown();" style="width: 100%; padding: 8px 10px; font-size: 12.5px; border-radius: 8px; margin-bottom: 4px; background: transparent; border: none; color: var(--text); display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <i class="fa-solid fa-user"></i> My Profile & Attendance
+                    </button>
+                    <button class="user-dropdown-signout-btn" onclick="logout(); closeUserDropdown();">
+                        <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                    </button>
                 </div>
-
             </div>
 
         </div>
@@ -317,53 +326,100 @@
                 </div>
             </div>
 
-            <!-- Inline Landing Login Card -->
+            <!-- Inline Landing Login Card with Explicit Role Selector -->
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: 0 15px 40px rgba(0,0,0,0.5);">
-                <div style="text-align: center; margin-bottom: 16px;">
+                <div style="text-align: center; margin-bottom: 14px;">
                     <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--cyan), var(--purple)); display: grid; place-items: center; color: white; font-size: 20px; margin: 0 auto 10px auto;">
-                        <i class="fa-solid fa-user-shield"></i>
+                        <i class="fa-solid fa-user-shield" id="landingAuthIcon"></i>
                     </div>
-                    <h2 style="font-size: 18px; font-weight: 700; color: var(--text);">Sign In to LearnIQ</h2>
-                    <p style="font-size: 12px; color: var(--muted);">Log in to unlock your personalized learning dashboard</p>
+                    <h2 style="font-size: 18px; font-weight: 700; color: var(--text);" id="landingAuthTitle">Sign In to LearnIQ</h2>
+                    <p style="font-size: 12px; color: var(--muted);" id="landingAuthSubtitle">Select your role to access your personalized environment</p>
                 </div>
 
-                <!-- Tabs -->
-                <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px; margin-bottom: 16px;">
-                    <button id="landingTabLogin" class="primary-btn" onclick="switchLandingTab('login')" style="flex: 1; padding: 8px; font-size: 12px; justify-content: center;">Sign In</button>
-                    <button id="landingTabSignup" class="primary-btn" onclick="switchLandingTab('signup')" style="flex: 1; padding: 8px; font-size: 12px; justify-content: center; background: transparent; border: none; color: var(--muted);">Create Account</button>
+                <!-- 3-Way Role Selector: Student | Teacher | Admin -->
+                <div class="role-selector-group" style="display: flex; gap: 6px; background: rgba(0,0,0,0.35); padding: 4px; border-radius: 12px; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.06);">
+                    <button type="button" id="landingRoleStudent" class="role-select-btn active" onclick="selectLandingRole('student')" style="flex: 1; padding: 7px 4px; font-size: 11.5px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: var(--primary-gradient); color: white;">
+                        <i class="fa-solid fa-graduation-cap"></i> Student
+                    </button>
+                    <button type="button" id="landingRoleTeacher" class="role-select-btn" onclick="selectLandingRole('teacher')" style="flex: 1; padding: 7px 4px; font-size: 11.5px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: transparent; color: var(--muted);">
+                        <i class="fa-solid fa-chalkboard-user"></i> Teacher
+                    </button>
+                    <button type="button" id="landingRoleAdmin" class="role-select-btn" onclick="selectLandingRole('admin')" style="flex: 1; padding: 7px 4px; font-size: 11.5px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: transparent; color: var(--muted);">
+                        <i class="fa-solid fa-shield-halved"></i> Admin
+                    </button>
+                </div>
+
+                <!-- Sign In / Sign Up Tabs (Sign up hidden for admin) -->
+                <div id="landingAuthTabsRow" style="display: flex; gap: 6px; background: rgba(0,0,0,0.25); padding: 4px; border-radius: 10px; margin-bottom: 14px;">
+                    <button type="button" id="landingTabLogin" class="primary-btn" onclick="switchLandingTab('login')" style="flex: 1; padding: 7px; font-size: 12px; justify-content: center;">Sign In</button>
+                    <button type="button" id="landingTabSignup" class="primary-btn" onclick="switchLandingTab('signup')" style="flex: 1; padding: 7px; font-size: 12px; justify-content: center; background: transparent; border: none; color: var(--muted);">Create Account</button>
+                </div>
+
+                <!-- Role Context Banner -->
+                <div id="landingRoleContextNotice" style="background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.15); border-radius: 8px; padding: 8px 10px; margin-bottom: 14px; font-size: 11.5px; color: var(--cyan); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span id="landingRoleContextText">Student Portal: Access class-specific quizzes, challenges & XP.</span>
                 </div>
 
                 <!-- Landing Login Form -->
                 <form id="landingLoginForm" onsubmit="handleAuthSubmit(event, 'login')">
+                    <input type="hidden" id="landingLoginRole" value="student">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label style="font-size: 12px; color: var(--muted);">Email Address</label>
-                        <input type="email" id="landingLoginEmail" class="form-control" placeholder="you@example.com" required style="font-size: 13px; padding: 10px;">
+                        <input type="email" id="landingLoginEmail" class="form-control" placeholder="student@example.com" required style="font-size: 13px; padding: 10px;">
                     </div>
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label style="font-size: 12px; color: var(--muted);">Password</label>
                         <input type="password" id="landingLoginPassword" class="form-control" placeholder="••••••••" required style="font-size: 13px; padding: 10px;">
                     </div>
-                    <button type="submit" class="primary-btn" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
-                        <i class="fa-solid fa-right-to-bracket"></i> Sign In to LearnIQ
+                    <button type="submit" class="primary-btn" id="landingLoginSubmitBtn" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
+                        <i class="fa-solid fa-right-to-bracket"></i> <span id="landingLoginBtnText">Sign In as Student</span>
                     </button>
                 </form>
 
                 <!-- Landing Signup Form -->
                 <form id="landingSignupForm" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
+                    <input type="hidden" id="landingSignupRole" value="student">
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; color: var(--muted);">Full Name</label>
-                        <input type="text" id="landingSignupName" class="form-control" placeholder="Your Name" required style="font-size: 13px; padding: 10px;">
+                        <input type="text" id="landingSignupName" class="form-control" placeholder="Full Name" required style="font-size: 13px; padding: 9px 10px;">
                     </div>
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; color: var(--muted);">Email Address</label>
-                        <input type="email" id="landingSignupEmail" class="form-control" placeholder="you@example.com" required style="font-size: 13px; padding: 10px;">
+                        <input type="email" id="landingSignupEmail" class="form-control" placeholder="you@example.com" required style="font-size: 13px; padding: 9px 10px;">
                     </div>
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; color: var(--muted);">Password</label>
-                        <input type="password" id="landingSignupPassword" class="form-control" placeholder="••••••••" required style="font-size: 13px; padding: 10px;">
+                        <input type="password" id="landingSignupPassword" class="form-control" placeholder="••••••••" required style="font-size: 13px; padding: 9px 10px;">
                     </div>
-                    <button type="submit" class="primary-btn" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
-                        <i class="fa-solid fa-user-plus"></i> Create Account
+
+                    <!-- Mandatory Class Selection (For Students Only) -->
+                    <div class="form-group" id="landingSignupClassGroup" style="margin-bottom: 12px;">
+                        <label style="font-size: 12px; color: var(--muted); display: flex; justify-content: space-between;">
+                            <span>Class / Standard <strong style="color: #ef4444;">*</strong></span>
+                            <span style="font-size: 10.5px; color: var(--cyan);">Mandatory for Students</span>
+                        </label>
+                        <select id="landingSignupClass" class="form-control" required style="font-size: 13px; padding: 9px 10px; background: #0b1120; color: var(--text);">
+                            <option value="" disabled selected>-- Select Your Class / Grade --</option>
+                            <option value="5">Class 5 (Primary Upper)</option>
+                            <option value="6">Class 6 (Middle School)</option>
+                            <option value="7">Class 7 (Middle School)</option>
+                            <option value="8">Class 8 (Middle School)</option>
+                            <option value="9">Class 9 (Secondary)</option>
+                            <option value="10">Class 10 (Secondary Board)</option>
+                            <option value="11">Class 11 (Senior Secondary)</option>
+                            <option value="12">Class 12 (Senior Secondary)</option>
+                        </select>
+                    </div>
+
+                    <!-- Teacher Department (For Teachers Only) -->
+                    <div class="form-group" id="landingSignupDepartmentGroup" style="margin-bottom: 12px; display: none;">
+                        <label style="font-size: 12px; color: var(--muted);">Teaching Subject / Department</label>
+                        <input type="text" id="landingSignupDepartment" class="form-control" placeholder="e.g. Mathematics, Science" style="font-size: 13px; padding: 9px 10px;">
+                    </div>
+
+                    <button type="submit" class="primary-btn" id="landingSignupSubmitBtn" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
+                        <i class="fa-solid fa-user-plus"></i> <span id="landingSignupBtnText">Create Student Account</span>
                     </button>
                 </form>
             </div>
@@ -519,24 +575,38 @@
 
 <section id="teacher-map" class="page">
 
-    <div class="page-header">
-
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
         <div>
-
             <span class="eyebrow">
-                TEACHER LEARNING INTELLIGENCE
+                <i class="fa-solid fa-chalkboard-user"></i> TEACHER LEARNING INTELLIGENCE
             </span>
-
             <h1>
                 Class Learning Map & Gap Detection
             </h1>
-
-            <p>
-                Real-time concept mastery trends and AI automated intervention plans for Class 10-B.
+            <p id="teacherMapSubtitle">
+                Real-time concept mastery trends and automated intervention plans.
             </p>
-
         </div>
 
+        <!-- Class / Grade Selector for Teacher -->
+        <div style="display: flex; align-items: center; gap: 10px; background: rgba(15, 23, 42, 0.85); padding: 8px 14px; border-radius: 12px; border: 1px solid var(--border);">
+            <label for="teacherClassSelect" style="font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap;">
+                <i class="fa-solid fa-layer-group" style="color: var(--cyan); margin-right: 6px;"></i>Select Class:
+            </label>
+            <select id="teacherClassSelect" onchange="onTeacherClassChanged(this.value)" style="background: #0b1120; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;">
+                <option value="5">Class 5</option>
+                <option value="6">Class 6</option>
+                <option value="7">Class 7</option>
+                <option value="8">Class 8</option>
+                <option value="9">Class 9</option>
+                <option value="10" selected>Class 10</option>
+                <option value="11">Class 11</option>
+                <option value="12">Class 12</option>
+            </select>
+            <span class="badge-pill strong" style="font-size: 11px;">
+                Educator Portal
+            </span>
+        </div>
     </div>
 
 
@@ -614,6 +684,122 @@
 
 
 <!-- ==========================================
+     ADMIN DASHBOARD
+     ========================================== -->
+<section id="admin-dashboard" class="page">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">ADMINISTRATION & SECURITY</span>
+            <h1>Admin Control Center</h1>
+            <p>Platform user directory, role governance, and role-based access security.</p>
+        </div>
+        <div class="header-actions">
+            <button class="primary-btn" onclick="loadAdminOverview()">
+                <i class="fa-solid fa-rotate"></i> Refresh Data
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin KPI Cards -->
+    <div class="stats-grid" style="margin-bottom: 24px;">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(0, 240, 255, 0.15); color: var(--cyan);">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+                <span class="stat-label">Total Platform Users</span>
+                <h3 class="stat-value" id="adminTotalUsers">0</h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(168, 85, 247, 0.15); color: var(--purple);">
+                <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div>
+                <span class="stat-label">Students</span>
+                <h3 class="stat-value" id="adminStudentsCount">0</h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                <i class="fa-solid fa-chalkboard-user"></i>
+            </div>
+            <div>
+                <span class="stat-label">Educators / Teachers</span>
+                <h3 class="stat-value" id="adminTeachersCount">0</h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <span class="stat-label">Administrators</span>
+                <h3 class="stat-value" id="adminAdminsCount">0</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- RBAC Security Policies Card -->
+    <div class="card" style="margin-bottom: 24px; padding: 20px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 240, 255, 0.15); color: var(--cyan); display: grid; place-items: center; font-size: 16px;">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 16px; margin: 0; color: var(--text);">Role-Based Access Enforcement</h3>
+                    <span style="font-size: 12px; color: var(--muted);">Strict backend middleware validation + client route barriers</span>
+                </div>
+            </div>
+            <span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <i class="fa-solid fa-circle-check"></i> RLS & RBAC Active
+            </span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 13px;">
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                <strong style="color: var(--cyan);">Student Role:</strong> Access to Student Dashboard, Adaptive Quiz Taker, Learning Intel. Denied from Teacher & Admin routes.
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                <strong style="color: var(--purple);">Teacher Role:</strong> Access to Teacher Dashboard & Class Learning Map. Denied from Admin routes.
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                <strong style="color: #f59e0b);">Admin Role:</strong> Full access to Admin Dashboard, user directory management, and system administration functions.
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Table -->
+    <div class="card" style="padding: 24px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <div>
+                <h3 style="font-size: 18px; margin: 0; color: var(--text);">User Directory & Role Governance</h3>
+                <span style="font-size: 13px; color: var(--muted);">Real-time account records verified through database</span>
+            </div>
+            <span id="adminTableUserCount" class="badge-pill" style="background: rgba(255,255,255,0.06); color: var(--muted);">Loading...</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border); color: var(--muted);">
+                        <th style="padding: 12px 10px;">User</th>
+                        <th style="padding: 12px 10px;">Email</th>
+                        <th style="padding: 12px 10px;">Role</th>
+                        <th style="padding: 12px 10px;">Class</th>
+                        <th style="padding: 12px 10px;">XP / Streak</th>
+                        <th style="padding: 12px 10px; text-align: right;">Role Action</th>
+                    </tr>
+                </thead>
+                <tbody id="adminUserTableBody">
+                    <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--muted);">Loading user records...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+
+<!-- ==========================================
      DASHBOARD
      ========================================== -->
 
@@ -643,63 +829,89 @@
 
 
 
-    <!-- STATS -->
+    <!-- GAMIFIED STATS GRID -->
 
     <div class="stats-grid">
 
 
-        <div class="stat-card">
+        <!-- Card 1: Level & XP Progress -->
+        <div class="stat-card" style="cursor: pointer;" onclick="showPage('rewards')">
 
-            <div class="stat-icon cyan">
-                <i class="fa-solid fa-chart-line"></i>
+            <div class="stat-icon purple" id="dashLevelIconBox" style="font-size: 24px;">
+                🌱
             </div>
 
-            <div>
+            <div style="flex: 1;">
 
-                <span>Overall Progress</span>
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <span id="dashLevelTitle">Level 1 — Explorer</span>
+                    <small id="dashLevelPercent" style="color: var(--cyan); font-weight: 700; font-size: 11px;">0%</small>
+                </div>
 
-                <strong>78%</strong>
+                <div class="level-progress-track" style="margin: 6px 0 4px 0;">
+                    <div class="level-progress-fill" id="dashLevelProgressFill" style="width: 0%;"></div>
+                </div>
 
-            </div>
-
-        </div>
-
-
-        <div class="stat-card">
-
-            <div class="stat-icon purple">
-                <i class="fa-solid fa-star"></i>
-            </div>
-
-            <div>
-
-                <span>Total XP</span>
-
-                <strong id="dashboardXpVal" class="xp-value">0</strong>
+                <strong id="dashboardXpVal" style="font-size: 13px; font-weight: 600; color: var(--muted); display: block;">
+                    0 / 150 XP
+                </strong>
 
             </div>
 
         </div>
 
 
-        <div class="stat-card">
+        <!-- Card 2: LearnCoins Virtual Balance -->
+        <div class="stat-card" style="cursor: pointer;" onclick="showPage('rewards')">
 
-            <div class="stat-icon orange">
-                <i class="fa-solid fa-fire"></i>
+            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                <i class="fa-solid fa-coins"></i>
             </div>
 
             <div>
 
-                <span>Current Streak</span>
+                <span style="display: flex; justify-content: space-between; align-items: center;">
+                    LearnCoins
+                    <span style="font-size: 10px; color: #fbbf24; background: rgba(245, 158, 11, 0.15); padding: 1px 6px; border-radius: 999px;">Shop</span>
+                </span>
 
-                <strong id="dashboardStreakVal">0 Days</strong>
+                <strong id="dashboardCoinsVal" style="color: #fbbf24;">50 🪙</strong>
 
             </div>
 
         </div>
 
 
-        <div class="stat-card">
+        <!-- Card 3: Learning Streak & Weekday Calendar -->
+        <div class="stat-card" style="padding: 16px 18px;">
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <div class="stat-icon orange" style="width: 38px; height: 38px; font-size: 16px;">
+                    <i class="fa-solid fa-fire"></i>
+                </div>
+
+                <div>
+                    <span style="font-size: 12px; color: var(--muted);">Learning Streak</span>
+                    <strong id="dashboardStreakVal" style="font-size: 16px; color: var(--text); display: block;">0 Days Active</strong>
+                </div>
+            </div>
+
+            <!-- Dynamic Weekday Mini Calendar -->
+            <div class="weekday-tracker" id="dashboardWeekdayTracker">
+                <div class="weekday-item"><span class="weekday-icon">Mon</span><span>-</span></div>
+                <div class="weekday-item"><span class="weekday-icon">Tue</span><span>-</span></div>
+                <div class="weekday-item"><span class="weekday-icon">Wed</span><span>-</span></div>
+                <div class="weekday-item"><span class="weekday-icon">Thu</span><span>-</span></div>
+                <div class="weekday-item"><span class="weekday-icon">Fri</span><span>-</span></div>
+                <div class="weekday-item"><span class="weekday-icon">Sat</span><span>-</span></div>
+                <div class="weekday-item"><span class="weekday-icon">Sun</span><span>-</span></div>
+            </div>
+
+        </div>
+
+
+        <!-- Card 4: Class Rank -->
+        <div class="stat-card" style="cursor: pointer;" onclick="showPage('rankings')">
 
             <div class="stat-icon green">
                 <i class="fa-solid fa-ranking-star"></i>
@@ -991,32 +1203,39 @@
 
 
         <!-- QUIZ HEADER -->
-
-        <div class="quiz-header">
-
+        <div class="quiz-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
             <div>
-
                 <span class="eyebrow">
-                    ADAPTIVE ASSESSMENT
+                    <i class="fa-solid fa-brain"></i> ADAPTIVE ASSESSMENT
                 </span>
-
                 <h2 id="quizTitle">
                     Linear Equations
                 </h2>
-
             </div>
 
+            <!-- Timer Controls and Dual Timer Display -->
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <!-- Timer Mode Switcher (Overall Quiz Timer OR Individual Question Timer) -->
+                <div class="timer-mode-switcher" style="display: flex; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 10px; border: 1px solid var(--border);">
+                    <button type="button" id="btnTimerModeOverall" class="timer-mode-btn active" onclick="setQuizTimerMode('overall')" style="padding: 6px 12px; font-size: 11.5px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; background: var(--primary-gradient); color: white;">
+                        <i class="fa-solid fa-hourglass-half"></i> Overall Quiz
+                    </button>
+                    <button type="button" id="btnTimerModeQuestion" class="timer-mode-btn" onclick="setQuizTimerMode('question')" style="padding: 6px 12px; font-size: 11.5px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; background: transparent; color: var(--muted);">
+                        <i class="fa-solid fa-stopwatch"></i> Per Question
+                    </button>
+                </div>
 
-            <div class="quiz-timer">
-
-                <i class="fa-regular fa-clock"></i>
-
-                <span id="quizTimer">
-                    05:00
-                </span>
-
+                <!-- Active Timer Box -->
+                <div class="quiz-timer" id="quizTimerBox" style="display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 10px;">
+                    <i class="fa-regular fa-clock" id="quizTimerIcon" style="color: var(--cyan);"></i>
+                    <span id="quizTimer" style="font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;">
+                        05:00
+                    </span>
+                    <span class="timer-mode-badge" id="quizTimerModeBadge" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: rgba(0, 240, 255, 0.2); color: var(--cyan); text-transform: uppercase;">
+                        Overall
+                    </span>
+                </div>
             </div>
-
         </div>
 
 
@@ -1255,93 +1474,111 @@
      CHALLENGES
      ========================================== -->
 
-<section id="challenges"
-         class="page">
+<section id="challenges" class="page">
 
-
-    <div class="page-header">
-
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px;">
         <div>
-
             <span class="eyebrow">
-                CHALLENGES
+                <i class="fa-solid fa-fire" style="color: #f97316;"></i> DAILY CURRICULUM MISSIONS
             </span>
-
             <h1>
-                Push Your Learning
+                Push Your Challenges
             </h1>
-
-            <p>
-                Complete challenges and earn XP.
+            <p id="challengesClassSubtitle">
+                Age-appropriate, subject-specific daily quests designed for your grade.
             </p>
-
         </div>
-
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="secondary-btn" onclick="fetchDailyChallenges()" style="padding: 8px 14px; font-size: 12.5px;">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh Missions
+            </button>
+        </div>
     </div>
 
-
-    <div class="challenge-grid">
-
-
-        <div class="challenge-card">
-
-            <i class="fa-solid fa-calculator"></i>
-
-            <h3>
-                Math Master
-            </h3>
-
-            <p>
-                Solve 20 mathematics problems.
-            </p>
-
-            <strong>
-                +300 XP
-            </strong>
-
+    <!-- Daily Challenge Overview Card -->
+    <div class="challenge-overview-card" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
+            <div>
+                <span class="challenge-badge" id="overviewClassBadge" style="display: inline-block; margin-bottom: 6px;">
+                    <i class="fa-solid fa-graduation-cap"></i> Class 10 Quests
+                </span>
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px;">Today's Daily Challenge Circuit</h3>
+                <p style="font-size: 13px; color: var(--muted); margin: 0;">Complete all level-specific quests to maintain your streak and accelerate level progression.</p>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <div style="text-align: right;">
+                    <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Available Today</span>
+                    <strong style="display: block; font-size: 18px; color: var(--cyan); font-weight: 800;" id="overviewTotalXpAvailable">+200 XP</strong>
+                </div>
+                <div style="background: rgba(249, 115, 22, 0.15); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 12px; padding: 8px 14px; text-align: center;">
+                    <span style="font-size: 11px; color: #f97316; font-weight: 700; display: block;"><i class="fa-solid fa-fire"></i> STREAK</span>
+                    <strong style="font-size: 16px; color: var(--text);" id="overviewStreakDays">3 Days</strong>
+                </div>
+            </div>
         </div>
 
-
-        <div class="challenge-card">
-
-            <i class="fa-solid fa-flask"></i>
-
-            <h3>
-                Science Explorer
-            </h3>
-
-            <p>
-                Complete 15 science questions.
-            </p>
-
-            <strong>
-                +450 XP
-            </strong>
-
+        <!-- Progress Track -->
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <span style="color: var(--muted);" id="overviewProgressLabel">Daily Completion</span>
+            <strong style="color: var(--cyan);" id="overviewProgressPercent">0 / 4 Complete (0%)</strong>
         </div>
-
-
-        <div class="challenge-card">
-
-            <i class="fa-solid fa-fire"></i>
-
-            <h3>
-                7 Day Streak
-            </h3>
-
-            <p>
-                Learn every day for one week.
-            </p>
-
-            <strong>
-                +600 XP
-            </strong>
-
+        <div style="background: rgba(0,0,0,0.4); border-radius: 8px; height: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
+            <div id="overviewProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--cyan), var(--purple)); transition: width 0.4s ease; border-radius: 8px;"></div>
         </div>
+    </div>
 
+    <!-- Dynamic Daily Challenges Grid -->
+    <div class="challenge-grid-v2" id="dailyChallengesGrid">
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--muted);">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--cyan); margin-bottom: 10px;"></i>
+            <p>Loading your grade's daily challenges...</p>
+        </div>
     </div>
 
 </section>
+
+<!-- ==========================================
+     INTERACTIVE CHALLENGE TASK MODAL
+     ========================================== -->
+<div id="challengeTaskModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 520px; background: #0b1120; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.85); border-radius: 20px; padding: 26px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <div>
+                <span id="modalChallengeBadge" class="challenge-badge" style="font-size: 11px; margin-bottom: 6px; display: inline-block;">
+                    Mathematics
+                </span>
+                <h3 id="modalChallengeTitle" style="font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px;">
+                    Daily Challenge
+                </h3>
+                <p id="modalChallengeDesc" style="font-size: 13px; color: var(--muted); margin: 0;">
+                    Complete the task to earn XP.
+                </p>
+            </div>
+            <button onclick="closeChallengeTaskModal()" style="background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 4px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Task Interactive Container -->
+        <div id="modalChallengeInteractiveArea" style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 18px;">
+            <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Feedback & Reward Announcement Bar -->
+        <div id="modalChallengeFeedback" style="display: none; padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; font-weight: 600;">
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="secondary-btn" onclick="closeChallengeTaskModal()" style="padding: 9px 16px; font-size: 13px;">
+                Cancel
+            </button>
+            <button class="primary-btn" id="modalChallengeSubmitBtn" onclick="verifyAndClaimChallenge()" style="padding: 9px 18px; font-size: 13px;">
+                <i class="fa-solid fa-bolt"></i> Complete & Claim XP
+            </button>
+        </div>
+    </div>
+</div>
 
 
 
@@ -1930,47 +2167,94 @@ document.addEventListener(
 
         <!-- Auth Forms Container (For Sign In / Sign Up) -->
         <div id="authFormsContainer">
-            <!-- Auth Tabs -->
-            <div style="display: flex; gap: 10px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; margin-bottom: 20px;">
-                <button id="tabLoginBtn" class="primary-btn" onclick="switchAuthTab('login')" style="flex: 1; padding: 8px; font-size: 13px; justify-content: center;">
+            <!-- 3-Way Role Selector: Student | Teacher | Admin -->
+            <div class="role-selector-group" style="display: flex; gap: 6px; background: rgba(0,0,0,0.35); padding: 4px; border-radius: 12px; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.06);">
+                <button type="button" id="modalRoleStudent" class="role-select-btn active" onclick="selectAuthModalRole('student')" style="flex: 1; padding: 7px 4px; font-size: 11.5px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: var(--primary-gradient); color: white;">
+                    <i class="fa-solid fa-graduation-cap"></i> Student
+                </button>
+                <button type="button" id="modalRoleTeacher" class="role-select-btn" onclick="selectAuthModalRole('teacher')" style="flex: 1; padding: 7px 4px; font-size: 11.5px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: transparent; color: var(--muted);">
+                    <i class="fa-solid fa-chalkboard-user"></i> Teacher
+                </button>
+                <button type="button" id="modalRoleAdmin" class="role-select-btn" onclick="selectAuthModalRole('admin')" style="flex: 1; padding: 7px 4px; font-size: 11.5px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: transparent; color: var(--muted);">
+                    <i class="fa-solid fa-shield-halved"></i> Admin
+                </button>
+            </div>
+
+            <!-- Auth Tabs (Sign In vs Create Account) -->
+            <div id="modalAuthTabsRow" style="display: flex; gap: 8px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; margin-bottom: 14px;">
+                <button id="tabLoginBtn" type="button" class="primary-btn" onclick="switchAuthTab('login')" style="flex: 1; padding: 8px; font-size: 13px; justify-content: center;">
                     Sign In
                 </button>
-                <button id="tabSignupBtn" class="primary-btn" onclick="switchAuthTab('signup')" style="flex: 1; padding: 8px; font-size: 13px; justify-content: center; background: transparent; border: 1px solid transparent; color: var(--muted);">
+                <button id="tabSignupBtn" type="button" class="primary-btn" onclick="switchAuthTab('signup')" style="flex: 1; padding: 8px; font-size: 13px; justify-content: center; background: transparent; border: 1px solid transparent; color: var(--muted);">
                     Create Account
                 </button>
             </div>
 
+            <!-- Role Context Notice -->
+            <div id="modalRoleContextNotice" style="background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.15); border-radius: 8px; padding: 7px 10px; margin-bottom: 14px; font-size: 11.5px; color: var(--cyan); display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-circle-info"></i>
+                <span id="modalRoleContextText">Student Portal: Access class-specific learning missions & quizzes.</span>
+            </div>
+
             <!-- Login Form -->
             <form id="loginForm" onsubmit="handleAuthSubmit(event, 'login')">
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Email Address</label>
-                    <input type="email" id="loginEmail" class="form-control" placeholder="you@example.com" required>
+                <input type="hidden" id="loginRole" value="student">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 12.5px; color: var(--muted);">Email Address</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="student@example.com" required style="font-size: 13px; padding: 10px;">
                 </div>
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Password</label>
-                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 12.5px; color: var(--muted);">Password</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required style="font-size: 13px; padding: 10px;">
                 </div>
-                <button type="submit" class="primary-btn" id="loginSubmitBtn" style="width: 100%; justify-content: center; padding: 12px;">
-                    <i class="fa-solid fa-right-to-bracket"></i> Sign In to LearnIQ
+                <button type="submit" class="primary-btn" id="loginSubmitBtn" style="width: 100%; justify-content: center; padding: 11px; font-size: 13px;">
+                    <i class="fa-solid fa-right-to-bracket"></i> <span id="modalLoginBtnText">Sign In as Student</span>
                 </button>
             </form>
 
             <!-- Signup Form -->
             <form id="signupForm" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Full Name</label>
-                    <input type="text" id="signupName" class="form-control" placeholder="Your Name" required>
+                <input type="hidden" id="signupRole" value="student">
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 12.5px; color: var(--muted);">Full Name</label>
+                    <input type="text" id="signupName" class="form-control" placeholder="Your Name" required style="font-size: 13px; padding: 9px 10px;">
                 </div>
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Email Address</label>
-                    <input type="email" id="signupEmail" class="form-control" placeholder="you@example.com" required>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 12.5px; color: var(--muted);">Email Address</label>
+                    <input type="email" id="signupEmail" class="form-control" placeholder="you@example.com" required style="font-size: 13px; padding: 9px 10px;">
                 </div>
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted);">Password</label>
-                    <input type="password" id="signupPassword" class="form-control" placeholder="••••••••" required>
-                  </div>
-                <button type="submit" class="primary-btn" id="signupSubmitBtn" style="width: 100%; justify-content: center; padding: 12px;">
-                    <i class="fa-solid fa-user-plus"></i> Create Account
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 12.5px; color: var(--muted);">Password</label>
+                    <input type="password" id="signupPassword" class="form-control" placeholder="••••••••" required style="font-size: 13px; padding: 9px 10px;">
+                </div>
+
+                <!-- Mandatory Class Selection (For Students Only) -->
+                <div class="form-group" id="modalSignupClassGroup" style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Class / Standard <strong style="color: #ef4444;">*</strong></span>
+                        <span style="font-size: 10.5px; color: var(--cyan);">Mandatory for Students</span>
+                    </label>
+                    <select id="signupClass" class="form-control" required style="font-size: 13px; padding: 9px 10px; background: #0b1120; color: var(--text);">
+                        <option value="" disabled selected>-- Select Your Class / Grade --</option>
+                        <option value="5">Class 5 (Primary Upper)</option>
+                        <option value="6">Class 6 (Middle School)</option>
+                        <option value="7">Class 7 (Middle School)</option>
+                        <option value="8">Class 8 (Middle School)</option>
+                        <option value="9">Class 9 (Secondary)</option>
+                        <option value="10">Class 10 (Secondary Board)</option>
+                        <option value="11">Class 11 (Senior Secondary)</option>
+                        <option value="12">Class 12 (Senior Secondary)</option>
+                    </select>
+                </div>
+
+                <!-- Teacher Department (For Teachers Only) -->
+                <div class="form-group" id="modalSignupDepartmentGroup" style="margin-bottom: 12px; display: none;">
+                    <label style="font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block;">Teaching Subject / Department</label>
+                    <input type="text" id="signupDepartment" class="form-control" placeholder="e.g. Mathematics, Science" style="font-size: 13px; padding: 9px 10px;">
+                </div>
+
+                <button type="submit" class="primary-btn" id="signupSubmitBtn" style="width: 100%; justify-content: center; padding: 11px; font-size: 13px;">
+                    <i class="fa-solid fa-user-plus"></i> <span id="modalSignupBtnText">Create Student Account</span>
                 </button>
             </form>
         </div>

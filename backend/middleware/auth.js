@@ -55,9 +55,50 @@ function isNearExpiry(token) {
 async function getProfile(userId) {
     if (!supabase) throw new Error("Supabase database is not configured.");
     const { data, error } = await supabase.from("profiles")
-        .select("user_id, full_name, role, class_level, xp_points, streak_days, rank_position")
-        .eq("user_id", userId)
+        .select("id, user_id, name, email, role, class, xp, streak, rank")
+        .or(`user_id.eq.${userId},id.eq.${userId}`)
         .maybeSingle();
+    if (error) throw error;
+    return data;
+}
+
+async function ensureProfile(user, { fullName, role: requestedRole, classLevel } = {}) {
+    const existingProfile = await getProfile(user.id);
+    if (existingProfile) return existingProfile;
+
+    const role = ["student", "teacher", "admin"].includes(requestedRole)
+        ? requestedRole
+        : (["student", "teacher", "admin"].includes(user.user_metadata?.role) ? user.user_metadata.role : "student");
+
+    let classValue = null;
+    if (role === "student") {
+        const classMatch = typeof classLevel === "string"
+            ? classLevel.match(/\d+/)
+            : (typeof user.user_metadata?.class_level === "string" ? user.user_metadata.class_level.match(/\d+/) : null);
+        const parsed = classMatch ? Number.parseInt(classMatch[0], 10) : null;
+        classValue = Number.isSafeInteger(parsed) ? parsed : null;
+    }
+
+    const name = typeof fullName === "string" && fullName.trim()
+        ? fullName.trim()
+        : user.user_metadata?.full_name || user.email?.split("@")[0] || (role === "teacher" ? "Educator" : "Student");
+
+    const { data, error } = await supabase.from("profiles").insert({
+        id: user.id,
+        user_id: user.id,
+        name,
+        email: user.email || null,
+        role,
+        class: classValue,
+        xp: 0,
+        streak: 0,
+        rank: 1
+    }).select("id, user_id, name, email, role, class, xp, streak, rank").single();
+
+    if (error?.code === "23505") {
+        const profileCreatedConcurrently = await getProfile(user.id);
+        if (profileCreatedConcurrently) return profileCreatedConcurrently;
+    }
     if (error) throw error;
     return data;
 }
@@ -91,11 +132,15 @@ async function resolveSession(req, res) {
         return null;
     }
 
-    const profile = await getProfile(user.id);
+    const profile = await ensureProfile(user);
     const role = ["student", "teacher", "admin"].includes(profile?.role)
         ? profile.role
         : "student";
-    const name = profile?.full_name || user.user_metadata?.full_name || "User";
+    const name = profile?.name || user.user_metadata?.full_name || "User";
+    const isStudent = role === "student";
+    const classStr = isStudent && profile?.class ? `Class ${profile.class}` : null;
+    const classNumber = isStudent ? (profile?.class || null) : null;
+
     return {
         accessToken,
         refreshToken: getCookie(req, REFRESH_COOKIE),
@@ -105,10 +150,11 @@ async function resolveSession(req, res) {
             name,
             role,
             roleName: role === "teacher" ? "Teacher / Educator" : role === "admin" ? "Admin" : "Student",
-            class: profile?.class_level || "Class 10",
-            xp: profile?.xp_points ?? 0,
-            streak: profile?.streak_days ?? 0,
-            rank: profile?.rank_position ?? "-"
+            class: classStr,
+            classNumber,
+            xp: profile?.xp ?? 0,
+            streak: profile?.streak ?? 0,
+            rank: profile?.rank ?? "-"
         }
     };
 }
@@ -144,6 +190,7 @@ module.exports = {
     clearSessionCookies,
     getAuthClient,
     getCookie,
+    ensureProfile,
     getProfile,
     requireRole,
     resolveSession,

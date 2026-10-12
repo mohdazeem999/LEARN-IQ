@@ -67,3 +67,35 @@ test("missing cookies do not restore an unauthenticated session", async () => {
     const session = await resolveSession({ headers: {} }, {});
     assert.equal(session, null);
 });
+
+test("admin role middleware strictly protects admin-only routes", () => {
+    const adminOnly = requireRole("admin");
+
+    // Student denied
+    let studentBlocked = false;
+    adminOnly(
+        { auth: { user: { role: "student" } } },
+        { status(code) { assert.equal(code, 403); return this; }, json() { studentBlocked = true; } },
+        () => assert.fail("Student must not access admin routes.")
+    );
+    assert.equal(studentBlocked, true);
+
+    // Teacher denied
+    let teacherBlocked = false;
+    adminOnly(
+        { auth: { user: { role: "teacher" } } },
+        { status(code) { assert.equal(code, 403); return this; }, json() { teacherBlocked = true; } },
+        () => assert.fail("Teacher must not access admin routes.")
+    );
+    assert.equal(teacherBlocked, true);
+
+    // Admin allowed
+    let adminAllowed = false;
+    adminOnly(
+        { auth: { user: { role: "admin" } } },
+        {},
+        () => { adminAllowed = true; }
+    );
+    assert.equal(adminAllowed, true);
+});
+

@@ -33,7 +33,9 @@ SET role = 'teacher'
 WHERE user_id = '<existing-auth-user-uuid>';
 ```
 
-Use `admin` for an administrator account. The existing `profiles`, `quizzes`, and `quiz_submissions` tables are reused; no schema migration is required for these changes. Existing user accounts and profile records are not deleted.
+Use `admin` for an administrator account. The existing `profiles`, `quizzes`, and `quiz_submissions` tables are reused; existing user accounts and profile records are not deleted.
+
+Before deploying the backend, apply [`backend/profile-auth-migration.sql`](./backend/profile-auth-migration.sql) in the Supabase SQL Editor. It adds the missing `profiles.user_id` link, associates legacy profiles to Auth users by email, and enables RLS without exposing profile data to anonymous clients. The backend uses the server-only Supabase key and enforces each request's user ID and role.
 
 From the repository root, start the app and run backend tests with:
 
