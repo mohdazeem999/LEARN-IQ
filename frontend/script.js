@@ -1197,7 +1197,7 @@ async function fetchDailyChallenges() {
                         <div class="challenge-card-v2 ${isCompleted ? 'completed' : ''}">
                             <div class="challenge-top-meta">
                                 <span class="challenge-badge">${escapeHtml(c.category || c.subject || 'Mission')}</span>
-                                <span class="challenge-xp-badge">+${c.xp} XP</span>
+                                <span class="challenge-xp-badge">+${c.xpReward || c.xp || 50} XP</span>
                             </div>
                             <h4>${escapeHtml(c.title)}</h4>
                             <p>${escapeHtml(c.description)}</p>
@@ -1209,8 +1209,8 @@ async function fetchDailyChallenges() {
                                     </span>
                                 </div>
                                 ${isCompleted
-                                    ? `<button class="challenge-claim-btn" disabled><i class="fa-solid fa-check-double"></i> Claimed (+${c.xp} XP)</button>`
-                                    : `<button class="challenge-claim-btn" onclick="openChallengeTask('${c.id}')"><i class="fa-solid fa-play"></i> Solve Challenge (+${c.xp} XP)</button>`
+                                    ? `<button class="challenge-claim-btn" disabled><i class="fa-solid fa-check-double"></i> Claimed (+${c.xpReward || c.xp || 50} XP)</button>`
+                                    : `<button class="challenge-claim-btn" onclick="openChallengeTask('${c.id}')"><i class="fa-solid fa-play"></i> Solve Challenge (+${c.xpReward || c.xp || 50} XP)</button>`
                                 }
                             </div>
                         </div>
@@ -1249,7 +1249,7 @@ function openChallengeTask(challengeId) {
 
     if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xp} XP`;
+        submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xpReward || c.xp || 50} XP`;
     }
 
     if (interactiveArea && c.problem) {

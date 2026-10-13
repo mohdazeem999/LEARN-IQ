@@ -79,7 +79,26 @@ button {
     align-items: center;
     gap: 12px;
 
-    padding: 0 10px 30px;
+    padding: 0 10px 24px;
+}
+
+.sidebar-logo-img {
+    height: 48px;
+    max-width: 220px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 14px rgba(0, 240, 255, 0.3));
+    transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.brand-logo-wrap {
+    cursor: pointer;
+    user-select: none;
+}
+
+.brand-logo-wrap:hover .sidebar-logo-img {
+    transform: scale(1.03);
+    filter: drop-shadow(0 4px 22px rgba(0, 240, 255, 0.55));
 }
 
 .logo-icon {
@@ -1638,6 +1657,11 @@ button {
         color: white;
 
         cursor: pointer;
+    }
+
+    .mobile-brand-logo {
+        display: flex !important;
+        align-items: center;
     }
 
     .topbar {

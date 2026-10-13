@@ -10,23 +10,32 @@ test("level system accurately computes levels, titles, and progress bars", () =>
     assert.equal(lvl1.xpNeededForNext, 100);
     assert.equal(lvl1.progressPercent, 33);
 
-    // Level 2: Learner (150-400)
+    // Level 2: Learner (150-350)
     const lvl2 = gamificationService.calculateLevel(250);
     assert.equal(lvl2.levelNumber, 2);
     assert.equal(lvl2.title, "Learner");
     assert.equal(lvl2.xpInLevel, 100);
-    assert.equal(lvl2.progressPercent, 40); // 100 / 250 span
+    assert.equal(lvl2.progressPercent, 50); // 100 / 200 span
 
     // Level 5: Achiever (1200-1800)
     const lvl5 = gamificationService.calculateLevel(1500);
     assert.equal(lvl5.levelNumber, 5);
     assert.equal(lvl5.title, "Achiever");
 
-    // Level 10: Master (7000+)
-    const lvl10 = gamificationService.calculateLevel(8500);
-    assert.equal(lvl10.levelNumber, 10);
-    assert.equal(lvl10.title, "Master");
-    assert.equal(lvl10.isMaxLevel, true);
+    // Level 11: Master (7200-9000)
+    const lvl11 = gamificationService.calculateLevel(8500);
+    assert.equal(lvl11.levelNumber, 11);
+    assert.equal(lvl11.title, "Master");
+
+    // Level 15: Supreme Luminary
+    const lvl15 = gamificationService.calculateLevel(18000);
+    assert.equal(lvl15.levelNumber, 15);
+    assert.equal(lvl15.title, "Supreme Luminary");
+
+    // Scalable levels beyond preset
+    const lvl17 = gamificationService.calculateLevel(25000);
+    assert.equal(lvl17.levelNumber, 17);
+    assert.equal(lvl17.title, "Luminary Tier 3");
 });
 
 test("daily missions generation provides structured educational goals", () => {

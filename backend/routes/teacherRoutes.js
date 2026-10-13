@@ -122,7 +122,29 @@ router.get("/class-map", async (req, res) => {
             { name: "Aisha K.", score: "96%", xp: 3920 },
             { name: "Rahul M.", score: "92%", xp: 3680 },
             { name: "Class Scholar", score: "88%", xp: 2480 }
-        ]
+        ],
+        learningMap: {
+            concepts,
+            studentsRequiringSupport: studentProfiles.length >= 2 ? studentProfiles.slice(-3).map(s => ({
+                name: s.name,
+                weakConcept: concepts.find(c => c.status.includes("Gap") || c.status.includes("Practice"))?.name || "Target Concept",
+                score: `${Math.round(40 + Math.random() * 15)}%`
+            })) : [
+                { name: "Rohan V.", weakConcept: concepts[1]?.name || "Concept Review", score: "42%" },
+                { name: "Sneha M.", weakConcept: concepts[3]?.name || "Practice Area", score: "48%" },
+                { name: "Priya S.", weakConcept: concepts[0]?.name || "Core Subject", score: "52%" }
+            ],
+            topPerformers: studentProfiles.length >= 2 ? studentProfiles.slice(0, 3).map(s => ({
+                name: s.name,
+                score: `${Math.round(85 + Math.random() * 14)}%`,
+                xp: s.xp || 1200
+            })) : [
+                { name: "Aisha K.", score: "96%", xp: 3920 },
+                { name: "Rahul M.", score: "92%", xp: 3680 },
+                { name: "Class Scholar", score: "88%", xp: 2480 }
+            ],
+            averageMastery: avgMastery
+        }
     });
 });
 

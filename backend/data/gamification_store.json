@@ -12,7 +12,9 @@
         "avatar_explorer"
       ],
       "unlockedItems": [],
-      "streakFreezeCount": 0
+      "streakFreezeCount": 0,
+      "xp": 0,
+      "recentXpGained": 0
     },
     "test_student_avatar_001": {
       "coins": 50,
@@ -26,10 +28,12 @@
         "avatar_explorer"
       ],
       "unlockedItems": [],
-      "streakFreezeCount": 0
+      "streakFreezeCount": 0,
+      "xp": 0,
+      "recentXpGained": 0
     },
     "27171240-0dac-472b-96b9-6f5e1b06d035": {
-      "coins": 130,
+      "coins": 195,
       "activeAvatar": "avatar_explorer",
       "equipped": {
         "frame": null,
@@ -42,8 +46,8 @@
       ],
       "unlockedItems": [],
       "streakFreezeCount": 0,
-      "xp": 165,
-      "recentXpGained": 0
+      "xp": 285,
+      "recentXpGained": 120
     },
     "b639be23-9e83-43df-a8ae-03136cf3355c": {
       "xp": 75,
@@ -108,6 +112,49 @@
       "unlockedAvatars": [
         "avatar_explorer",
         "avatar_scientist"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
+    },
+    "6ab346c8-3c23-4738-908d-8d14d99ba1e6": {
+      "xp": 10049,
+      "recentXpGained": 50,
+      "coins": 75,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer",
+        "avatar_scientist",
+        "avatar_mathematician",
+        "avatar_coder",
+        "avatar_engineer",
+        "avatar_inventor",
+        "avatar_master_scholar"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
+    },
+    "0fa59b6f-9c86-4140-ae90-e978fbcf02d1": {
+      "xp": 1250,
+      "recentXpGained": 0,
+      "coins": 50,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer",
+        "avatar_scientist",
+        "avatar_mathematician",
+        "avatar_coder",
+        "avatar_engineer",
+        "avatar_astronaut"
       ],
       "unlockedItems": [],
       "streakFreezeCount": 0
@@ -177,6 +224,38 @@
       "coinsEarned": 65,
       "aiInsight": "Good effort. Review the question feedback below and use the practice activities to strengthen your understanding.",
       "submittedAt": "2026-10-12T17:38:58.277Z"
+    },
+    {
+      "id": "a0a090ae-ef35-4b8e-a75d-d649ed31aeb7",
+      "studentId": "6ab346c8-3c23-4738-908d-8d14d99ba1e6",
+      "quizId": "e7c25461-30ac-44c2-9c56-499d025737cc",
+      "title": "Linear Equations",
+      "subject": "Mathematics",
+      "topic": "Linear Equations",
+      "classLevel": "Class 10",
+      "scorePercentage": 0,
+      "correctCount": 0,
+      "totalQuestions": 5,
+      "xpEarned": 50,
+      "coinsEarned": 25,
+      "aiInsight": "Every quiz is a chance to learn. Start with the concepts marked for review and practise them one step at a time.",
+      "submittedAt": "2026-10-12T18:01:47.943Z"
+    },
+    {
+      "id": "d0be89be-e9b4-47b2-a1cf-1f0e71740ba0",
+      "studentId": "27171240-0dac-472b-96b9-6f5e1b06d035",
+      "quizId": "e28066c3-c367-414a-bd56-a8d775cb1aa4",
+      "title": "Tenses & Active/Passive Voice (English)",
+      "subject": "English",
+      "topic": "Tenses & Active/Passive Voice (English)",
+      "classLevel": "Class 9",
+      "scorePercentage": 100,
+      "correctCount": 2,
+      "totalQuestions": 2,
+      "xpEarned": 120,
+      "coinsEarned": 65,
+      "aiInsight": "Good effort. Review the question feedback below and use the practice activities to strengthen your understanding.",
+      "submittedAt": "2026-10-13T18:16:34.737Z"
     }
   ],
   "xp_transactions": [
@@ -243,6 +322,22 @@
       "source": "quiz_submission",
       "referenceId": "60063dbb-0c03-420e-bb5d-4e4c9f61fca4",
       "createdAt": "2026-10-12T17:38:58.277Z"
+    },
+    {
+      "id": "437d4dd0-e757-469a-9b93-88c5be9040e3",
+      "studentId": "6ab346c8-3c23-4738-908d-8d14d99ba1e6",
+      "amount": 50,
+      "source": "quiz_submission",
+      "referenceId": "a0a090ae-ef35-4b8e-a75d-d649ed31aeb7",
+      "createdAt": "2026-10-12T18:01:47.943Z"
+    },
+    {
+      "id": "fb5fa0a5-026d-4c58-9cfa-bf3e8cfe98d3",
+      "studentId": "27171240-0dac-472b-96b9-6f5e1b06d035",
+      "amount": 120,
+      "source": "quiz_submission",
+      "referenceId": "d0be89be-e9b4-47b2-a1cf-1f0e71740ba0",
+      "createdAt": "2026-10-13T18:16:34.736Z"
     }
   ],
   "coin_transactions": [
@@ -277,6 +372,22 @@
       "source": "quiz_submission",
       "referenceId": "60063dbb-0c03-420e-bb5d-4e4c9f61fca4",
       "createdAt": "2026-10-12T17:38:58.277Z"
+    },
+    {
+      "id": "e4f2535f-2492-4ce3-841c-c35c9e1e0372",
+      "studentId": "6ab346c8-3c23-4738-908d-8d14d99ba1e6",
+      "amount": 25,
+      "source": "quiz_submission",
+      "referenceId": "a0a090ae-ef35-4b8e-a75d-d649ed31aeb7",
+      "createdAt": "2026-10-12T18:01:47.943Z"
+    },
+    {
+      "id": "544b5cd1-96fa-4e35-bf7e-3336ec7f5a2d",
+      "studentId": "27171240-0dac-472b-96b9-6f5e1b06d035",
+      "amount": 65,
+      "source": "quiz_submission",
+      "referenceId": "d0be89be-e9b4-47b2-a1cf-1f0e71740ba0",
+      "createdAt": "2026-10-13T18:16:34.737Z"
     }
   ],
   "student_achievements": {
@@ -334,6 +445,16 @@
       {
         "achievementId": "mastery_unlocked",
         "unlockedAt": "2026-10-12T17:38:58.545Z"
+      }
+    ],
+    "6ab346c8-3c23-4738-908d-8d14d99ba1e6": [
+      {
+        "achievementId": "first_step",
+        "unlockedAt": "2026-10-12T18:01:48.823Z"
+      },
+      {
+        "achievementId": "rising_star",
+        "unlockedAt": "2026-10-12T18:01:48.823Z"
       }
     ]
   },
@@ -570,14 +691,201 @@
           "xpReward": 35,
           "coinsReward": 20
         }
+      ],
+      "6ab346c8-3c23-4738-908d-8d14d99ba1e6": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ]
+    },
+    "2026-10-13": {
+      "test_student_missions_123": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ],
+      "0fa59b6f-9c86-4140-ae90-e978fbcf02d1": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ],
+      "27171240-0dac-472b-96b9-6f5e1b06d035": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 2,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
       ]
     }
   },
   "submission_timestamps": {
-    "27171240-0dac-472b-96b9-6f5e1b06d035": 1791821918895,
+    "27171240-0dac-472b-96b9-6f5e1b06d035": 1791915394304,
     "5407f0dd-17fe-4f8b-9866-53ed703beaa2": 1791826613188,
     "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0": 1791826687062,
-    "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b": 1791826738053
+    "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b": 1791826738053,
+    "6ab346c8-3c23-4738-908d-8d14d99ba1e6": 1791828107552
   },
   "student_challenges": {
     "2026-10-12": {
@@ -613,6 +921,11 @@
           "completedAt": "2026-10-12T17:38:56.631Z"
         }
       },
+      "27171240-0dac-472b-96b9-6f5e1b06d035": {},
+      "6ab346c8-3c23-4738-908d-8d14d99ba1e6": {}
+    },
+    "2026-10-13": {
+      "0fa59b6f-9c86-4140-ae90-e978fbcf02d1": {},
       "27171240-0dac-472b-96b9-6f5e1b06d035": {}
     }
   }

@@ -8,6 +8,7 @@
           content="width=device-width, initial-scale=1.0">
 
     <title>LearnIQ — AI-Powered Learning Intelligence</title>
+    <link rel="icon" type="image/png" href="assets/logo-icon.png">
 
     <!-- Google Font -->
     <link rel="preconnect"
@@ -41,17 +42,8 @@
 
 <aside class="sidebar">
 
-    <div class="logo">
-
-        <div class="logo-icon">
-            <i class="fa-solid fa-brain"></i>
-        </div>
-
-        <div>
-            <h2>LearnIQ</h2>
-            <span>Learning Intelligence</span>
-        </div>
-
+    <div class="logo brand-logo-wrap" onclick="showPage('dashboard')" title="LearnIQ — Learning Intelligence">
+        <img src="assets/logo-transparent.png" alt="LearnIQ — Learning Intelligence" class="sidebar-logo-img">
     </div>
 
 
@@ -197,6 +189,10 @@
             <i class="fa-solid fa-bars"></i>
         </button>
 
+        <div class="mobile-brand-logo" onclick="showPage('dashboard')" style="display: none; cursor: pointer; align-items: center; margin: 0 12px 0 6px;" title="LearnIQ">
+            <img src="assets/logo-icon-transparent.png" alt="LearnIQ" style="height: 32px; width: 32px; object-fit: contain;">
+        </div>
+
 
         <div class="search-box">
             <i class="fa-solid fa-search"></i>
@@ -281,6 +277,10 @@
         <div style="display: grid; grid-template-columns: 1fr 400px; gap: 40px; align-items: center;">
             <!-- Hero Description -->
             <div>
+                <div style="margin-bottom: 20px;">
+                    <img src="assets/logo-transparent.png" alt="LearnIQ — Learning Intelligence" style="height: 56px; max-width: 100%; object-fit: contain; filter: drop-shadow(0 4px 20px rgba(0, 240, 255, 0.4));">
+                </div>
+
                 <span class="eyebrow" style="background: rgba(0, 240, 255, 0.1); color: var(--cyan); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(0, 240, 255, 0.2); font-weight: 700; letter-spacing: 1px; font-size: 11px;">
                     <i class="fa-solid fa-sparkles"></i> AI-POWERED CLASSROOM INTELLIGENCE
                 </span>
@@ -329,8 +329,8 @@
             <!-- Inline Landing Login Card with Explicit Role Selector -->
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: 0 15px 40px rgba(0,0,0,0.5);">
                 <div style="text-align: center; margin-bottom: 14px;">
-                    <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--cyan), var(--purple)); display: grid; place-items: center; color: white; font-size: 20px; margin: 0 auto 10px auto;">
-                        <i class="fa-solid fa-user-shield" id="landingAuthIcon"></i>
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(11, 17, 32, 0.95); border: 1px solid rgba(0, 240, 255, 0.35); display: grid; place-items: center; margin: 0 auto 10px auto; box-shadow: 0 0 20px rgba(0, 240, 255, 0.25); overflow: hidden; padding: 4px;">
+                        <img src="assets/logo-icon-transparent.png" alt="LearnIQ" style="width: 100%; height: 100%; object-fit: contain;">
                     </div>
                     <h2 style="font-size: 18px; font-weight: 700; color: var(--text);" id="landingAuthTitle">Sign In to LearnIQ</h2>
                     <p style="font-size: 12px; color: var(--muted);" id="landingAuthSubtitle">Select your role to access your personalized environment</p>
@@ -2137,9 +2137,9 @@ document.addEventListener(
 <div id="authModal" class="modal-overlay">
     <div class="modal-content" style="max-width: 440px; background: #0b1120; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.8); border-radius: 20px; padding: 28px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="logo-icon" style="width: 38px; height: 38px; font-size: 18px; background: linear-gradient(135deg, var(--cyan), var(--purple)); border-radius: 10px; display: grid; place-items: center; color: white;">
-                    <i class="fa-solid fa-brain"></i>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(11, 17, 32, 0.95); border: 1px solid rgba(0, 240, 255, 0.35); display: grid; place-items: center; box-shadow: 0 0 16px rgba(0, 240, 255, 0.25); overflow: hidden; padding: 4px;">
+                    <img src="assets/logo-icon-transparent.png" alt="LearnIQ" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
                 <div>
                     <h2 style="font-size: 20px; font-weight: 700; color: var(--text);">LearnIQ Account</h2>
