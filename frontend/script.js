@@ -1402,6 +1402,19 @@ function startLinearEquationsPractice() {
     showPage("assessment");
 }
 
+function startRecommendedPractice() {
+    const topicRows = [...document.querySelectorAll("#intelligence .mastery-row")];
+    const weakestTopic = topicRows.reduce((weakest, row) => {
+        const mastery = Number(row.dataset.mastery);
+        return Number.isFinite(mastery) && (!weakest || mastery < weakest.mastery)
+            ? { name: row.dataset.topic, mastery }
+            : weakest;
+    }, null);
+
+    const topic = weakestTopic ? weakestTopic.name : "Fractions";
+    practiceLearningTopic(topic);
+}
+
 function renderLearningIntelligence() {
     const history = Array.isArray(studentQuizHistory) ? studentQuizHistory : [];
     const scoreHistory = history

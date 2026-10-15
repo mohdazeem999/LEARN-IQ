@@ -925,6 +925,52 @@
           "xpReward": 35,
           "coinsReward": 20
         }
+      ],
+      "27171240-0dac-472b-96b9-6f5e1b06d035": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
       ]
     }
   },
@@ -974,6 +1020,9 @@
     },
     "2026-10-13": {
       "0fa59b6f-9c86-4140-ae90-e978fbcf02d1": {},
+      "27171240-0dac-472b-96b9-6f5e1b06d035": {}
+    },
+    "2026-10-15": {
       "27171240-0dac-472b-96b9-6f5e1b06d035": {}
     }
   }
