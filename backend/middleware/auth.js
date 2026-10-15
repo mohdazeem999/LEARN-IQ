@@ -1,5 +1,7 @@
 const supabase = require("../config/supabaseClient");
 const { createClient } = require("@supabase/supabase-js");
+const { isValidUUID } = require("../utils/validators");
+const { presentUser } = require("../utils/userPresenter");
 
 const ACCESS_COOKIE = "learniq_access";
 const REFRESH_COOKIE = "learniq_refresh";
@@ -54,6 +56,7 @@ function isNearExpiry(token) {
 
 async function getProfile(userId) {
     if (!supabase) throw new Error("Supabase database is not configured.");
+    if (!isValidUUID(userId)) return null;
     const { data, error } = await supabase.from("profiles")
         .select("id, user_id, name, email, role, class, xp, streak, rank")
         .or(`user_id.eq.${userId},id.eq.${userId}`)
@@ -133,29 +136,11 @@ async function resolveSession(req, res) {
     }
 
     const profile = await ensureProfile(user);
-    const role = ["student", "teacher", "admin"].includes(profile?.role)
-        ? profile.role
-        : "student";
-    const name = profile?.name || user.user_metadata?.full_name || "User";
-    const isStudent = role === "student";
-    const classStr = isStudent && profile?.class ? `Class ${profile.class}` : null;
-    const classNumber = isStudent ? (profile?.class || null) : null;
 
     return {
         accessToken,
         refreshToken: getCookie(req, REFRESH_COOKIE),
-        user: {
-            id: user.id,
-            email: user.email,
-            name,
-            role,
-            roleName: role === "teacher" ? "Teacher / Educator" : role === "admin" ? "Admin" : "Student",
-            class: classStr,
-            classNumber,
-            xp: profile?.xp ?? 0,
-            streak: profile?.streak ?? 0,
-            rank: profile?.rank ?? "-"
-        }
+        user: presentUser(user, profile)
     };
 }
 

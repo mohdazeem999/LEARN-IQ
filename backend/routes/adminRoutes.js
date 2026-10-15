@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabaseClient");
 const { authenticate, requireRole } = require("../middleware/auth");
+const { isValidUUID } = require("../utils/validators");
 
 // Strictly protect all admin routes with authentication and admin role requirement
 router.use(authenticate, requireRole("admin"));
@@ -78,6 +79,10 @@ router.post("/role", async (req, res) => {
         const { userId, role } = req.body;
         if (!userId || !["student", "teacher", "admin"].includes(role)) {
             return res.status(400).json({ success: false, message: "Valid userId and role ('student', 'teacher', 'admin') are required." });
+        }
+
+        if (!isValidUUID(userId)) {
+            return res.status(400).json({ success: false, message: "Invalid userId format. Must be a valid UUID." });
         }
 
         if (!supabase) {

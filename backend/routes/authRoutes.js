@@ -8,30 +8,12 @@ const {
     resolveSession,
     setSessionCookies
 } = require("../middleware/auth");
+const { presentUser } = require("../utils/userPresenter");
 
 const router = express.Router();
 
 function presentSession(session) {
     return session ? { user: session.user } : null;
-}
-
-function presentUser(authUser, profile) {
-    const role = ["student", "teacher", "admin"].includes(profile?.role) ? profile.role : "student";
-    const name = profile?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || (role === "teacher" ? "Educator" : "User");
-    const isStudent = role === "student";
-    const classStr = isStudent && profile?.class ? `Class ${profile.class}` : null;
-    return {
-        id: authUser.id,
-        email: authUser.email,
-        name,
-        role,
-        roleName: role === "teacher" ? "Teacher / Educator" : role === "admin" ? "Admin" : "Student",
-        class: classStr,
-        classNumber: isStudent ? (profile?.class || null) : null,
-        xp: isStudent ? (profile?.xp ?? 0) : 0,
-        streak: isStudent ? (profile?.streak ?? 0) : 0,
-        rank: isStudent ? (profile?.rank ?? "-") : "-"
-    };
 }
 
 function authErrorResponse(error) {

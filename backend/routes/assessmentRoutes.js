@@ -8,6 +8,7 @@ const {
 const supabase = require("../config/supabaseClient");
 const { authenticate, requireRole } = require("../middleware/auth");
 const gamificationService = require("../services/gamificationService");
+const { isValidUUID } = require("../utils/validators");
 
 router.use(authenticate);
 
@@ -144,10 +145,10 @@ router.post("/submit", requireRole("student", "admin"), async (req, res) => {
             analysis
         });
 
-        // Optionally persist to Supabase if tables exist
-        if (supabase && quizId) {
+        // Optionally persist to Supabase if tables exist and quizId is a valid UUID
+        if (supabase && quizId && isValidUUID(quizId)) {
             try {
-                await supabase.from("quiz_submissions").insert({
+                const { error: subErr } = await supabase.from("quiz_submissions").insert({
                     quiz_id: quizId,
                     student_id: req.auth.user.id,
                     score_percentage: analysis.scorePercentage,
@@ -158,8 +159,11 @@ router.post("/submit", requireRole("student", "admin"), async (req, res) => {
                     mistake_categories: analysis.mistakeCategories || null,
                     concept_stats: analysis.conceptStats || null
                 });
+                if (subErr) {
+                    console.warn("Quiz submission save warning:", subErr.message);
+                }
             } catch (sErr) {
-                // Non-blocking if table is pending migration
+                console.warn("Quiz submission record failed to save to Supabase:", sErr.message);
             }
         }
 

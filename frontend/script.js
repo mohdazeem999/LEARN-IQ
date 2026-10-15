@@ -6,8 +6,6 @@
 // Use the same origin as the frontend so local and deployed server ports stay in sync.
 const API_BASE = "/api";
 
-localStorage.removeItem("learniq_token");
-
 // Application State
 let currentQuiz = null;
 let currentQuestionIdx = 0;
