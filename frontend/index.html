@@ -19,17 +19,18 @@
           crossorigin>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet">
+          rel="stylesheet" media="print" onload="this.media='all'">
 
     <!-- Font Awesome -->
     <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" media="print" onload="this.media='all'">
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart Engine -->
+    <script src="assets/chart.min.js" defer></script>
 
     <!-- CSS -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="rankings.css">
 
 </head>
 
@@ -1586,64 +1587,52 @@
      RANKINGS
      ========================================== -->
 
-<section id="rankings"
-         class="page">
+<section id="rankings" class="page">
+    <div class="rankings-container">
+        <!-- Header -->
+        <header class="rankings-header">
+            <span class="rankings-eyebrow">LEARNING LEAGUE</span>
+            <h1 class="rankings-title">Rankings</h1>
+            <p class="rankings-subtitle">Track your progress against your classmates.</p>
+        </header>
 
+        <!-- Tabs -->
+        <nav class="rankings-tabs" aria-label="Leaderboard Filters">
+            <button type="button" class="rankings-tab-btn active" onclick="switchRankingTab(this, 'Overall')">Overall</button>
+            <button type="button" class="rankings-tab-btn" onclick="switchRankingTab(this, 'Most Improved')">Most Improved</button>
+            <button type="button" class="rankings-tab-btn" onclick="switchRankingTab(this, 'Consistency')">Consistency</button>
+            <button type="button" class="rankings-tab-btn" onclick="switchRankingTab(this, 'Mastery')">Mastery</button>
+            <button type="button" class="rankings-tab-btn" onclick="switchRankingTab(this, 'Challenges')">Challenges</button>
+            <button type="button" class="rankings-tab-btn" onclick="switchRankingTab(this, 'Subject')">Subject</button>
+        </nav>
 
-    <div class="page-header">
+        <!-- Main Two-Column Layout -->
+        <div class="rankings-main-grid">
+            <!-- LEFT: YOUR RANK CARD -->
+            <aside id="yourRankCardContainer" class="your-rank-card" aria-label="Your Rank">
+                <div class="your-rank-label">YOUR RANK</div>
+                <div class="your-rank-number-wrap">
+                    <span class="your-rank-big-num" id="yourRankNumber">#--</span>
+                    <span class="your-rank-classmates" id="yourRankClassmates">of -- classmates</span>
+                </div>
+                <div class="your-rank-xp" id="yourRankXp">-- XP</div>
+                <div class="your-rank-progress-track" role="progressbar" aria-label="Progress to next rank" aria-valuemin="0" aria-valuemax="100">
+                    <div class="your-rank-progress-fill" id="yourRankProgressFill" style="width: 0%;"></div>
+                </div>
+                <div class="your-rank-status-line" id="yourRankStatusLine">Loading your standing...</div>
+            </aside>
 
-        <div>
-
-            <span class="eyebrow">
-                LEARNING LEAGUE
-            </span>
-
-            <h1>
-                Rankings
-            </h1>
-
-            <p>
-                Track your progress against your classmates.
-            </p>
-
+            <!-- RIGHT: LEADERBOARD LIST -->
+            <main class="leaderboard-list-column">
+                <div id="rankingListContainer" class="leaderboard-list" role="list">
+                    <!-- Dynamic Rows populated by loadLeaderboard() -->
+                    <div class="ranking-skeleton-row"><div class="ranking-skeleton-avatar"></div><div class="ranking-skeleton-bar" style="width: 40%;"></div><div class="ranking-skeleton-bar" style="width: 15%; margin-left: auto;"></div></div>
+                    <div class="ranking-skeleton-row"><div class="ranking-skeleton-avatar"></div><div class="ranking-skeleton-bar" style="width: 35%;"></div><div class="ranking-skeleton-bar" style="width: 15%; margin-left: auto;"></div></div>
+                    <div class="ranking-skeleton-row"><div class="ranking-skeleton-avatar"></div><div class="ranking-skeleton-bar" style="width: 45%;"></div><div class="ranking-skeleton-bar" style="width: 15%; margin-left: auto;"></div></div>
+                </div>
+            </main>
         </div>
-
     </div>
-
-
-    <div class="ranking-tabs">
-
-        <button class="active">
-            Overall
-        </button>
-
-        <button>
-            Most Improved
-        </button>
-
-        <button>
-            Consistency
-        </button>
-
-        <button>
-            Mastery
-        </button>
-
-        <button>
-            Challenges
-        </button>
-
-        <button>
-            Subject
-        </button>
-
-    </div>
-
-
-    <div id="rankingListContainer" class="ranking-list">
-        <!-- Dynamically populated from Supabase profiles -->
-    </div>
-
 </section>
 
 
@@ -2053,7 +2042,7 @@ document.addEventListener(
             );
 
         if (!canvas) return;
-
+        if (typeof Chart === "undefined") return;
 
         new Chart(canvas, {
 

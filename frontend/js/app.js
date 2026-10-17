@@ -6,7 +6,7 @@ import { state, defaultQuiz, API_BASE } from "./state.js";
 import { escapeHtml, showToast, toggleSidebar, toggleUserDropdown, closeUserDropdown, showPage } from "./ui.js";
 import { checkAuthSession, logout, updateUserUI, openAuthModal, closeAuthModal, selectLandingRole, selectAuthModalRole, switchAuthTab, switchLandingTab, handleAuthSubmit } from "./auth.js";
 import { onSubjectChange, setTopic, generateAIQuiz, startGeneratedQuiz, setQuizTimerMode, startQuiz, selectOption, nextQuestion, finishQuiz, openDiagnosisModal, startSimilarPractice, closeDiagnosisModal } from "./quiz.js";
-import { fetchStudentProfile, updateStudentXP, updateXPDisplay, fetchDailyChallenges, openChallengeTask, selectChallengeTaskOption, closeChallengeTaskModal, verifyAndClaimChallenge, redeemReward, practiceLearningTopic, startLinearEquationsPractice, startRecommendedPractice, renderLearningIntelligence, loadLeaderboard, logQuizAttendance, renderProfileTestHistory } from "./gamification.js";
+import { fetchStudentProfile, updateStudentXP, updateXPDisplay, fetchDailyChallenges, openChallengeTask, selectChallengeTaskOption, closeChallengeTaskModal, verifyAndClaimChallenge, redeemReward, practiceLearningTopic, selectLearningSubject, startLinearEquationsPractice, startRecommendedPractice, renderLearningIntelligence, loadLeaderboard, switchRankingTab, logQuizAttendance, renderProfileTestHistory } from "./gamification.js";
 import { loadTeacherClassMap, onTeacherClassChanged, generateIntervention, renderTeacherClassMap } from "./teacher.js";
 import { loadAdminOverview, updateUserRole } from "./admin.js";
 
@@ -55,10 +55,12 @@ window.closeChallengeTaskModal = closeChallengeTaskModal;
 window.verifyAndClaimChallenge = verifyAndClaimChallenge;
 window.redeemReward = redeemReward;
 window.practiceLearningTopic = practiceLearningTopic;
+window.selectLearningSubject = selectLearningSubject;
 window.startLinearEquationsPractice = startLinearEquationsPractice;
 window.startRecommendedPractice = startRecommendedPractice;
 window.renderLearningIntelligence = renderLearningIntelligence;
 window.loadLeaderboard = loadLeaderboard;
+window.switchRankingTab = switchRankingTab;
 window.logQuizAttendance = logQuizAttendance;
 window.renderProfileTestHistory = renderProfileTestHistory;
 

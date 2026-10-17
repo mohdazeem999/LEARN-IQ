@@ -158,6 +158,24 @@
       ],
       "unlockedItems": [],
       "streakFreezeCount": 0
+    },
+    "89477a22-911b-435a-8fcc-43a2a4bab2d3": {
+      "xp": 500,
+      "recentXpGained": 75,
+      "coins": 185,
+      "activeAvatar": "avatar_explorer",
+      "equipped": {
+        "frame": null,
+        "theme": null,
+        "title": null
+      },
+      "unlockedAvatars": [
+        "avatar_explorer",
+        "avatar_scientist",
+        "avatar_mathematician"
+      ],
+      "unlockedItems": [],
+      "streakFreezeCount": 0
     }
   },
   "submissions": [
@@ -256,6 +274,70 @@
       "coinsEarned": 65,
       "aiInsight": "Good effort. Review the question feedback below and use the practice activities to strengthen your understanding.",
       "submittedAt": "2026-10-13T18:16:34.737Z"
+    },
+    {
+      "id": "8df3a8a2-9d7d-4c00-98d6-a778352a5726",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "quizId": "cb8ce489-902d-4c3b-adbe-fbb57dbb5ce8",
+      "title": "Quadratic Equations (Mathematics)",
+      "subject": "Mathematics",
+      "topic": "Quadratic Equations (Mathematics)",
+      "classLevel": "Class 10",
+      "scorePercentage": 0,
+      "correctCount": 0,
+      "totalQuestions": 5,
+      "xpEarned": 50,
+      "coinsEarned": 25,
+      "aiInsight": "Every quiz is a chance to learn. Start with the concepts marked for review and practise them one step at a time.",
+      "submittedAt": "2026-10-17T17:58:39.151Z"
+    },
+    {
+      "id": "64f374cf-3cd9-49b1-b33b-bffdfa9b31b9",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "quizId": "dd7bdfa9-75b8-4621-a3c4-9e6b6037371e",
+      "title": "Quadratic Equations (Mathematics)",
+      "subject": "Mathematics",
+      "topic": "Quadratic Equations (Mathematics)",
+      "classLevel": "Class 10",
+      "scorePercentage": 0,
+      "correctCount": 0,
+      "totalQuestions": 5,
+      "xpEarned": 80,
+      "coinsEarned": 30,
+      "aiInsight": "Every quiz is a chance to learn. Start with the concepts marked for review and practise them one step at a time.",
+      "submittedAt": "2026-10-17T18:08:31.677Z"
+    },
+    {
+      "id": "db0b1355-7907-47c0-b19f-aa3ba0bbdbe0",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "quizId": "30d7db01-b389-4a12-9eed-337ade31dbc5",
+      "title": "Quadratic Equations (Mathematics)",
+      "subject": "Mathematics",
+      "topic": "Quadratic Equations (Mathematics)",
+      "classLevel": "Class 10",
+      "scorePercentage": 0,
+      "correctCount": 0,
+      "totalQuestions": 5,
+      "xpEarned": 45,
+      "coinsEarned": 10,
+      "aiInsight": "Every quiz is a chance to learn. Start with the concepts marked for review and practise them one step at a time.",
+      "submittedAt": "2026-10-17T18:13:47.018Z"
+    },
+    {
+      "id": "c2e3dd28-9599-46f2-9422-6a11ced4b03b",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "quizId": "a7e70c74-1960-4004-8f6d-298793c5ff90",
+      "title": "Quadratic Equations (Mathematics)",
+      "subject": "Mathematics",
+      "topic": "Quadratic Equations (Mathematics)",
+      "classLevel": "Class 10",
+      "scorePercentage": 20,
+      "correctCount": 1,
+      "totalQuestions": 5,
+      "xpEarned": 75,
+      "coinsEarned": 20,
+      "aiInsight": "Every quiz is a chance to learn. Start with the concepts marked for review and practise them one step at a time.",
+      "submittedAt": "2026-10-17T18:15:24.667Z"
     }
   ],
   "xp_transactions": [
@@ -338,6 +420,38 @@
       "source": "quiz_submission",
       "referenceId": "d0be89be-e9b4-47b2-a1cf-1f0e71740ba0",
       "createdAt": "2026-10-13T18:16:34.736Z"
+    },
+    {
+      "id": "e9d6c706-25c1-4a90-a9ec-f4f53599f07e",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "amount": 50,
+      "source": "quiz_submission",
+      "referenceId": "8df3a8a2-9d7d-4c00-98d6-a778352a5726",
+      "createdAt": "2026-10-17T17:58:39.151Z"
+    },
+    {
+      "id": "b342ce0d-b472-4729-91c6-efa15a309a3d",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "amount": 80,
+      "source": "quiz_submission",
+      "referenceId": "64f374cf-3cd9-49b1-b33b-bffdfa9b31b9",
+      "createdAt": "2026-10-17T18:08:31.677Z"
+    },
+    {
+      "id": "fdf5d196-ba02-4390-a466-e95bbb14189e",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "amount": 45,
+      "source": "quiz_submission",
+      "referenceId": "db0b1355-7907-47c0-b19f-aa3ba0bbdbe0",
+      "createdAt": "2026-10-17T18:13:47.018Z"
+    },
+    {
+      "id": "f7ac662e-658a-4776-a602-c3bd2666edee",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "amount": 75,
+      "source": "quiz_submission",
+      "referenceId": "c2e3dd28-9599-46f2-9422-6a11ced4b03b",
+      "createdAt": "2026-10-17T18:15:24.667Z"
     }
   ],
   "coin_transactions": [
@@ -388,6 +502,38 @@
       "source": "quiz_submission",
       "referenceId": "d0be89be-e9b4-47b2-a1cf-1f0e71740ba0",
       "createdAt": "2026-10-13T18:16:34.737Z"
+    },
+    {
+      "id": "001622e6-b2a7-44ba-8238-6189ed1a3383",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "amount": 25,
+      "source": "quiz_submission",
+      "referenceId": "8df3a8a2-9d7d-4c00-98d6-a778352a5726",
+      "createdAt": "2026-10-17T17:58:39.151Z"
+    },
+    {
+      "id": "e2dc76d6-77de-4d14-a68c-d0e76ec604fc",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "amount": 30,
+      "source": "quiz_submission",
+      "referenceId": "64f374cf-3cd9-49b1-b33b-bffdfa9b31b9",
+      "createdAt": "2026-10-17T18:08:31.677Z"
+    },
+    {
+      "id": "954653d2-4cb2-4ffd-a81a-35bb2e130553",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "amount": 10,
+      "source": "quiz_submission",
+      "referenceId": "db0b1355-7907-47c0-b19f-aa3ba0bbdbe0",
+      "createdAt": "2026-10-17T18:13:47.018Z"
+    },
+    {
+      "id": "dff3cd3d-16c8-47f5-af8b-98213c113584",
+      "studentId": "89477a22-911b-435a-8fcc-43a2a4bab2d3",
+      "amount": 20,
+      "source": "quiz_submission",
+      "referenceId": "c2e3dd28-9599-46f2-9422-6a11ced4b03b",
+      "createdAt": "2026-10-17T18:15:24.667Z"
     }
   ],
   "student_achievements": {
@@ -455,6 +601,16 @@
       {
         "achievementId": "rising_star",
         "unlockedAt": "2026-10-12T18:01:48.823Z"
+      }
+    ],
+    "89477a22-911b-435a-8fcc-43a2a4bab2d3": [
+      {
+        "achievementId": "first_step",
+        "unlockedAt": "2026-10-17T17:58:39.584Z"
+      },
+      {
+        "achievementId": "comeback",
+        "unlockedAt": "2026-10-17T18:15:27.341Z"
       }
     ]
   },
@@ -972,6 +1128,146 @@
           "coinsReward": 20
         }
       ]
+    },
+    "2026-10-17": {
+      "27171240-0dac-472b-96b9-6f5e1b06d035": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ],
+      "test_student_missions_123": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ],
+      "89477a22-911b-435a-8fcc-43a2a4bab2d3": [
+        {
+          "id": "mission_quiz",
+          "title": "Complete 1 Assessment",
+          "description": "Take any adaptive AI quiz or practice test today.",
+          "icon": "fa-graduation-cap",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_correct",
+          "title": "Answer 4 Questions Correctly",
+          "description": "Show strong conceptual accuracy on today's questions.",
+          "icon": "fa-circle-check",
+          "target": 4,
+          "current": 1,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_score",
+          "title": "Score 70% or Higher",
+          "description": "Demonstrate solid mastery on at least one quiz.",
+          "icon": "fa-bullseye",
+          "target": 1,
+          "current": 0,
+          "completed": false,
+          "xpReward": 30,
+          "coinsReward": 15
+        },
+        {
+          "id": "mission_weak",
+          "title": "Practice a Growth Area",
+          "description": "Target a concept that needs strengthening.",
+          "icon": "fa-seedling",
+          "target": 1,
+          "current": 1,
+          "completed": true,
+          "xpReward": 35,
+          "coinsReward": 20
+        }
+      ]
     }
   },
   "submission_timestamps": {
@@ -979,7 +1275,8 @@
     "5407f0dd-17fe-4f8b-9866-53ed703beaa2": 1791826613188,
     "eb8c8abd-8f52-44da-a34f-2f5cf7da3bc0": 1791826687062,
     "acbc7644-6024-47a4-8da4-5f8b4bd7dc8b": 1791826738053,
-    "6ab346c8-3c23-4738-908d-8d14d99ba1e6": 1791828107552
+    "6ab346c8-3c23-4738-908d-8d14d99ba1e6": 1791828107552,
+    "89477a22-911b-435a-8fcc-43a2a4bab2d3": 1792260923419
   },
   "student_challenges": {
     "2026-10-12": {
@@ -1024,6 +1321,10 @@
     },
     "2026-10-15": {
       "27171240-0dac-472b-96b9-6f5e1b06d035": {}
+    },
+    "2026-10-17": {
+      "27171240-0dac-472b-96b9-6f5e1b06d035": {},
+      "89477a22-911b-435a-8fcc-43a2a4bab2d3": {}
     }
   }
 }

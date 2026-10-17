@@ -502,6 +502,73 @@ export function renderProfileTestHistory() {
     }
 }
 
+export function switchRankingTab(button, tabName) {
+    const tabs = document.querySelectorAll("#rankings .rankings-tab-btn");
+    tabs.forEach(btn => btn.classList.remove("active"));
+    if (button) button.classList.add("active");
+}
+
+function updateYourRankCard(leaderboard, myIndex) {
+    const rankNumElem = document.getElementById("yourRankNumber");
+    const classmatesElem = document.getElementById("yourRankClassmates");
+    const xpElem = document.getElementById("yourRankXp");
+    const progressFill = document.getElementById("yourRankProgressFill");
+    const statusLine = document.getElementById("yourRankStatusLine");
+
+    if (!rankNumElem || !classmatesElem || !xpElem || !progressFill || !statusLine) return;
+
+    const totalClassmates = Array.isArray(leaderboard) ? leaderboard.length : 0;
+
+    if (myIndex >= 0 && myIndex < totalClassmates) {
+        const myItem = leaderboard[myIndex];
+        const myRank = myIndex + 1;
+        const myXp = Number(myItem.xp) || 0;
+
+        rankNumElem.textContent = `#${myRank}`;
+        classmatesElem.textContent = `of ${totalClassmates} classmates`;
+        xpElem.textContent = `${myXp.toLocaleString()} XP`;
+
+        if (myRank === 1) {
+            progressFill.style.width = "100%";
+            statusLine.innerHTML = "🏆 You're leading the class";
+        } else {
+            const nextStudent = leaderboard[myIndex - 1];
+            const nextXp = Number(nextStudent.xp) || 0;
+            const diffXp = Math.max(0, nextXp - myXp);
+            const fillPct = nextXp > 0 ? Math.min(100, Math.max(5, Math.round((myXp / nextXp) * 100))) : 100;
+            progressFill.style.width = `${fillPct}%`;
+            statusLine.innerHTML = `<strong>${diffXp.toLocaleString()} XP</strong> to pass <strong>${escapeHtml(nextStudent.name)}</strong>`;
+        }
+
+        const dashboardRank = document.getElementById("dashboardRankVal");
+        if (dashboardRank) dashboardRank.innerText = `#${myRank}`;
+    } else if (state.currentUser && state.currentUser.name) {
+        const myXp = Number(state.studentProfile?.xp) || 0;
+        const myRank = totalClassmates + 1;
+        rankNumElem.textContent = `#${myRank}`;
+        classmatesElem.textContent = `of ${totalClassmates + 1} classmates`;
+        xpElem.textContent = `${myXp.toLocaleString()} XP`;
+
+        if (totalClassmates > 0) {
+            const targetStudent = leaderboard[totalClassmates - 1];
+            const targetXp = Number(targetStudent.xp) || 0;
+            const diffXp = Math.max(1, targetXp - myXp);
+            const fillPct = targetXp > 0 ? Math.min(100, Math.round((myXp / targetXp) * 100)) : 0;
+            progressFill.style.width = `${fillPct}%`;
+            statusLine.innerHTML = `<strong>${diffXp.toLocaleString()} XP</strong> to pass <strong>${escapeHtml(targetStudent.name)}</strong>`;
+        } else {
+            progressFill.style.width = "100%";
+            statusLine.innerHTML = "🏆 Complete a quiz to set your class ranking!";
+        }
+    } else {
+        rankNumElem.textContent = "#--";
+        classmatesElem.textContent = totalClassmates ? `of ${totalClassmates} classmates` : "of classmates";
+        xpElem.textContent = "0 XP";
+        progressFill.style.width = "0%";
+        statusLine.innerHTML = `<a href="javascript:void(0)" onclick="openAuthModal()" style="color: #38d6ff; text-decoration: underline; font-weight: 700;">Sign in</a> to view your ranking.`;
+    }
+}
+
 export async function loadLeaderboard() {
     const container = document.getElementById("rankingListContainer");
     if (!container) return;
@@ -510,26 +577,93 @@ export async function loadLeaderboard() {
         const response = await fetch(`${API_BASE}/students/leaderboard`);
         const data = await response.json();
 
-        if (data.success && data.leaderboard && data.leaderboard.length > 0) {
-            container.innerHTML = data.leaderboard.map(item => {
-                const isCurrentUser = state.currentUser && (state.currentUser.id === item.userId || state.currentUser.name === item.name);
-                const initial = (item.name || "S").charAt(0).toUpperCase();
-                if (isCurrentUser) {
-                    const rankElem = document.getElementById("dashboardRankVal");
-                    if (rankElem) rankElem.innerText = `#${item.rank}`;
-                }
+        if (data.success && Array.isArray(data.leaderboard) && data.leaderboard.length > 0) {
+            const leaderboard = data.leaderboard;
+            const myIndex = leaderboard.findIndex(item => {
+                const user = state.currentUser;
+                if (!user) return false;
+                return (user.id && (user.id === item.userId || user.id === item.id)) ||
+                       (user.name && user.name.toLowerCase() === (item.name || "").toLowerCase()) ||
+                       (user.email && item.email && user.email === item.email);
+            });
+
+            updateYourRankCard(leaderboard, myIndex);
+
+            container.innerHTML = leaderboard.map((item, index) => {
+                const user = state.currentUser;
+                const rankNum = item.rank || (index + 1);
+                const rankColorClass = rankNum === 1 ? 'rank-gold' : rankNum === 2 ? 'rank-silver' : rankNum === 3 ? 'rank-bronze' : 'rank-other';
+                const isCurrentUser = user && (
+                    (user.id && (user.id === item.userId || user.id === item.id)) ||
+                    (user.name && user.name.toLowerCase() === (item.name || "").toLowerCase()) ||
+                    (user.email && item.email && user.email === item.email)
+                );
+
+                const cleanName = (item.name || "Student").replace(/\s*\((?:you|You)\)\s*/gi, "").trim();
+                const rawClass = String(item.class || "Class 10").replace(/class\s*/gi, "").trim();
+                const classDisplay = `CLASS ${rawClass || "10"}`;
+
                 return `
-                    <div class="ranking-row ${isCurrentUser ? 'you' : ''}">
-                        <span>#${item.rank}</span>
-                        <div class="avatar">${initial}</div>
-                        <strong>${escapeHtml(item.name)} ${isCurrentUser ? '(You)' : ''}</strong>
-                        <span class="badge-pill" style="font-size: 11px; margin-left: auto; margin-right: 12px; background: rgba(255,255,255,0.05);">${item.class ? 'Class ' + item.class : 'Class 10'}</span>
-                        <span style="color: var(--cyan); font-weight: 700;">${(item.xp || 0).toLocaleString()} XP</span>
-                    </div>
+                    <article class="leaderboard-row ${isCurrentUser ? 'current-user-row' : ''}">
+                        <span class="leaderboard-rank ${rankColorClass}">#${rankNum}</span>
+                        <div class="leaderboard-avatar" aria-hidden="true">${(cleanName || "S").charAt(0).toUpperCase()}</div>
+                        <div class="leaderboard-info">
+                            <span class="leaderboard-name">${escapeHtml(cleanName)}</span>
+                            ${isCurrentUser ? '<span class="you-badge">YOU</span>' : ''}
+                        </div>
+                        <span class="class-chip">${classDisplay}</span>
+                        <span class="leaderboard-xp">${(item.xp || 0).toLocaleString()} XP</span>
+                    </article>
                 `;
             }).join("");
+        } else {
+            updateYourRankCard([], -1);
+            if (state.currentUser && state.currentUser.name) {
+                const cleanName = (state.currentUser.name || "Student").replace(/\s*\((?:you|You)\)\s*/gi, "").trim();
+                const rawClass = String(state.currentUser.class || "Class 10").replace(/class\s*/gi, "").trim();
+                container.innerHTML = `
+                    <article class="leaderboard-row current-user-row">
+                        <span class="leaderboard-rank rank-gold">#1</span>
+                        <div class="leaderboard-avatar" aria-hidden="true">${(cleanName || "U").charAt(0).toUpperCase()}</div>
+                        <div class="leaderboard-info">
+                            <span class="leaderboard-name">${escapeHtml(cleanName)}</span>
+                            <span class="you-badge">YOU</span>
+                        </div>
+                        <span class="class-chip">CLASS ${rawClass || "10"}</span>
+                        <span class="leaderboard-xp">${(state.studentProfile.xp || 0).toLocaleString()} XP</span>
+                    </article>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="ranking-empty-card">
+                        <i class="fa-solid fa-ranking-star" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
+                        <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">No Active Leaderboard Members Yet</h3>
+                        <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Sign in and complete AI quizzes to earn XP and claim the #1 spot on the leaderboard!</p>
+                        <button class="primary-btn" onclick="openAuthModal()" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                            <i class="fa-solid fa-user-plus"></i> Sign In to Join Leaderboard
+                        </button>
+                    </div>
+                `;
+            }
         }
     } catch (err) {
         console.warn("Leaderboard fetch notice:", err.message);
+    }
+}
+
+export function selectLearningSubject(subject) {
+    const overview = document.getElementById("learningSubjectOverview");
+    const detail = document.getElementById("learningSubjectDetail");
+    const nameEl = document.getElementById("selectedSubjectName");
+    const select = document.getElementById("learningSubjectSelect");
+    if (select && select.value !== subject) select.value = subject;
+
+    if (!subject || subject === "All Subjects") {
+        if (overview) overview.hidden = false;
+        if (detail) detail.hidden = true;
+    } else {
+        if (overview) overview.hidden = true;
+        if (detail) detail.hidden = false;
+        if (nameEl) nameEl.textContent = subject;
     }
 }

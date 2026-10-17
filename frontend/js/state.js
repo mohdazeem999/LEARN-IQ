@@ -4,6 +4,20 @@
 
 export const API_BASE = "/api";
 
+if (typeof window !== "undefined" && window.fetch) {
+    const _origFetch = window.fetch;
+    window.fetch = function (resource, options) {
+        options = options || {};
+        const url = typeof resource === "string" ? resource : resource?.url || "";
+        if (url.startsWith("/api") || url.startsWith(API_BASE)) {
+            if (!options.credentials) {
+                options.credentials = "same-origin";
+            }
+        }
+        return _origFetch.call(this, resource, options);
+    };
+}
+
 export const state = {
     currentUser: null,
     currentQuiz: null,

@@ -1,0 +1,379 @@
+/**
+ * LearnIQ - Rankings Page Component Scoped Styles
+ * Learning League UI Redesign
+ */
+
+/* ============================================================
+   PAGE CONTAINER & THEME BACKGROUND
+   ============================================================ */
+#rankings {
+    background-color: #070a12 !important;
+    background-image: radial-gradient(circle at 10% 10%, rgba(12, 42, 56, 0.7) 0%, transparent 55%) !important;
+    min-height: calc(100vh - 70px);
+    padding: 36px 24px 60px 24px;
+    font-family: 'Manrope', 'Inter', system-ui, -apple-system, sans-serif;
+    color: #ffffff;
+    box-sizing: border-box;
+}
+
+#rankings .rankings-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* ============================================================
+   HEADER & EYEBROW
+   ============================================================ */
+#rankings .rankings-header {
+    margin-bottom: 24px;
+}
+
+#rankings .rankings-eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: #38d6ff;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+#rankings .rankings-title {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #ffffff;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.02em;
+}
+
+#rankings .rankings-subtitle {
+    font-size: 17px;
+    font-weight: 500;
+    color: #9aa6bd;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+#rankings .rankings-tabs {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 32px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#rankings .rankings-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+#rankings .rankings-tab-btn {
+    min-height: 44px;
+    padding: 10px 22px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: #111726;
+    color: #9aa6bd;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#rankings .rankings-tab-btn:hover {
+    color: #ffffff;
+    background: #161e33;
+}
+
+#rankings .rankings-tab-btn:focus-visible {
+    outline: 2px solid #38d6ff;
+    outline-offset: 2px;
+}
+
+#rankings .rankings-tab-btn.active {
+    background: #12384a;
+    color: #38d6ff;
+    border-color: rgba(56, 214, 255, 0.28);
+    box-shadow: 0 0 14px rgba(56, 214, 255, 0.12);
+}
+
+/* ============================================================
+   MAIN TWO-COLUMN GRID LAYOUT
+   ============================================================ */
+#rankings .rankings-main-grid {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 700px) {
+    #rankings .rankings-main-grid {
+        grid-template-columns: 1fr;
+    }
+    #rankings .rankings-title {
+        font-size: 38px;
+    }
+    #rankings {
+        padding: 24px 16px 48px 16px;
+    }
+}
+
+/* ============================================================
+   LEFT COLUMN: YOUR RANK CARD
+   ============================================================ */
+#rankings .your-rank-card {
+    background: linear-gradient(160deg, #12384a 0%, #0e1424 100%);
+    border: 1px solid #1f4a60;
+    border-radius: 22px;
+    padding: 28px 24px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 90px;
+}
+
+#rankings .your-rank-label {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #38d6ff;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+#rankings .your-rank-number-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+#rankings .your-rank-big-num {
+    font-size: 88px;
+    font-weight: 800;
+    line-height: 0.95;
+    color: #ffffff;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+}
+
+#rankings .your-rank-classmates {
+    font-size: 15px;
+    font-weight: 500;
+    color: #9aa6bd;
+    white-space: nowrap;
+}
+
+#rankings .your-rank-xp {
+    font-size: 30px;
+    font-weight: 800;
+    color: #38d6ff;
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+}
+
+#rankings .your-rank-progress-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    position: relative;
+}
+
+#rankings .your-rank-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4cc9f0, #8b7cff);
+    border-radius: 10px;
+    transition: width 600ms ease-out;
+}
+
+#rankings .your-rank-status-line {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #9aa6bd;
+    line-height: 1.45;
+}
+
+#rankings .your-rank-status-line strong {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+/* ============================================================
+   RIGHT COLUMN: LEADERBOARD LIST
+   ============================================================ */
+#rankings .leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#rankings .leaderboard-row {
+    background: #0e1424;
+    border: 1px solid #1b2338;
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    cursor: default;
+}
+
+#rankings .leaderboard-row:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 214, 255, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+#rankings .leaderboard-row.current-user-row {
+    background: #0d1d2b;
+    border: 1.5px solid #38d6ff;
+    box-shadow: 0 0 18px rgba(56, 214, 255, 0.14);
+}
+
+#rankings .leaderboard-rank {
+    font-size: 18px;
+    font-weight: 800;
+    min-width: 36px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+/* Rank Medals / Colours */
+#rankings .rank-gold { color: #f5c451; }
+#rankings .rank-silver { color: #c4cbd8; }
+#rankings .rank-bronze { color: #e0955a; }
+#rankings .rank-other { color: #6f7b93; }
+
+#rankings .leaderboard-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4cc9f0, #8b7cff);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(76, 201, 240, 0.25);
+    user-select: none;
+}
+
+#rankings .leaderboard-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+#rankings .leaderboard-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#rankings .you-badge {
+    background: #38d6ff;
+    color: #070a12;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    line-height: 1.3;
+}
+
+#rankings .class-chip {
+    background: #151b2a;
+    color: #9aa6bd;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    margin-left: auto;
+    margin-right: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+#rankings .leaderboard-xp {
+    font-size: 15px;
+    font-weight: 800;
+    color: #38d6ff;
+    text-align: right;
+    min-width: 85px;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   SKELETON & EMPTY STATES
+   ============================================================ */
+#rankings .ranking-skeleton-row {
+    background: #0e1424;
+    border: 1px solid #1b2338;
+    border-radius: 14px;
+    padding: 18px;
+    height: 68px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: rankingsPulse 1.4s infinite ease-in-out;
+}
+
+#rankings .ranking-skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+#rankings .ranking-skeleton-bar {
+    height: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+}
+
+@keyframes rankingsPulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.85; }
+}
+
+#rankings .ranking-empty-card {
+    background: #0e1424;
+    border: 1px dashed #1b2338;
+    border-radius: 18px;
+    padding: 48px 24px;
+    text-align: center;
+    color: #9aa6bd;
+}

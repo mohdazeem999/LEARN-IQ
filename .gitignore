@@ -6,3 +6,5 @@ backend/.env
 frontend/.env
 *.log
 .DS_Store
+scratch/
+*.tmp*
