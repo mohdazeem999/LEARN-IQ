@@ -19,17 +19,19 @@ router.get("/leaderboard", async (req, res) => {
         }
 
         const leaderboard = profilesData.map((profile, index) => {
+            const uid = profile.user_id || profile.id;
             const lvl = gamificationService.calculateLevel(profile.xp || 0);
             return {
                 rank: index + 1,
-                userId: profile.user_id || profile.id,
+                userId: uid,
                 name: profile.name || "Student",
                 xp: profile.xp || 0,
                 level: lvl.levelNumber,
                 levelTitle: lvl.title,
                 class: profile.class ? `Class ${profile.class}` : "Class 10",
                 streak: profile.streak || 0,
-                role: profile.role
+                role: profile.role,
+                badges: gamificationService.getStudentVisibleBadges(uid)
             };
         });
 
@@ -139,6 +141,19 @@ router.post("/avatar/select", (req, res) => {
 router.post("/rewards/redeem", async (req, res) => {
     try {
         const { itemId, rewardTitle, cost } = req.body;
+        const studentId = req.auth.user.id;
+        const badgeMatch = gamificationService.findBadgeByTitleOrId(itemId || rewardTitle);
+
+        if (badgeMatch) {
+            const result = gamificationService.redeemRewardBadge(studentId, badgeMatch.id);
+            return res.json({
+                success: true,
+                message: `Successfully unlocked ${result.badge.name}!`,
+                badge: result.badge,
+                badges: result.badges
+            });
+        }
+
         const targetItemId = itemId || (
             rewardTitle && rewardTitle.toLowerCase().includes("gold") ? "frame_gold" :
             rewardTitle && rewardTitle.toLowerCase().includes("neon") ? "frame_neon" :
@@ -147,7 +162,7 @@ router.post("/rewards/redeem", async (req, res) => {
             "frame_neon"
         );
 
-        const result = gamificationService.redeemShopItem(req.auth.user.id, targetItemId);
+        const result = gamificationService.redeemShopItem(studentId, targetItemId);
 
         res.json({
             success: true,
@@ -158,6 +173,32 @@ router.post("/rewards/redeem", async (req, res) => {
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
+    }
+});
+
+// GET /api/students/badges
+router.get("/badges", (req, res) => {
+    try {
+        const studentId = req.auth.user.id;
+        const badges = gamificationService.getStudentBadges(studentId);
+        res.json({ success: true, badges });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// POST /api/students/badges/toggle
+router.post("/badges/toggle", (req, res) => {
+    try {
+        const studentId = req.auth.user.id;
+        const { badgeId, showOnProfile } = req.body;
+        if (!badgeId) {
+            return res.status(400).json({ success: false, message: "badgeId is required." });
+        }
+        const result = gamificationService.toggleStudentBadgeVisibility(studentId, badgeId, showOnProfile);
+        res.json({ success: true, ...result });
+    } catch (e) {
+        res.status(400).json({ success: false, message: e.message });
     }
 });
 

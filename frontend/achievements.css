@@ -1,0 +1,528 @@
+/* ==========================================================================
+   LearnIQ - Your Achievements Page: "Reward Vault" Design System
+   Scoped strictly to #rewards to ensure 0% CSS leakage
+   ========================================================================== */
+
+#rewards {
+    background-color: #070a12;
+    background-image: radial-gradient(circle at 12% 10%, #0c2a38 0%, transparent 48%);
+    min-height: 100vh;
+    padding: 36px 36px 60px 36px;
+    box-sizing: border-box;
+    font-family: 'Manrope', 'Inter', system-ui, -apple-system, sans-serif;
+    color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Header: Eyebrow, H1, Subtitle & Balance Card
+   -------------------------------------------------------------------------- */
+#rewards .vault-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+#rewards .vault-header-left {
+    display: flex;
+    flex-direction: column;
+}
+
+#rewards .vault-eyebrow {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    color: #38d6ff;
+    text-transform: uppercase;
+}
+
+#rewards .vault-title {
+    font-size: 52px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 6px 0 8px 0;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+#rewards .vault-subtitle {
+    font-size: 17px;
+    color: #9aa6bd;
+    margin: 0;
+    line-height: 1.4;
+}
+
+#rewards .vault-balance-card {
+    background: linear-gradient(135deg, #12384a, #1b2150);
+    border: 1px solid #2a5b78;
+    border-radius: 18px;
+    padding: 14px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 170px;
+    box-sizing: border-box;
+}
+
+#rewards .vault-balance-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    color: #38d6ff;
+    text-transform: uppercase;
+}
+
+#rewards .vault-balance-val {
+    font-size: 30px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.1;
+}
+
+/* --------------------------------------------------------------------------
+   Reward Vault Grid
+   -------------------------------------------------------------------------- */
+#rewards .vault-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-top: 32px;
+}
+
+@media (min-width: 1024px) {
+    #rewards .vault-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 580px) {
+    #rewards .vault-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Per-Reward Accent System (Cycles every 4 rewards)
+   1 = #38d6ff, 2 = #9a8cff, 3 = #f5c451, 4 = #ff8a50
+   -------------------------------------------------------------------------- */
+#rewards .vault-card:nth-child(4n + 1) {
+    --card-accent: #38d6ff;
+    --accent-2e: #38d6ff2e;
+    --accent-55: #38d6ff55;
+    --accent-88: #38d6ff88;
+    --accent-11: #38d6ff11;
+    --accent-44: #38d6ff44;
+    --accent-66: #38d6ff66;
+}
+
+#rewards .vault-card:nth-child(4n + 2) {
+    --card-accent: #9a8cff;
+    --accent-2e: #9a8cff2e;
+    --accent-55: #9a8cff55;
+    --accent-88: #9a8cff88;
+    --accent-11: #9a8cff11;
+    --accent-44: #9a8cff44;
+    --accent-66: #9a8cff66;
+}
+
+#rewards .vault-card:nth-child(4n + 3) {
+    --card-accent: #f5c451;
+    --accent-2e: #f5c4512e;
+    --accent-55: #f5c45155;
+    --accent-88: #f5c45188;
+    --accent-11: #f5c45111;
+    --accent-44: #f5c45144;
+    --accent-66: #f5c45166;
+}
+
+#rewards .vault-card:nth-child(4n + 4) {
+    --card-accent: #ff8a50;
+    --accent-2e: #ff8a502e;
+    --accent-55: #ff8a5055;
+    --accent-88: #ff8a5088;
+    --accent-11: #ff8a5011;
+    --accent-44: #ff8a5044;
+    --accent-66: #ff8a5066;
+}
+
+/* --------------------------------------------------------------------------
+   Reward Vault Card ("Vault" style)
+   -------------------------------------------------------------------------- */
+#rewards .vault-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: linear-gradient(165deg, var(--accent-2e), #0e1424 60%);
+    border: 1px solid var(--accent-55);
+    transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    box-sizing: border-box;
+}
+
+#rewards .vault-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-88);
+}
+
+#rewards .vault-card.unlocked {
+    box-shadow: 0 0 30px var(--accent-44);
+}
+
+/* Decorative watermark: stroke only, opacity .14, top -10px, right -14px */
+#rewards .vault-watermark {
+    position: absolute;
+    top: -10px;
+    right: -14px;
+    font-size: 150px;
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--card-accent);
+    opacity: 0.14;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+}
+
+/* Card position label: "REWARD 01", "REWARD 02", etc. */
+#rewards .vault-card-num {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    color: var(--card-accent);
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+}
+
+/* 64px Icon tile */
+#rewards .vault-icon-tile {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 25%, var(--accent-55), var(--accent-11));
+    border: 1.5px solid var(--accent-88);
+    box-shadow: 0 0 22px var(--accent-44);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--card-accent);
+    font-size: 26px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Reward Name */
+#rewards .vault-card-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    line-height: 1.2;
+    position: relative;
+    z-index: 1;
+}
+
+/* Description (min-height 40px ensures card alignment) */
+#rewards .vault-card-desc {
+    font-size: 14px;
+    color: #b4bfd3;
+    min-height: 40px;
+    line-height: 1.45;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Progress Row: 76px Circular Ring & XP Remaining
+   -------------------------------------------------------------------------- */
+#rewards .vault-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: auto;
+    padding-top: 4px;
+    position: relative;
+    z-index: 1;
+}
+
+#rewards .vault-ring-wrap {
+    width: 76px;
+    height: 76px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+#rewards .vault-ring-svg {
+    width: 76px;
+    height: 76px;
+    display: block;
+}
+
+#rewards .vault-ring-track {
+    stroke: #1a2133;
+    stroke-width: 7px;
+    fill: none;
+}
+
+#rewards .vault-ring-arc {
+    fill: none;
+    stroke: var(--card-accent);
+    stroke-width: 7px;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 38px 38px;
+    transition: stroke-dashoffset 700ms ease-out;
+}
+
+#rewards .vault-ring-pct {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+    user-select: none;
+}
+
+#rewards .vault-progress-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#rewards .vault-cost {
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+#rewards .vault-rem {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--card-accent);
+}
+
+/* --------------------------------------------------------------------------
+   Redeem Button (Locked, Unlocked, Redeemed)
+   -------------------------------------------------------------------------- */
+#rewards .vault-redeem-btn {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    box-sizing: border-box;
+    transition: all 150ms ease;
+    position: relative;
+    z-index: 1;
+}
+
+#rewards .vault-redeem-btn:focus-visible {
+    outline: 2px solid var(--card-accent);
+    outline-offset: 3px;
+}
+
+/* LOCKED */
+#rewards .vault-redeem-btn.locked,
+#rewards .vault-redeem-btn:disabled:not(.redeemed) {
+    background: #111726;
+    border: 1px solid #232b40;
+    color: #9aa6bd;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* UNLOCKED */
+#rewards .vault-redeem-btn.unlocked,
+#rewards .vault-card.unlocked .vault-redeem-btn:not(:disabled):not(.redeemed) {
+    background: var(--card-accent);
+    color: #070a12;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 20px var(--accent-66);
+}
+
+#rewards .vault-redeem-btn.unlocked:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+/* REDEEMED */
+#rewards .vault-redeem-btn.redeemed {
+    background: #111726;
+    border: 1px solid var(--accent-55);
+    color: var(--card-accent);
+    cursor: default;
+    box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   Loading & Empty States
+   -------------------------------------------------------------------------- */
+#rewards .vault-skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-top: 32px;
+}
+
+#rewards .vault-skeleton-card {
+    height: 340px;
+    border-radius: 24px;
+    background: linear-gradient(90deg, #0e1424 25%, #151d33 50%, #0e1424 75%);
+    background-size: 200% 100%;
+    animation: vaultSkeletonShimmer 1.5s infinite;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@keyframes vaultSkeletonShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+#rewards .vault-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(14, 20, 36, 0.4);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    margin-top: 32px;
+}
+
+/* --------------------------------------------------------------------------
+   Reduced Motion Accessibility
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    #rewards * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Redeemed Card State & Show On Profile Switch
+   -------------------------------------------------------------------------- */
+#rewards .vault-redeemed-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--card-accent, #38d6ff);
+    color: #070a12;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+#rewards .vault-card.redeemed {
+    border-color: var(--card-accent);
+    box-shadow: 0 0 34px var(--accent-44, rgba(56, 214, 255, 0.27));
+}
+
+#rewards .vault-toggle-shelf {
+    margin-top: auto;
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    z-index: 2;
+}
+
+#rewards .vault-switch-divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+#rewards .vault-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+}
+
+#rewards .vault-switch-text {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+#rewards .vault-switch-btn {
+    width: 48px;
+    height: 28px;
+    border-radius: 999px;
+    background: #1a2133;
+    border: 1px solid #232b40;
+    cursor: pointer;
+    position: relative;
+    transition: background 200ms ease, border-color 200ms ease;
+    padding: 0;
+    outline: none;
+    flex-shrink: 0;
+    min-height: 28px;
+}
+
+#rewards .vault-switch-btn.active {
+    background: #38d6ff;
+    border-color: #38d6ff;
+}
+
+#rewards .vault-switch-btn:focus-visible {
+    outline: 2px solid #38d6ff;
+    outline-offset: 3px;
+}
+
+#rewards .vault-switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    transition: transform 200ms ease;
+}
+
+#rewards .vault-switch-btn.active .vault-switch-knob {
+    transform: translateX(20px);
+    background: #070a12;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Adaptations
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    #rewards {
+        padding: 24px 16px 48px 16px;
+    }
+    #rewards .vault-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 18px;
+    }
+    #rewards .vault-title {
+        font-size: 38px;
+    }
+    #rewards .vault-balance-card {
+        width: 100%;
+    }
+}

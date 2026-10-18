@@ -1392,8 +1392,17 @@ async function redeemReward(cost, title = "Reward Item") {
         if (!response.ok || !data.success) {
             throw new Error(data.message || "Reward redemption could not be completed.");
         }
-        studentProfile.xp = data.remainingXp;
+        studentProfile.xp = data.remainingXp !== undefined ? data.remainingXp : studentProfile.xp;
         updateXPDisplay(studentProfile.xp);
+        if (window.recordRedeemedBadge && (data.badge || title)) {
+            window.recordRedeemedBadge(data.badge || { name: title });
+        }
+        if (window.syncBadgesAcrossUI) {
+            window.syncBadgesAcrossUI();
+        }
+        if (typeof loadLeaderboard === "function") {
+            loadLeaderboard();
+        }
         showToast(`🎁 ${data.message}`);
     } catch (e) {
         showToast(`⚠️ ${e.message || "Reward redemption could not be confirmed. Please try again."}`);
@@ -1704,6 +1713,9 @@ function updateUserUI(user) {
         studentProfile.classLevel = user.class ? `Class ${user.class}` : studentProfile.classLevel;
         studentProfile.xp = user.xp !== undefined ? user.xp : (studentProfile.xp || 0);
         updateXPDisplay(studentProfile.xp);
+        if (window.fetchUserBadges) {
+            window.fetchUserBadges(true);
+        }
 
         // Sidebar navigation visibility based on role
         if (user.role === "teacher") {
@@ -1764,6 +1776,10 @@ function updateUserUI(user) {
 
         studentProfile.xp = 0;
         updateXPDisplay(0);
+        if (window.syncBadgesAcrossUI) {
+            window.cachedUserBadges = [];
+            window.syncBadgesAcrossUI();
+        }
     }
 
     const roleLabel = document.getElementById("roleLabel");
@@ -1873,6 +1889,8 @@ async function loadLeaderboard() {
                 const cleanName = (item.name || "Student").replace(/\s*\((?:you|You)\)\s*/gi, "").trim();
                 const rawClass = String(item.class || "Class 10").replace(/class\s*/gi, "").trim();
                 const classDisplay = `CLASS ${rawClass || "10"}`;
+                const studentBadges = (isCurrentUser && window.cachedUserBadges) ? window.cachedUserBadges : (item.badges || []);
+                const badgesHtml = typeof renderUserBadges === 'function' ? renderUserBadges(studentBadges, { size: 24, max: 3, gap: 5 }) : '';
 
                 return `
                     <article class="leaderboard-row ${isCurrentUser ? 'current-user-row' : ''}">
@@ -1880,6 +1898,7 @@ async function loadLeaderboard() {
                         <div class="leaderboard-avatar" aria-hidden="true">${(cleanName || "S").charAt(0).toUpperCase()}</div>
                         <div class="leaderboard-info">
                             <span class="leaderboard-name">${escapeHtml(cleanName)}</span>
+                            ${badgesHtml}
                             ${isCurrentUser ? '<span class="you-badge">YOU</span>' : ''}
                         </div>
                         <span class="class-chip">${classDisplay}</span>
@@ -1892,12 +1911,15 @@ async function loadLeaderboard() {
             if (currentUser && currentUser.name) {
                 const cleanName = (currentUser.name || "Student").replace(/\s*\((?:you|You)\)\s*/gi, "").trim();
                 const rawClass = String(currentUser.class || "Class 10").replace(/class\s*/gi, "").trim();
+                const myBadges = window.cachedUserBadges || [];
+                const badgesHtml = typeof renderUserBadges === 'function' ? renderUserBadges(myBadges, { size: 24, max: 3, gap: 5 }) : '';
                 container.innerHTML = `
                     <article class="leaderboard-row current-user-row">
                         <span class="leaderboard-rank rank-gold">#1</span>
                         <div class="leaderboard-avatar" aria-hidden="true">${(cleanName || "U").charAt(0).toUpperCase()}</div>
                         <div class="leaderboard-info">
                             <span class="leaderboard-name">${escapeHtml(cleanName)}</span>
+                            ${badgesHtml}
                             <span class="you-badge">YOU</span>
                         </div>
                         <span class="class-chip">CLASS ${rawClass || "10"}</span>

@@ -228,10 +228,20 @@
                 <i class="fa-regular fa-bell"></i>
             </button>
 
+            <!-- Topbar Badge Chip (Visible only when student has at least 1 visible badge) -->
+            <div id="topbarBadgeChip" class="topbar-badge-chip" style="display: none;" title="Your Featured Badge">
+                <span id="topbarChipMedal"></span>
+                <span id="topbarChipName"></span>
+                <span id="topbarChipMore" class="topbar-chip-more" style="display: none;"></span>
+            </div>
+
             <!-- Authenticated User Profile & Dropdown with Aligned Sign Out -->
             <div class="topbar-user-wrap" style="position: relative;">
                 <div class="user-profile" id="topbarUserProfile" onclick="toggleUserDropdown()" style="cursor: pointer;">
-                    <div class="avatar" id="userAvatar">🌱</div>
+                    <div class="avatar" id="userAvatar" style="position: relative;">
+                        🌱
+                        <div id="topbarAvatarMedal" class="topbar-avatar-medal" style="display: none;"></div>
+                    </div>
                     <div>
                         <strong id="userName">Sign in</strong>
                         <span id="userSub">Student Mode</span>
@@ -251,7 +261,21 @@
                         <span id="dropdownUserRoleBadge" class="badge-pill strong" style="font-size: 11px;">Student</span>
                         <span id="dropdownUserClassBadge" class="badge-pill" style="font-size: 11px; background: rgba(57,217,255,0.1); color: var(--cyan);">Class 10</span>
                     </div>
-                    <button class="nav-item" onclick="showPage('profile'); closeUserDropdown();" style="width: 100%; padding: 8px 10px; font-size: 12.5px; border-radius: 8px; margin-bottom: 4px; background: transparent; border: none; color: var(--text); display: flex; align-items: center; gap: 8px; cursor: pointer;">
+
+                    <!-- MY BADGES SHELF -->
+                    <div class="dropdown-badges-section">
+                        <div class="dropdown-badges-header">
+                            <span>MY BADGES</span>
+                        </div>
+                        <div class="dropdown-badges-shelf" id="dropdownBadgesShelf">
+                            <!-- Populated with 56px medals and empty dashed slots -->
+                        </div>
+                        <button type="button" class="dropdown-badges-btn" onclick="showPage('rewards'); closeUserDropdown();">
+                            <i class="fa-solid fa-award" aria-hidden="true"></i> View all badges
+                        </button>
+                    </div>
+
+                    <button class="nav-item" onclick="showPage('profile'); closeUserDropdown();" style="width: 100%; padding: 8px 10px; font-size: 12.5px; border-radius: 8px; margin-top: 8px; margin-bottom: 4px; background: transparent; border: none; color: var(--text); display: flex; align-items: center; gap: 8px; cursor: pointer;">
                         <i class="fa-solid fa-user"></i> My Profile & Attendance
                     </button>
                     <button class="user-dropdown-signout-btn" onclick="logout(); closeUserDropdown();">
@@ -1644,123 +1668,266 @@
 <section id="rewards"
          class="page">
 
+    <link rel="stylesheet" href="achievements.css">
 
-    <div class="page-header">
+    <!-- ==========================================
+         VAULT HEADER
+         ========================================== -->
+    <div class="vault-header">
+        <div class="vault-header-left">
+            <span class="vault-eyebrow">DIGITAL REWARDS</span>
+            <h1 class="vault-title">Your Achievements</h1>
+            <p class="vault-subtitle">Use your XP to unlock digital rewards.</p>
+        </div>
 
-        <div>
+        <div class="vault-balance-card" aria-label="Current XP Balance">
+            <span class="vault-balance-label">YOUR BALANCE</span>
+            <span class="vault-balance-val"><span class="xp-value" id="vaultBalanceXp">0</span> XP</span>
+        </div>
+    </div>
 
-            <span class="eyebrow">
-                DIGITAL REWARDS
-            </span>
+    <!-- ==========================================
+         LOADING & EMPTY STATES (Page Scoped)
+         ========================================== -->
+    <div id="vaultSkeletonGrid" class="vault-skeleton-grid" style="display: none;" aria-hidden="true">
+        <div class="vault-skeleton-card"></div>
+        <div class="vault-skeleton-card"></div>
+        <div class="vault-skeleton-card"></div>
+        <div class="vault-skeleton-card"></div>
+    </div>
 
-            <h1>
-                Your Achievements
-            </h1>
+    <div id="vaultEmptyState" class="vault-empty-state" style="display: none;">
+        <i class="fa-solid fa-box-open" style="font-size: 40px; color: #9aa6bd; margin-bottom: 12px;" aria-hidden="true"></i>
+        <h3 style="font-size: 18px; color: #ffffff; margin-bottom: 6px;">No Rewards Available</h3>
+        <p style="font-size: 14px; color: #9aa6bd; margin: 0 auto; max-width: 320px;">Check back soon for new digital achievements and streak multipliers!</p>
+    </div>
 
-            <p>
-                Use your XP to unlock digital rewards.
-            </p>
+    <!-- ==========================================
+         REWARD VAULT GRID
+         ========================================== -->
+    <div class="vault-grid" id="vaultGrid">
 
+        <!-- Reward 01: Scholar Badge (500 XP, Accent: #38d6ff) -->
+        <div class="vault-card locked" data-cost="500" data-reward-id="scholar-badge">
+            <i class="fa-solid fa-medal vault-watermark" aria-hidden="true"></i>
+
+            <span class="vault-card-num">REWARD 01</span>
+
+            <div class="vault-icon-tile">
+                <i class="fa-solid fa-medal" aria-hidden="true"></i>
+            </div>
+
+            <h3 class="vault-card-name">Scholar Badge</h3>
+            <p class="vault-card-desc">Show your learning achievement.</p>
+
+            <div class="vault-progress-row">
+                <div class="vault-ring-wrap">
+                    <svg class="vault-ring-svg" width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+                        <circle class="vault-ring-track" cx="38" cy="38" r="34.5"></circle>
+                        <circle class="vault-ring-arc" cx="38" cy="38" r="34.5" stroke-dasharray="216.77" stroke-dashoffset="216.77"></circle>
+                    </svg>
+                    <span class="vault-ring-pct">0%</span>
+                </div>
+
+                <div class="vault-progress-info">
+                    <span class="vault-cost">500 XP</span>
+                    <span class="vault-rem">500 to go</span>
+                </div>
+            </div>
+
+            <button type="button" class="vault-redeem-btn locked" disabled onclick="redeemReward(500, 'Scholar Badge')">
+                Redeem at 500 XP
+            </button>
+        </div>
+
+        <!-- Reward 02: Learning Rocket (800 XP, Accent: #9a8cff) -->
+        <div class="vault-card locked" data-cost="800" data-reward-id="learning-rocket">
+            <i class="fa-solid fa-rocket vault-watermark" aria-hidden="true"></i>
+
+            <span class="vault-card-num">REWARD 02</span>
+
+            <div class="vault-icon-tile">
+                <i class="fa-solid fa-rocket" aria-hidden="true"></i>
+            </div>
+
+            <h3 class="vault-card-name">Learning Rocket</h3>
+            <p class="vault-card-desc">For consistent improvement.</p>
+
+            <div class="vault-progress-row">
+                <div class="vault-ring-wrap">
+                    <svg class="vault-ring-svg" width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+                        <circle class="vault-ring-track" cx="38" cy="38" r="34.5"></circle>
+                        <circle class="vault-ring-arc" cx="38" cy="38" r="34.5" stroke-dasharray="216.77" stroke-dashoffset="216.77"></circle>
+                    </svg>
+                    <span class="vault-ring-pct">0%</span>
+                </div>
+
+                <div class="vault-progress-info">
+                    <span class="vault-cost">800 XP</span>
+                    <span class="vault-rem">800 to go</span>
+                </div>
+            </div>
+
+            <button type="button" class="vault-redeem-btn locked" disabled onclick="redeemReward(800, 'Learning Rocket')">
+                Redeem at 800 XP
+            </button>
+        </div>
+
+        <!-- Reward 03: Master Crown (1500 XP, Accent: #f5c451) -->
+        <div class="vault-card locked" data-cost="1500" data-reward-id="master-crown">
+            <i class="fa-solid fa-crown vault-watermark" aria-hidden="true"></i>
+
+            <span class="vault-card-num">REWARD 03</span>
+
+            <div class="vault-icon-tile">
+                <i class="fa-solid fa-crown" aria-hidden="true"></i>
+            </div>
+
+            <h3 class="vault-card-name">Master Crown</h3>
+            <p class="vault-card-desc">Demonstrate concept mastery.</p>
+
+            <div class="vault-progress-row">
+                <div class="vault-ring-wrap">
+                    <svg class="vault-ring-svg" width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+                        <circle class="vault-ring-track" cx="38" cy="38" r="34.5"></circle>
+                        <circle class="vault-ring-arc" cx="38" cy="38" r="34.5" stroke-dasharray="216.77" stroke-dashoffset="216.77"></circle>
+                    </svg>
+                    <span class="vault-ring-pct">0%</span>
+                </div>
+
+                <div class="vault-progress-info">
+                    <span class="vault-cost">1,500 XP</span>
+                    <span class="vault-rem">1,500 to go</span>
+                </div>
+            </div>
+
+            <button type="button" class="vault-redeem-btn locked" disabled onclick="redeemReward(1500, 'Master Crown')">
+                Redeem at 1,500 XP
+            </button>
+        </div>
+
+        <!-- Reward 04: 30 Day Streak (2000 XP, Accent: #ff8a50) -->
+        <div class="vault-card locked" data-cost="2000" data-reward-id="30-day-streak">
+            <i class="fa-solid fa-fire vault-watermark" aria-hidden="true"></i>
+
+            <span class="vault-card-num">REWARD 04</span>
+
+            <div class="vault-icon-tile">
+                <i class="fa-solid fa-fire" aria-hidden="true"></i>
+            </div>
+
+            <h3 class="vault-card-name">30 Day Streak</h3>
+            <p class="vault-card-desc">Celebrate long-term consistency.</p>
+
+            <div class="vault-progress-row">
+                <div class="vault-ring-wrap">
+                    <svg class="vault-ring-svg" width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+                        <circle class="vault-ring-track" cx="38" cy="38" r="34.5"></circle>
+                        <circle class="vault-ring-arc" cx="38" cy="38" r="34.5" stroke-dasharray="216.77" stroke-dashoffset="216.77"></circle>
+                    </svg>
+                    <span class="vault-ring-pct">0%</span>
+                </div>
+
+                <div class="vault-progress-info">
+                    <span class="vault-cost">2,000 XP</span>
+                    <span class="vault-rem">2,000 to go</span>
+                </div>
+            </div>
+
+            <button type="button" class="vault-redeem-btn locked" disabled onclick="redeemReward(2000, '30 Day Streak')">
+                Redeem at 2,000 XP
+            </button>
         </div>
 
     </div>
 
+    <!-- ==========================================
+         VAULT REACTIVITY SCRIPT (Page Scoped)
+         Syncs Progress Rings, XP Remaining, Button States
+         Without modifying any external logic or API calls
+         ========================================== -->
+    <script>
+    (function () {
+        const C = 216.77; // 2 * PI * 34.5
 
-    <div class="reward-grid">
+        function getCurrentUserXp() {
+            if (typeof studentProfile !== "undefined" && typeof studentProfile.xp === "number") {
+                return studentProfile.xp;
+            }
+            if (typeof state !== "undefined" && state.studentProfile && typeof state.studentProfile.xp === "number") {
+                return state.studentProfile.xp;
+            }
+            const el = document.getElementById("vaultBalanceXp");
+            if (el) {
+                const parsed = parseInt(el.innerText.replace(/[^0-9]/g, ""), 10);
+                if (!isNaN(parsed)) return parsed;
+            }
+            return 0;
+        }
 
+        function refreshVaultCardStates() {
+            const userXP = getCurrentUserXp();
+            const cards = document.querySelectorAll("#rewards .vault-card");
+            if (!cards || cards.length === 0) return;
 
-        <div class="reward-card">
+            cards.forEach(card => {
+                const cost = parseInt(card.dataset.cost, 10) || 500;
+                const pct = Math.min(100, Math.round((userXP / cost) * 100));
+                const arc = card.querySelector(".vault-ring-arc");
+                const pctEl = card.querySelector(".vault-ring-pct");
+                const remEl = card.querySelector(".vault-rem");
+                const btn = card.querySelector(".vault-redeem-btn");
+                const isRedeemed = card.dataset.redeemed === "true" || card.classList.contains("redeemed");
+                if (isRedeemed) {
+                    return;
+                }
 
-            <i class="fa-solid fa-medal"></i>
+                if (pctEl) pctEl.textContent = pct + "%";
+                if (arc) {
+                    const offset = C * (1 - pct / 100);
+                    arc.style.strokeDashoffset = offset;
+                }
 
-            <h3>
-                Scholar Badge
-            </h3>
+                if (userXP >= cost) {
+                    card.classList.remove("locked");
+                    card.classList.add("unlocked");
+                    if (remEl) remEl.textContent = "Ready to redeem";
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.className = "vault-redeem-btn unlocked";
+                        btn.textContent = "Redeem";
+                    }
+                } else {
+                    card.classList.remove("unlocked");
+                    card.classList.add("locked");
+                    const diff = cost - userXP;
+                    if (remEl) remEl.textContent = diff.toLocaleString() + " to go";
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.className = "vault-redeem-btn locked";
+                        btn.textContent = "Redeem at " + cost.toLocaleString() + " XP";
+                    }
+                }
+            });
+        }
 
-            <p>
-                Show your learning achievement.
-            </p>
+        window.refreshVaultCardStates = refreshVaultCardStates;
 
-            <strong>
-                500 XP
-            </strong>
+        const balanceEl = document.getElementById("vaultBalanceXp");
+        if (balanceEl && typeof MutationObserver !== "undefined") {
+            const observer = new MutationObserver(() => refreshVaultCardStates());
+            observer.observe(balanceEl, { childList: true, characterData: true, subtree: true });
+        }
 
-            <button onclick="redeemReward(500)">
-                Redeem
-            </button>
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", refreshVaultCardStates);
+        } else {
+            refreshVaultCardStates();
+        }
 
-        </div>
-
-
-        <div class="reward-card">
-
-            <i class="fa-solid fa-rocket"></i>
-
-            <h3>
-                Learning Rocket
-            </h3>
-
-            <p>
-                For consistent improvement.
-            </p>
-
-            <strong>
-                800 XP
-            </strong>
-
-            <button onclick="redeemReward(800)">
-                Redeem
-            </button>
-
-        </div>
-
-
-        <div class="reward-card">
-
-            <i class="fa-solid fa-crown"></i>
-
-            <h3>
-                Master Crown
-            </h3>
-
-            <p>
-                Demonstrate concept mastery.
-            </p>
-
-            <strong>
-                1500 XP
-            </strong>
-
-            <button onclick="redeemReward(1500)">
-                Redeem
-            </button>
-
-        </div>
-
-
-        <div class="reward-card">
-
-              <i class="fa-solid fa-fire"></i>
-
-            <h3>
-                30 Day Streak
-            </h3>
-
-            <p>
-                Celebrate long-term consistency.
-            </p>
-
-            <strong>
-                2000 XP
-            </strong>
-
-            <button onclick="redeemReward(2000)">
-                Redeem
-            </button>
-
-        </div>
-
-    </div>
+        setInterval(refreshVaultCardStates, 800);
+    })();
+    </script>
 
 </section>
 
@@ -2023,6 +2190,7 @@
      JAVASCRIPT
      ========================================== -->
 
+<script src="js/badges.js"></script>
 <script src="script.js"></script>
 
 

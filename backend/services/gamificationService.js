@@ -1380,12 +1380,120 @@ async function getTeacherGamificationOverview() {
     };
 }
 
+// ========================================================
+// 12. DIGITAL REWARD BADGES (ACHIEVEMENTS VAULT)
+// ========================================================
+const REWARD_BADGES = {
+    "scholar-badge": {
+        id: "scholar-badge",
+        name: "Scholar Badge",
+        icon: "fa-solid fa-medal",
+        cost: 500,
+        color: "#38d6ff"
+    },
+    "learning-rocket": {
+        id: "learning-rocket",
+        name: "Learning Rocket",
+        icon: "fa-solid fa-rocket",
+        cost: 800,
+        color: "#9a8cff"
+    },
+    "master-crown": {
+        id: "master-crown",
+        name: "Master Crown",
+        icon: "fa-solid fa-crown",
+        cost: 1500,
+        color: "#f5c451"
+    },
+    "30-day-streak": {
+        id: "30-day-streak",
+        name: "30 Day Streak",
+        icon: "fa-solid fa-fire",
+        cost: 2000,
+        color: "#ff8a50"
+    }
+};
+
+function findBadgeByTitleOrId(identifier) {
+    if (!identifier) return null;
+    const clean = String(identifier).trim().toLowerCase();
+    for (const key of Object.keys(REWARD_BADGES)) {
+        const badge = REWARD_BADGES[key];
+        if (badge.id.toLowerCase() === clean || badge.name.toLowerCase() === clean || clean.includes(badge.name.toLowerCase()) || clean.includes(key)) {
+            return badge;
+        }
+    }
+    return null;
+}
+
+function getStudentBadges(studentId) {
+    const store = loadStore();
+    if (!store.student_badges) store.student_badges = {};
+    return store.student_badges[studentId] || [];
+}
+
+function getStudentVisibleBadges(studentId) {
+    const badges = getStudentBadges(studentId);
+    return badges.filter(b => b.showOnProfile !== false);
+}
+
+function redeemRewardBadge(studentId, badgeIdentifier) {
+    const badge = findBadgeByTitleOrId(badgeIdentifier);
+    if (!badge) {
+        throw new Error("Reward badge not recognized.");
+    }
+    const store = loadStore();
+    if (!store.student_badges) store.student_badges = {};
+    if (!store.student_badges[studentId]) store.student_badges[studentId] = [];
+
+    const existing = store.student_badges[studentId].find(b => b.id === badge.id);
+    if (existing) {
+        throw new Error(`You have already redeemed the ${badge.name}.`);
+    }
+
+    const newBadge = {
+        id: badge.id,
+        name: badge.name,
+        icon: badge.icon,
+        cost: badge.cost,
+        color: badge.color,
+        showOnProfile: true,
+        redeemedAt: new Date().toISOString()
+    };
+
+    store.student_badges[studentId].push(newBadge);
+    saveStore();
+
+    return {
+        badge: newBadge,
+        badges: store.student_badges[studentId]
+    };
+}
+
+function toggleStudentBadgeVisibility(studentId, badgeId, showOnProfile) {
+    const store = loadStore();
+    if (!store.student_badges || !store.student_badges[studentId]) {
+        throw new Error("Student has no redeemed badges.");
+    }
+    const badge = store.student_badges[studentId].find(b => b.id === badgeId);
+    if (!badge) {
+        throw new Error("Badge not found for student.");
+    }
+    badge.showOnProfile = Boolean(showOnProfile);
+    saveStore();
+    return {
+        badge,
+        badges: store.student_badges[studentId]
+    };
+}
+
 module.exports = {
     LEVELS,
     AVATARS,
     ACHIEVEMENTS,
     REWARD_SHOP_ITEMS,
     CLASS_CHALLENGES,
+    REWARD_BADGES,
     calculateLevel,
     getDailyMissions,
     getStudentDailyChallenges,
@@ -1395,5 +1503,10 @@ module.exports = {
     getStudentGamificationProfile,
     redeemShopItem,
     selectActiveAvatar,
-    getTeacherGamificationOverview
+    getTeacherGamificationOverview,
+    findBadgeByTitleOrId,
+    getStudentBadges,
+    getStudentVisibleBadges,
+    redeemRewardBadge,
+    toggleStudentBadgeVisibility
 };
