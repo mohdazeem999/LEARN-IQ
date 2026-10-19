@@ -1,0 +1,16 @@
+{
+  "name": "learniq-platform",
+  "version": "1.0.0",
+  "description": "LearnIQ AI-Powered Classroom Learning Intelligence & Quiz Generator Platform",
+  "main": "backend/server.js",
+  "scripts": {
+    "postinstall": "npm --prefix backend install",
+    "build": "npm --prefix backend install",
+    "start": "node backend/server.js",
+    "dev": "npm --prefix backend run dev",
+    "test": "npm --prefix backend test"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

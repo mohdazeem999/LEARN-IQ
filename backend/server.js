@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 require("dotenv").config();
 
 // Startup Environment Variable Validation
@@ -128,9 +129,9 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
     console.log(`=======================================================`);
     console.log(`🚀 LearnIQ AI Quiz Generator & Intelligence Platform`);
-    console.log(`🌐 Web App running at: http://localhost:${PORT}`);
+    console.log(`🌐 Web App running at: http://0.0.0.0:${PORT}`);
     console.log(`=======================================================`);
 });
