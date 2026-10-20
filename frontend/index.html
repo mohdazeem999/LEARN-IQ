@@ -31,6 +31,7 @@
     <!-- CSS -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="rankings.css">
+    <link rel="stylesheet" href="adaptive-quiz.css">
 
 </head>
 
@@ -1224,138 +1225,148 @@
 
 
 
-    <div class="quiz-card">
+    <div class="quiz-layout-wrapper">
 
+        <div class="quiz-card">
 
-        <!-- QUIZ HEADER -->
-        <div class="quiz-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
-            <div>
-                <span class="eyebrow">
-                    <i class="fa-solid fa-brain"></i> ADAPTIVE ASSESSMENT
-                </span>
-                <h2 id="quizTitle">
-                    Linear Equations
-                </h2>
-            </div>
-
-            <!-- Timer Controls and Dual Timer Display -->
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <!-- Timer Mode Switcher (Overall Quiz Timer OR Individual Question Timer) -->
-                <div class="timer-mode-switcher" style="display: flex; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 10px; border: 1px solid var(--border);">
-                    <button type="button" id="btnTimerModeOverall" class="timer-mode-btn active" onclick="setQuizTimerMode('overall')" style="padding: 6px 12px; font-size: 11.5px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; background: var(--primary-gradient); color: white;">
-                        <i class="fa-solid fa-hourglass-half"></i> Overall Quiz
-                    </button>
-                    <button type="button" id="btnTimerModeQuestion" class="timer-mode-btn" onclick="setQuizTimerMode('question')" style="padding: 6px 12px; font-size: 11.5px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; background: transparent; color: var(--muted);">
-                        <i class="fa-solid fa-stopwatch"></i> Per Question
-                    </button>
+            <!-- 1. QUIZ HEADER STRIP -->
+            <div class="quiz-header">
+                <div class="quiz-header-titles">
+                    <span class="quiz-header-eyebrow eyebrow">
+                        ADAPTIVE ASSESSMENT
+                    </span>
+                    <h2 id="quizTitle">
+                        Linear Equations
+                    </h2>
                 </div>
 
-                <!-- Active Timer Box -->
-                <div class="quiz-timer" id="quizTimerBox" style="display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 10px;">
-                    <i class="fa-regular fa-clock" id="quizTimerIcon" style="color: var(--cyan);"></i>
-                    <span id="quizTimer" style="font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;">
+                <!-- Timer Controls & Mode Switcher -->
+                <div class="quiz-header-controls">
+                    <div class="timer-mode-switcher">
+                        <button type="button" id="btnTimerModeOverall" class="timer-mode-btn active" onclick="setQuizTimerMode('overall')">
+                            <i class="fa-solid fa-hourglass-half"></i> Overall Quiz
+                        </button>
+                        <button type="button" id="btnTimerModeQuestion" class="timer-mode-btn" onclick="setQuizTimerMode('question')">
+                            <i class="fa-solid fa-stopwatch"></i> Per Question
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. PROGRESS ROW (one line, vertically centered: Question 1 of 5 | 5-segment bar | timer pill | Score 0) -->
+            <div class="quiz-progress-row quiz-progress">
+                <span id="questionNumber" class="quiz-prog-label">
+                    Question 1 of 5
+                </span>
+
+                <div class="quiz-progress-bar">
+                    <div id="quizProgressFill" style="width:20%"></div>
+                </div>
+
+                <!-- Timer Pill (04:55 with cyan border) -->
+                <div class="quiz-timer" id="quizTimerBox">
+                    <i class="fa-regular fa-clock" id="quizTimerIcon"></i>
+                    <span id="quizTimer">
                         05:00
                     </span>
-                    <span class="timer-mode-badge" id="quizTimerModeBadge" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: rgba(0, 240, 255, 0.2); color: var(--cyan); text-transform: uppercase;">
+                    <span class="timer-mode-badge" id="quizTimerModeBadge" style="display: none;">
                         Overall
                     </span>
                 </div>
-            </div>
-        </div>
 
-
-
-        <!-- PROGRESS -->
-
-        <div class="quiz-progress">
-
-            <div class="quiz-progress-bar">
-
-                <div id="quizProgressFill"
-                     style="width:10%">
-                </div>
-
-            </div>
-
-
-            <div class="quiz-progress-info">
-
-                <span id="questionNumber">
-                    Question 1 of 10
-                </span>
-
-                <span id="scoreDisplay">
+                <span id="scoreDisplay" class="quiz-score-label">
                     Score: 0
                 </span>
+            </div>
 
+            <!-- 3. QUESTION AREA -->
+            <div class="question-area">
+                <div class="question-number" id="questionIndex">
+                    01
+                </div>
+
+                <h3 id="questionText">
+                    Solve for x in the equation: 3x - 7 = 14
+                </h3>
+
+                <!-- 4. ANSWER OPTIONS 2x2 GRID -->
+                <div class="answer-grid" id="answerContainer">
+                    <button type="button" class="answer-option" onclick="selectOption(0)">
+                        <span class="option-num-badge">1</span>
+                        <span>x = 7</span>
+                    </button>
+                    <button type="button" class="answer-option" onclick="selectOption(1)">
+                        <span class="option-num-badge">2</span>
+                        <span>x = 5</span>
+                    </button>
+                    <button type="button" class="answer-option" onclick="selectOption(2)">
+                        <span class="option-num-badge">3</span>
+                        <span>x = 9</span>
+                    </button>
+                    <button type="button" class="answer-option" onclick="selectOption(3)">
+                        <span class="option-num-badge">4</span>
+                        <span>x = 3</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 5. FOOTER ROW -->
+            <div class="quiz-footer">
+                <div class="adaptive-message">
+                    <i class="fa-solid fa-brain"></i>
+                    <span id="adaptiveMessage">
+                        Select an option (1, 2, 3, or 4)
+                    </span>
+                </div>
+
+                <button class="primary-btn quiz-next-btn" onclick="nextQuestion()">
+                    <span>Next Question</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
             </div>
 
         </div>
 
+        <!-- 6. OPTIONAL SIDE PANEL (Desktop 1024px and wider) -->
+        <aside class="quiz-side-panel">
+            <div class="quiz-side-card">
+                <div class="quiz-side-header">
+                    <span class="quiz-side-eyebrow">
+                        <i class="fa-solid fa-bolt"></i> ADAPTIVE ENGINE
+                    </span>
+                    <h4 class="quiz-side-title">Live Assessment</h4>
+                </div>
 
+                <div class="quiz-side-block">
+                    <span class="quiz-side-label">Adaptive Level</span>
+                    <div class="quiz-side-pill">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>Level 1 • Adaptive</span>
+                    </div>
+                </div>
 
-        <!-- QUESTION -->
+                <div class="quiz-side-block">
+                    <span class="quiz-side-label">Target Concept</span>
+                    <div class="quiz-side-concept">
+                        <i class="fa-solid fa-brain"></i>
+                        <span>One-variable linear equations</span>
+                    </div>
+                </div>
 
-        <div class="question-area">
+                <div class="quiz-side-divider"></div>
 
-
-            <div class="question-number"
-                 id="questionIndex">
-
-                01
-
+                <div class="quiz-side-meta">
+                    <div class="quiz-side-info-item">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Questions dynamically calibrate to your real-time performance.</span>
+                    </div>
+                    <div class="quiz-side-info-item">
+                        <i class="fa-regular fa-keyboard"></i>
+                        <span>Select answers using keys 1, 2, 3, 4</span>
+                    </div>
+                </div>
             </div>
-
-
-            <h3 id="questionText">
-
-                Loading question...
-
-            </h3>
-
-
-            <!-- JavaScript inserts answers here -->
-
-            <div class="answer-grid"
-                 id="answerContainer">
-
-            </div>
-
-
-        </div>
-
-
-
-        <!-- FOOTER -->
-
-        <div class="quiz-footer">
-
-
-            <div class="adaptive-message">
-
-                <i class="fa-solid fa-brain"></i>
-
-                <span id="adaptiveMessage">
-
-                    Choose an answer.
-                    Your next question will adapt to your performance.
-
-                </span>
-
-            </div>
-
-
-            <button class="primary-btn"
-                    onclick="nextQuestion()">
-
-                Next Question
-
-                <i class="fa-solid fa-arrow-right"></i>
-
-            </button>
-
-        </div>
-
+        </aside>
 
     </div>
 

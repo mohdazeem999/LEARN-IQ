@@ -101,15 +101,17 @@ app.use("/api/teachers", teacherRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 
-// Health Endpoint
-app.get("/api/health", (req, res) => {
-    res.json({
-        success: true,
-        status: "healthy",
+// Health Endpoints
+const healthHandler = (req, res) => {
+    res.status(200).json({
+        status: "ok",
+        healthy: true,
         service: "LearnIQ Backend Server",
         timestamp: new Date().toISOString()
     });
-});
+};
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
 
 // Serve frontend SPA fallback
 app.get("*", (req, res) => {
