@@ -29,7 +29,7 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
 const frontendPath = path.join(__dirname, "../frontend");
 
 app.set("trust proxy", 1);
@@ -50,13 +50,14 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 
-// Restrict CORS to specified origins or localhost in dev
+// Restrict CORS to specified origins, localhost in dev, or Render deployment URL
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
     : [
         `http://localhost:${PORT}`,
         `http://127.0.0.1:${PORT}`,
-        "http://localhost:3000"
+        "http://localhost:3000",
+        ...(process.env.RENDER_EXTERNAL_URL ? [process.env.RENDER_EXTERNAL_URL] : [])
     ];
 
 app.use(cors({
@@ -134,6 +135,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`=======================================================`);
     console.log(`🚀 LearnIQ AI Quiz Generator & Intelligence Platform`);
+    console.log(`Server running on port ${PORT}`);
     console.log(`🌐 Web App running at: http://0.0.0.0:${PORT}`);
     console.log(`=======================================================`);
 });

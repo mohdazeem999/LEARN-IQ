@@ -186,9 +186,9 @@ LearnIQ follows a client-server architecture.
 
 Current project implementation:
 
-* bcryptjs for password hashing
-* JWT for authentication
-* `app_users` database table
+* Supabase Auth for identity management, authentication, and secure password handling
+* HttpOnly, SameSite=Lax session cookies (`learniq_access`, `learniq_refresh`)
+* `auth.users` linked with `public.profiles` database table
 
 ## Development
 
@@ -201,56 +201,102 @@ Current project implementation:
 
 # 8. Project Structure
 
-The target project structure is:
+The project structure is:
 
 ```text
-project/
+screening1/
 │
 ├── package.json
-├── server.js
-├── .env
-├── .env.example
 ├── README.md
-├── DESIGN.md
 │
-├── controllers/
-│   ├── authController.js
-│   ├── assessmentController.js
-│   ├── studentController.js
-│   └── teacherController.js
+├── backend/
+│   ├── package.json
+│   ├── server.js
+│   ├── .env
+│   ├── .env.example
+│   ├── schema.sql
+│   ├── gamification-schema.sql
+│   ├── profile-auth-migration.sql
+│   │
+│   ├── config/
+│   │   └── supabaseClient.js
+│   │
+│   ├── constants/
+│   │   └── gamification.js
+│   │
+│   ├── data/
+│   │   └── gamification_store.json
+│   │
+│   ├── middleware/
+│   │   └── auth.js
+│   │
+│   ├── routes/
+│   │   ├── adminRoutes.js
+│   │   ├── assessmentRoutes.js
+│   │   ├── authRoutes.js
+│   │   ├── studentRoutes.js
+│   │   └── teacherRoutes.js
+│   │
+│   ├── services/
+│   │   ├── aiService.js
+│   │   ├── gamificationService.js
+│   │   └── gamification/
+│   │
+│   ├── utils/
+│   │   ├── userPresenter.js
+│   │   └── validators.js
+│   │
+│   └── tests/
 │
-├── routes/
-│   ├── authRoutes.js
-│   ├── assessmentRoutes.js
-│   ├── studentRoutes.js
-│   └── teacherRoutes.js
+├── frontend/
+│   ├── index.html
+│   ├── style.css
+│   ├── script.js
+│   ├── achievements.css
+│   ├── adaptive-quiz.css
+│   ├── rankings.css
+│   │
+│   ├── assets/
+│   │
+│   └── js/
+│       ├── admin.js
+│       ├── app.js
+│       ├── auth.js
+│       ├── badges.js
+│       ├── gamification.js
+│       ├── quiz.js
+│       ├── state.js
+│       ├── teacher.js
+│       └── ui.js
 │
-├── middleware/
-│   └── authMiddleware.js
-│
-├── config/
-│   └── supabase.js
-│
-├── database/
-│   └── schema.sql
-│
-└── public/
-    ├── index.html
-    ├── style.css
-    └── script.js
+└── documentation/
+    └── design.md
 ```
 
 ---
 
 # 9. Frontend Architecture
 
-The frontend is contained inside the `public/` folder.
+The frontend is contained inside the `frontend/` folder and served statically by Express.
 
 ```text
-public/
+frontend/
 ├── index.html
 ├── style.css
-└── script.js
+├── script.js
+├── achievements.css
+├── adaptive-quiz.css
+├── rankings.css
+└── js/
+    ├── admin.js
+    ├── app.js
+    ├── auth.js
+    ├── badges.js
+    ├── gamification.js
+    ├── quiz.js
+    ├── state.js
+    ├── teacher.js
+    └── ui.js
 ```
 
 ## index.html
@@ -258,60 +304,54 @@ public/
 Responsible for:
 
 * Page structure
-* Login
-* Registration
-* Dashboard
-* Assessment interface
-* Learning intelligence interface
-* Rankings
-* Rewards
-* Challenges
-* Profile/settings
+* Login & Signup modals / forms
+* Student Dashboard
+* Assessment & Quiz interface
+* Learning intelligence & DNA map interface
+* Rankings & Leaderboards
+* Rewards shop
+* Challenges & Quests
+* Teacher & Admin portals
+* Profile & settings
 
-## style.css
-
-Responsible for:
-
-* Layout
-* Responsive design
-* Glassmorphism
-* Dark theme
-* Buttons
-* Cards
-* Navigation
-* Assessment styling
-* Dashboard components
-
-## script.js
+## style.css & Modular CSS
 
 Responsible for:
 
-* User interaction
-* Navigation
-* API requests
-* Authentication state
-* Assessment interaction
-* Dashboard data
-* UI updates
+* Layout and responsive grid
+* Glassmorphism and futuristic dark theme design system
+* Component styling (Cards, Buttons, Modals, Progress bars)
+* Modular styles: `achievements.css`, `adaptive-quiz.css`, `rankings.css`
+
+## script.js & Modular JavaScript (`frontend/js/`)
+
+Responsible for:
+
+* User interaction and navigation
+* API requests using credentials (`credentials: "same-origin"`)
+* Session management and authentication state via HttpOnly cookies
+* Assessment interaction and real-time AI scoring
+* Teacher classroom intelligence & intervention generation
+* Gamification (XP, coins, streaks, badges, leaderboard)
 
 ---
 
 # 10. Backend Architecture
 
-The backend follows a basic MVC-style separation.
+The backend follows an Express route-middleware-service architecture.
 
 ```text
 Request
    ↓
-Route
+Routes (backend/routes/*.js)
    ↓
-Middleware
+Middleware (backend/middleware/auth.js)
    ↓
-Controller
+Services (backend/services/*.js)
    ↓
-Supabase
+Supabase Client (backend/config/supabaseClient.js)
    ↓
-Database
+Database (PostgreSQL / Supabase)
 ```
 
 ---
@@ -322,78 +362,83 @@ Database
 
 Responsibilities:
 
-* Start Express.
-* Load environment variables.
-* Enable CORS.
-* Parse JSON.
-* Serve frontend files.
-* Register API routes.
-* Start the server.
+* Start Express application on `PORT` 5050 (configured in `backend/.env`).
+* Load environment variables via `dotenv`.
+* Security headers via Helmet (with Content Security Policy allowing required fonts and CDNs).
+* CORS configuration with credentials support for allowed origins.
+* Rate limiting for authentication (`/api/auth`) and AI quiz generation (`/api/assessments/generate`).
+* Parse JSON payloads.
+* Serve static frontend files from `../frontend`.
+* Register API routes (`/api/assessments`, `/api/students`, `/api/teachers`, `/api/auth`, `/api/admin`).
+* Health endpoints (`/health` and `/api/health`).
+* SPA fallback for client-side routing.
 
 Example flow:
 
 ```text
 Browser
    ↓
-http://localhost:5000
+http://localhost:5050
    ↓
 Express
    ↓
-public/index.html
+frontend/index.html
 ```
 
 ---
 
 # 12. Authentication Design
 
-Authentication follows this flow:
+Authentication uses Supabase Auth with server-managed HttpOnly session cookies (`learniq_access`, `learniq_refresh`). Raw tokens are never stored in browser `localStorage` or exposed to client-side JavaScript.
 
 ## Registration
 
 ```text
-Registration Form
+Registration Form (Name, Email, Password, Role, Class)
        ↓
-JavaScript
+frontend/js/auth.js (handleAuthSubmit)
        ↓
-POST /api/auth/register
+POST /api/auth/signup
        ↓
-authRoutes.js
+backend/routes/authRoutes.js
        ↓
-authController.js
+Validate Input (valid email, password >= 6 chars, name, class for students)
        ↓
-Validate Input
+Supabase Auth (authClient.auth.signUp / admin createUser fallback)
        ↓
-bcrypt.hash()
+Create Profile in public.profiles (user_id = auth.users.id)
        ↓
-Supabase
+Issue HttpOnly Session Cookies (learniq_access, learniq_refresh)
        ↓
-app_users
+Return Sanitized User Session
+       ↓
+Frontend (state.currentUser updated)
 ```
 
-A password is never stored as plain text.
+Passwords are securely hashed and managed by Supabase Auth; passwords are never stored in plain text or in application-level profile tables.
 
 ---
 
 ## Login
 
 ```text
-Login Form
+Login Form (Email, Password)
+     ↓
+frontend/js/auth.js (handleAuthSubmit)
      ↓
 POST /api/auth/login
      ↓
-authRoutes.js
+backend/routes/authRoutes.js
      ↓
-authController.js
+Validate with Supabase Auth (authClient.auth.signInWithPassword)
      ↓
-Find User
+Retrieve / Sync Profile from public.profiles
      ↓
-bcrypt.compare()
+Set HttpOnly Session Cookies (learniq_access, learniq_refresh)
      ↓
-Generate JWT
+Return Sanitized User Profile
      ↓
-Return Token
-     ↓
-Frontend
+Frontend (state.currentUser updated)
      ↓
 Dashboard
 ```
@@ -402,109 +447,131 @@ Dashboard
 
 # 13. Protected Routes
 
-Protected API requests require a valid JWT.
+Protected API requests authenticate via secure HttpOnly session cookies (`learniq_access` and `learniq_refresh`).
 
 ```text
-Request
+Request (credentials: "same-origin" / Cookie header)
    ↓
-Authorization Header
+backend/middleware/auth.js (authenticate)
    ↓
-authMiddleware.js
+Read Cookie (learniq_access)
    ↓
-JWT Verification
-   ↓
-Valid?
- ┌───┴───┐
-No      Yes
-↓        ↓
-401     Controller
-         ↓
-      Database
+Token Expired or Expiring Soon?
+ ┌───────────────┴───────────────┐
+Yes                             No
+ ↓                               ↓
+Refresh via Supabase Auth   Verify with Supabase Auth
+(learniq_refresh)           (supabase.auth.getUser)
+ ↓                               ↓
+Rotate Session Cookies           Valid?
+ └───────────────┬───────────────┘
+                 ↓
+               Valid?
+         ┌───────┴───────┐
+        No              Yes
+        ↓                ↓
+       401          Fetch/Verify Profile
+                    (public.profiles)
+                         ↓
+                    Attach req.auth & Check Role
+                    (requireRole)
+                         ↓
+                    Route Handler / Controller
+                         ↓
+                    Database
 ```
 
 ---
 
 # 14. Current User Flow
 
-After login, the frontend obtains the authenticated user's information.
+On initial application load, the frontend checks for an active session by calling:
 
-The dashboard should display actual database information.
+```text
+GET /api/auth/session  (or GET /api/auth/me)
+```
 
-Example:
+The backend resolves the session from the HttpOnly cookies, verifies the user with Supabase Auth, fetches the corresponding profile from `public.profiles`, and returns the user object.
+
+The dashboard displays actual database information:
 
 ```text
 Welcome back, Azeem
 
 XP: 0
 Streak: 0
-Rank: No rankings yet
+Rank: 1
 ```
 
-These values must not be hard-coded.
+Values are fetched live from the database and not hard-coded.
 
 ---
 
 # 15. Logout Design
 
-Logout should:
+Logout invalidates the device session on both the backend and client:
 
 ```text
 Logout Button
       ↓
-Remove authentication token
+POST /api/auth/logout
       ↓
-Clear user state
+backend/routes/authRoutes.js
       ↓
-Redirect to Login
+Clear Session Cookies (learniq_access & learniq_refresh with Max-Age=0)
+      ↓
+Revoke Session in Supabase Auth (signOut({ scope: "local" }))
+      ↓
+Frontend resets state.currentUser
+      ↓
+Redirect to Landing / Login View
 ```
 
-If the user tries to access the dashboard afterward, the application should redirect them back to login.
+If the user attempts to access protected routes afterward, the backend rejects the unauthenticated request with a 401 response and prompts for login.
 
 ---
 
 # 16. Database Design
 
-The database contains the major entities required for the learning intelligence system.
+The database contains the major entities required for the learning intelligence system:
 
 ```text
-app_users
+auth.users (managed by Supabase Auth)
 profiles
-subjects
-topics
-questions
-quiz_attempts
-quiz_answers
-learning_progress
-learning_mistakes
-learning_recommendations
-achievements
-student_achievements
+quizzes
+quiz_submissions
+class_learning_maps
+rewards
+reward_redemptions
+xp_transactions
 challenges
 student_challenges
-rewards
-student_rewards
-xp_transactions
 ```
 
 ---
 
 # 17. User Data
 
-`app_users` stores authentication and basic user information.
+User authentication identity is managed in Supabase Auth (`auth.users`), while application profile, educational tier, and gamification state reside in `public.profiles`.
 
-Important fields:
+Important fields in `public.profiles`:
 
 ```text
-id
-name
-email
-password_hash
-role
-class
-xp
-streak
-rank
-created_at
+id (UUID, primary key)
+user_id (UUID, references auth.users(id) ON DELETE CASCADE)
+name (TEXT)
+email (TEXT)
+role (TEXT: student, teacher, admin)
+class (INT: student grade 5-12)
+xp (INT)
+streak (INT)
+rank (INT)
+coins (INT)
+active_avatar (TEXT)
+equipped_frame (TEXT)
+equipped_theme (TEXT)
+equipped_title (TEXT)
+created_at (TIMESTAMP WITH TIME ZONE)
 ```
 
 Initial student values:
@@ -512,7 +579,8 @@ Initial student values:
 ```text
 xp = 0
 streak = 0
-rank = NULL
+rank = 1
+coins = 50
 ```
 
 The frontend displays:
@@ -521,7 +589,7 @@ The frontend displays:
 Rank: No rankings yet
 ```
 
-when no ranking exists.
+when no ranking records exist yet.
 
 ---
 
@@ -928,15 +996,18 @@ Fake data must not be presented as actual student information.
 
 Security requirements include:
 
-* Password hashing.
-* JWT verification.
-* Protected routes.
-* Role-based authorization.
-* Environment variables for secrets.
-* No real `.env` file in GitHub.
-* No password hashes returned to frontend.
-* Database access controls.
-* Input validation.
+* Supabase Auth managed authentication and secure password hashing.
+* HttpOnly, SameSite=Lax session cookies (`learniq_access`, `learniq_refresh`), marked `Secure` in production.
+* No access/refresh tokens stored in browser `localStorage` or `sessionStorage`.
+* Protected backend routes validated through `backend/middleware/auth.js`.
+* Role-based authorization (`student`, `teacher`, `admin`) via `requireRole`.
+* Security headers configured via Helmet including Content Security Policy (CSP).
+* Rate limiting on sensitive routes (`/api/auth` limiter: 30 requests/15m; `/api/assessments/generate`: 10 requests/1m).
+* Environment variables for all secrets (`SUPABASE_SECRET_KEY`, `GEMINI_API_KEY`).
+* Server-only Supabase service keys never exposed to client-side code.
+* No real `.env` file committed to version control.
+* PostgreSQL Row Level Security (RLS) on database tables.
+* Input validation on all incoming request payloads.
 
 ---
 
@@ -945,22 +1016,25 @@ Security requirements include:
 Real credentials are stored locally in:
 
 ```text
-.env
+backend/.env
 ```
 
-The repository contains only:
+The repository template contains:
 
 ```text
-.env.example
+backend/.env.example
 ```
 
 Example:
 
 ```env
-PORT=5000
-SUPABASE_URL=your_url_here
-SUPABASE_ANON_KEY=your_key_here
-JWT_SECRET=your_secret_here
+PORT=5050
+NODE_ENV=development
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+SUPABASE_SECRET_KEY=your_service_role_or_secret_key
+GEMINI_API_KEY=your_gemini_api_key
+ALLOWED_ORIGINS=http://localhost:5050
 ```
 
 Real credentials must never be committed to GitHub.
@@ -976,15 +1050,16 @@ Main API groups:
 /api/assessments
 /api/students
 /api/teachers
-/api/subjects
-/api/topics
+/api/admin
 ```
 
 Authentication:
 
 ```text
-POST /api/auth/register
+POST /api/auth/signup
 POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/session
 GET  /api/auth/me
 ```
 
@@ -993,7 +1068,37 @@ Assessment:
 ```text
 GET  /api/assessments
 GET  /api/assessments/:id
+POST /api/assessments/generate
 POST /api/assessments/submit
+POST /api/assessments/feedback/retry
+```
+
+Students & Gamification:
+
+```text
+GET  /api/students/profile
+GET  /api/students/leaderboard
+GET  /api/students/challenges
+POST /api/students/challenges/claim
+GET  /api/students/rewards
+POST /api/students/rewards/redeem
+GET  /api/students/badges
+POST /api/students/badges/toggle
+```
+
+Teachers:
+
+```text
+GET  /api/teachers/class-map
+POST /api/teachers/intervention
+```
+
+Admin:
+
+```text
+GET  /api/admin/overview
+GET  /api/admin/users
+POST /api/admin/role
 ```
 
 ---
@@ -1002,14 +1107,13 @@ POST /api/assessments/submit
 
 The backend should return clear responses for:
 
-* Missing input
-* Invalid credentials
-* Duplicate email
-* Invalid token
-* Unauthorized access
-* Database errors
-* Invalid question
-* Invalid assessment
+* Missing or invalid input payload
+* Invalid email or password credentials
+* Duplicate email on registration
+* Expired or missing session cookies
+* Unauthorized role access (403)
+* Rate limit exceeded (429)
+* Database or third-party service errors (500/503)
 
 Example:
 

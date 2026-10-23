@@ -1,0 +1,23 @@
+# LearnIQ Production Blueprint for Render
+# Automatically configures the Web Service on Render with the verified
+# build and start commands, health check endpoint, and environment variable requirements.
+
+services:
+  - type: web
+    name: learniq-platform
+    env: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

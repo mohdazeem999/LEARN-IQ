@@ -23,7 +23,7 @@ Quiz submissions are associated with the authenticated Supabase user and stored 
 
 Authentication uses Supabase Auth. The backend exchanges credentials with Supabase and keeps each browser's session in `HttpOnly`, `SameSite=Lax` cookies; access and refresh tokens are not stored in browser JavaScript storage. Refresh tokens are rotated by Supabase and refreshed by the backend. Cookies last up to 30 days, subject to the Supabase Auth session policy, and logging out revokes only that device's session.
 
-Set `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`), and the server-only `SUPABASE_SECRET_KEY` in `backend/.env`. Never expose the secret key to the frontend. Production must use HTTPS and `NODE_ENV=production` so session cookies are marked `Secure`. Configure email confirmation and the allowed redirect/site URLs under Supabase **Authentication** settings; when confirmation is required, users confirm their email before signing in.
+Set `PORT` (configured as `5050` in `backend/.env`), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`), and the server-only `SUPABASE_SECRET_KEY` in `backend/.env`. Never expose the secret key to the frontend. Production must use HTTPS and `NODE_ENV=production` so session cookies are marked `Secure`. Configure email confirmation and the allowed redirect/site URLs under Supabase **Authentication** settings; when confirmation is required, users confirm their email before signing in.
 
 New self-service accounts are students. Teacher and admin access comes from the existing `profiles.role` value and must be assigned by a trusted administrator, not selected during public registration. For an existing Auth user, update only that account's profile role in the Supabase SQL editor, for example:
 
@@ -45,4 +45,4 @@ npm install
 npm run dev
 ```
 
-In another terminal, run `cd backend; npm test`. The application is served at `http://localhost:5000` by default.
+In another terminal, run `cd backend; npm test`. The application is served at `http://localhost:5050` by default.
