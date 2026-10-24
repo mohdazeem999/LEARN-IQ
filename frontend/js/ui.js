@@ -78,8 +78,8 @@ export function showPage(pageId) {
         }
     });
 
-    if (pageId === "assessment" && (!state.currentQuiz || state.currentQuestionIdx === 0)) {
-        if (window.startQuiz) window.startQuiz(state.currentQuiz || window.defaultQuiz);
+    if (pageId === "assessment") {
+        if (window.renderAssessmentIntro) window.renderAssessmentIntro();
     } else if (pageId === "admin-dashboard") {
         if (window.loadAdminOverview) window.loadAdminOverview();
     } else if (pageId === "teacher-map") {

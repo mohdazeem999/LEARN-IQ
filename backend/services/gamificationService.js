@@ -563,7 +563,7 @@ const CLASS_CHALLENGES = {
     ]
 };
 
-function getStudentDailyChallenges(studentId, classNum = 10) {
+async function getStudentDailyChallenges(studentId, classNum = 10) {
     const store = loadStore();
     const today = getTodayString();
     if (!store.student_challenges) store.student_challenges = {};
@@ -571,20 +571,68 @@ function getStudentDailyChallenges(studentId, classNum = 10) {
     if (!store.student_challenges[today][studentId]) store.student_challenges[today][studentId] = {};
 
     const userRecord = store.student_challenges[today][studentId];
+
+    // Check Supabase for challenge attempts if available
+    if (supabase && isValidUUID(studentId)) {
+        try {
+            const { data: dbAttempts } = await supabase.from("student_challenge_attempts")
+                .select("challenge_id, completed, claimed, score_percentage, correct_count, total_questions, earned_xp")
+                .eq("student_id", studentId)
+                .eq("date_key", today);
+            if (Array.isArray(dbAttempts)) {
+                dbAttempts.forEach(row => {
+                    userRecord[row.challenge_id] = {
+                        completed: row.completed,
+                        claimed: row.claimed,
+                        scorePercentage: row.score_percentage,
+                        correctCount: row.correct_count,
+                        totalQuestions: row.total_questions,
+                        earnedXp: row.earned_xp
+                    };
+                });
+            }
+        } catch (dbErr) {
+            // Non-blocking fallback to local store
+        }
+    }
+
     const parsedNum = Number.parseInt(String(classNum).replace(/\D/g, ""), 10);
     const cNum = Number.isSafeInteger(parsedNum) && CLASS_CHALLENGES[parsedNum] ? parsedNum : 10;
     const baseList = CLASS_CHALLENGES[cNum] || CLASS_CHALLENGES[10];
 
     const challenges = baseList.map(item => {
         const status = userRecord[item.id] || { completed: false, claimed: false, current: 0 };
+        // Strip correct answers and explanations before sending to client
+        const sanitizedQuestions = (item.taskQuestions || []).map((q, idx) => ({
+            id: idx,
+            question: q.q,
+            options: q.options
+        }));
+        const problem = sanitizedQuestions.length > 0 ? {
+            question: sanitizedQuestions[0].question,
+            options: sanitizedQuestions[0].options
+        } : null;
+
         return {
-            ...item,
+            id: item.id,
+            subject: item.subject,
+            title: item.title,
+            description: item.description,
+            icon: item.icon,
+            target: item.target,
+            xpReward: item.xpReward,
+            coinsReward: item.coinsReward,
+            interactiveType: item.interactiveType,
+            questions: sanitizedQuestions,
+            problem,
             classLevel: cNum,
             className: `Class ${cNum}`,
             completed: Boolean(status.completed),
             claimed: Boolean(status.claimed),
             current: typeof status.current === "number" ? status.current : (status.completed ? item.target : 0),
-            completedAt: status.completedAt || null
+            completedAt: status.completedAt || null,
+            scorePercentage: status.scorePercentage ?? null,
+            correctCount: status.correctCount ?? null
         };
     });
 
@@ -603,7 +651,14 @@ function getStudentDailyChallenges(studentId, classNum = 10) {
     };
 }
 
-async function completeDailyChallenge(studentId, challengeId, classNum = 10) {
+async function completeDailyChallenge(studentId, challengeId, answers, classNum = 10) {
+    if (!studentId || typeof studentId !== "string") {
+        throw new Error("Valid authenticated student ID is required.");
+    }
+    if (!challengeId || typeof challengeId !== "string") {
+        throw new Error("Valid challenge ID is required.");
+    }
+
     const store = loadStore();
     const today = getTodayString();
     if (!store.student_challenges) store.student_challenges = {};
@@ -619,78 +674,253 @@ async function completeDailyChallenge(studentId, challengeId, classNum = 10) {
         throw new Error("Challenge not found for this class level.");
     }
 
-    const currentStatus = store.student_challenges[today][studentId][challengeId] || {};
-    if (currentStatus.claimed) {
-        throw new Error("This daily challenge reward has already been claimed today.");
-    }
-
-    // Mark as completed & claimed
-    store.student_challenges[today][studentId][challengeId] = {
-        completed: true,
-        claimed: true,
-        current: challenge.target,
-        completedAt: new Date().toISOString()
-    };
-
-    // Calculate XP and Coins
+    // Determine current student profile XP and coins
     let currentXp = studentState.xp || 0;
+    let currentCoins = studentState.coins || 0;
     if (supabase && isValidUUID(studentId)) {
         try {
             const { data: prof } = await supabase.from("profiles")
-                .select("xp, streak")
+                .select("xp, coins, streak")
                 .or(`user_id.eq.${studentId},id.eq.${studentId}`)
                 .maybeSingle();
-            if (prof && typeof prof.xp === "number") {
-                currentXp = Math.max(currentXp, prof.xp);
+            if (prof) {
+                if (typeof prof.xp === "number") currentXp = Math.max(currentXp, prof.xp);
+                if (typeof prof.coins === "number") currentCoins = Math.max(currentCoins, prof.coins);
             }
         } catch (err) {
             console.warn("Supabase profile fetch warning:", err.message);
         }
     }
 
-    const earnedXp = challenge.xpReward || 50;
-    const earnedCoins = challenge.coinsReward || 20;
-    const newTotalXp = currentXp + earnedXp;
-
-    studentState.xp = newTotalXp;
-    studentState.recentXpGained = earnedXp;
-    studentState.coins = (studentState.coins || 0) + earnedCoins;
-
-    store.xp_transactions.push({
-        id: crypto.randomUUID(),
-        studentId,
-        amount: earnedXp,
-        source: "daily_challenge",
-        referenceId: challengeId,
-        createdAt: new Date().toISOString()
-    });
-
-    saveStore();
-
-    if (supabase && isValidUUID(studentId)) {
-        try {
-            await supabase.from("profiles")
-                .update({ xp: newTotalXp })
-                .or(`user_id.eq.${studentId},id.eq.${studentId}`);
-        } catch (syncErr) {
-            console.warn("Supabase profile XP sync warning on challenge:", syncErr.message);
-        }
+    // Idempotency: if already claimed today, return the existing result with 0 additional XP
+    const currentStatus = store.student_challenges[today][studentId][challengeId] || {};
+    if (currentStatus.claimed) {
+        const lvl = calculateLevel(currentXp);
+        return {
+            success: true,
+            alreadyClaimed: true,
+            passed: true,
+            challengeId,
+            earnedXp: 0,
+            earnedCoins: 0,
+            xp: currentXp,
+            totalXp: currentXp,
+            coins: currentCoins,
+            totalCoins: currentCoins,
+            scorePercentage: currentStatus.scorePercentage || 100,
+            correctCount: currentStatus.correctCount || (challenge.taskQuestions ? challenge.taskQuestions.length : 1),
+            totalQuestions: currentStatus.totalQuestions || (challenge.taskQuestions ? challenge.taskQuestions.length : 1),
+            level: lvl,
+            xpNeededForNext: lvl.xpNeededForNext,
+            feedbackMessage: "This daily challenge has already been completed today. No additional XP awarded."
+        };
     }
 
-    const newLevelData = calculateLevel(newTotalXp);
-    const feedbackMessage = `+${earnedXp} XP 🎉 → Challenge Complete → ${newLevelData.xpNeededForNext} XP to Next Level`;
+    // Validate and score submitted answers against server-side correct answers
+    const questions = challenge.taskQuestions || [];
+    if (questions.length > 0) {
+        if (answers === undefined || answers === null) {
+            throw new Error("Answers are required to complete this challenge.");
+        }
 
-    return {
-        success: true,
-        challengeId,
-        earnedXp,
-        earnedCoins,
-        xp: newTotalXp,
-        totalXp: newTotalXp,
-        level: newLevelData,
-        xpNeededForNext: newLevelData.xpNeededForNext,
-        feedbackMessage
-    };
+        let correctCount = 0;
+        const feedback = [];
+
+        questions.forEach((q, idx) => {
+            let studentAns = null;
+            if (typeof answers === "number") {
+                if (idx === 0) studentAns = answers;
+            } else if (Array.isArray(answers)) {
+                studentAns = answers[idx];
+            } else if (answers && typeof answers === "object") {
+                studentAns = answers[String(idx)] !== undefined ? answers[String(idx)] : answers[idx];
+            }
+
+            if (studentAns === null || studentAns === undefined) {
+                throw new Error(`Answer for question ${idx + 1} is required.`);
+            }
+
+            const ansNum = Number.parseInt(studentAns, 10);
+            if (!Number.isInteger(ansNum) || ansNum < 0 || ansNum >= q.options.length) {
+                throw new Error(`Invalid answer option for question ${idx + 1}.`);
+            }
+
+            const isCorrect = (ansNum === q.correct);
+            if (isCorrect) correctCount++;
+            feedback.push({
+                questionIndex: idx,
+                question: q.q,
+                selectedOption: ansNum,
+                correctOption: q.correct,
+                isCorrect,
+                explanation: q.explanation
+            });
+        });
+
+        const totalQuestions = questions.length;
+        const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
+
+        // 0 correct -> failed attempt, no XP awarded, not marked completed
+        if (correctCount === 0) {
+            return {
+                success: false,
+                passed: false,
+                challengeId,
+                scorePercentage: 0,
+                correctCount: 0,
+                totalQuestions,
+                earnedXp: 0,
+                earnedCoins: 0,
+                feedback,
+                message: `0 of ${totalQuestions} questions correct. Review the explanations and try again!`
+            };
+        }
+
+        // Proportional reward calculation (full marks = full XP, partial marks = proportional XP)
+        const earnedXp = Math.round((challenge.xpReward || 50) * (correctCount / totalQuestions));
+        const earnedCoins = Math.round((challenge.coinsReward || 20) * (correctCount / totalQuestions));
+        const newTotalXp = currentXp + earnedXp;
+        const newTotalCoins = currentCoins + earnedCoins;
+
+        // Atomically update local store
+        store.student_challenges[today][studentId][challengeId] = {
+            completed: true,
+            claimed: true,
+            current: challenge.target,
+            scorePercentage,
+            correctCount,
+            totalQuestions,
+            earnedXp,
+            earnedCoins,
+            completedAt: new Date().toISOString()
+        };
+
+        studentState.xp = newTotalXp;
+        studentState.coins = newTotalCoins;
+        studentState.recentXpGained = earnedXp;
+
+        store.xp_transactions.push({
+            id: crypto.randomUUID(),
+            studentId,
+            amount: earnedXp,
+            source: "daily_challenge",
+            referenceId: challengeId,
+            createdAt: new Date().toISOString()
+        });
+
+        saveStore();
+
+        // Atomically sync Supabase tables
+        if (supabase && isValidUUID(studentId)) {
+            try {
+                await supabase.from("profiles")
+                    .update({ xp: newTotalXp, coins: newTotalCoins })
+                    .or(`user_id.eq.${studentId},id.eq.${studentId}`);
+
+                await supabase.from("xp_transactions")
+                    .insert({
+                        student_id: studentId,
+                        amount: earnedXp,
+                        source: "daily_challenge",
+                        reference_id: challengeId
+                    });
+
+                await supabase.from("student_challenge_attempts")
+                    .upsert({
+                        student_id: studentId,
+                        challenge_id: challengeId,
+                        date_key: today,
+                        score_percentage: scorePercentage,
+                        correct_count: correctCount,
+                        total_questions: totalQuestions,
+                        earned_xp: earnedXp,
+                        earned_coins: earnedCoins,
+                        completed: true,
+                        claimed: true,
+                        submitted_answers: answers,
+                        completed_at: new Date().toISOString()
+                    }, { onConflict: "student_id, challenge_id, date_key" });
+            } catch (syncErr) {
+                console.warn("Supabase challenge sync warning:", syncErr.message);
+            }
+        }
+
+        const newLevelData = calculateLevel(newTotalXp);
+        const feedbackMessage = `+${earnedXp} XP 🎉 → Challenge Complete → ${newLevelData.xpNeededForNext} XP to Next Level (${newLevelData.title})`;
+
+        return {
+            success: true,
+            passed: true,
+            challengeId,
+            scorePercentage,
+            correctCount,
+            totalQuestions,
+            earnedXp,
+            earnedCoins,
+            xp: newTotalXp,
+            totalXp: newTotalXp,
+            coins: newTotalCoins,
+            totalCoins: newTotalCoins,
+            level: newLevelData,
+            xpNeededForNext: newLevelData.xpNeededForNext,
+            feedback,
+            feedbackMessage
+        };
+    } else {
+        const earnedXp = challenge.xpReward || 50;
+        const earnedCoins = challenge.coinsReward || 20;
+        const newTotalXp = currentXp + earnedXp;
+        const newTotalCoins = currentCoins + earnedCoins;
+
+        store.student_challenges[today][studentId][challengeId] = {
+            completed: true,
+            claimed: true,
+            current: challenge.target,
+            scorePercentage: 100,
+            correctCount: 1,
+            totalQuestions: 1,
+            earnedXp,
+            earnedCoins,
+            completedAt: new Date().toISOString()
+        };
+
+        studentState.xp = newTotalXp;
+        studentState.coins = newTotalCoins;
+        studentState.recentXpGained = earnedXp;
+
+        store.xp_transactions.push({
+            id: crypto.randomUUID(),
+            studentId,
+            amount: earnedXp,
+            source: "daily_challenge",
+            referenceId: challengeId,
+            createdAt: new Date().toISOString()
+        });
+
+        saveStore();
+
+        if (supabase && isValidUUID(studentId)) {
+            try {
+                await supabase.from("profiles")
+                    .update({ xp: newTotalXp, coins: newTotalCoins })
+                    .or(`user_id.eq.${studentId},id.eq.${studentId}`);
+            } catch (err) {}
+        }
+
+        const newLevelData = calculateLevel(newTotalXp);
+        return {
+            success: true,
+            passed: true,
+            challengeId,
+            earnedXp,
+            earnedCoins,
+            xp: newTotalXp,
+            totalXp: newTotalXp,
+            level: newLevelData,
+            xpNeededForNext: newLevelData.xpNeededForNext,
+            feedbackMessage: `+${earnedXp} XP 🎉 → Challenge Complete`
+        };
+    }
 }
 
 // ========================================================
@@ -978,6 +1208,8 @@ async function processQuizSubmission({ studentId, studentName = "Student", quiz,
         xpEarned: earnedXp,
         coinsEarned: earnedCoins,
         aiInsight: analysis.aiInsight,
+        mistakeCategories: analysis.mistakeCategories || null,
+        conceptStats: analysis.conceptStats || null,
         submittedAt: new Date().toISOString()
     };
     store.submissions.push(submissionRecord);
@@ -1487,6 +1719,332 @@ function toggleStudentBadgeVisibility(studentId, badgeId, showOnProfile) {
     };
 }
 
+// ========================================================
+// 12. LEARNING INTELLIGENCE & CURRICULUM TOPIC MASTERY
+// ========================================================
+
+function cleanTopic(name) {
+    if (!name || typeof name !== "string") return "General";
+    return name
+        .replace(/\s*\((Mathematics|Science|Chemistry|Physics|Biology|English|Social Science|Math)\)\s*$/i, "")
+        .replace(/^Class\s*\d+\s*/i, "")
+        .replace(/\s*Assessment$/i, "")
+        .trim();
+}
+
+function matchesSubject(recordSubject, filterSubject) {
+    if (!filterSubject || filterSubject === "All Subjects") return true;
+    if (!recordSubject) return false;
+
+    const r = String(recordSubject).trim().toLowerCase();
+    const f = String(filterSubject).trim().toLowerCase();
+
+    if (f === "science") {
+        return r === "science" || r === "physics" || r === "chemistry" || r === "biology" || r.includes("science");
+    }
+    if (f === "mathematics" || f === "math" || f === "maths") {
+        return r === "mathematics" || r === "math" || r === "maths";
+    }
+    if (f === "english") {
+        return r === "english" || r.startsWith("english");
+    }
+    if (f === "social science") {
+        return r === "social science" || r === "history" || r === "civics" || r === "geography" || r === "economics";
+    }
+    return r === f || r.includes(f);
+}
+
+function matchesClass(recordClass, targetClass) {
+    if (!recordClass || !targetClass) return true;
+    const rNum = String(recordClass).replace(/\D/g, "");
+    const tNum = String(targetClass).replace(/\D/g, "");
+    if (!rNum || !tNum) return true;
+    return rNum === tNum;
+}
+
+async function getAllStudentSubmissions(studentId, authUser) {
+    const store = loadStore();
+    const inMemorySubs = (store.submissions || []).filter(s => s.studentId === studentId);
+
+    const supabaseSubs = [];
+    if (supabase && isValidUUID(studentId)) {
+        try {
+            const { data: dbSubs, error } = await supabase
+                .from("quiz_submissions")
+                .select("id, quiz_id, student_id, score_percentage, correct_count, total_questions, xp_earned, coins_earned, ai_insight, mistake_categories, concept_stats, submitted_at")
+                .eq("student_id", studentId);
+
+            if (!error && Array.isArray(dbSubs) && dbSubs.length > 0) {
+                const quizIds = [...new Set(dbSubs.map(s => s.quiz_id).filter(isValidUUID))];
+                let quizMap = new Map();
+                if (quizIds.length > 0) {
+                    const { data: quizzes } = await supabase
+                        .from("quizzes")
+                        .select("id, title, subject, class_level, topic")
+                        .in("id", quizIds);
+                    if (quizzes) {
+                        quizzes.forEach(q => quizMap.set(q.id, q));
+                    }
+                }
+
+                for (const sub of dbSubs) {
+                    const quizInfo = quizMap.get(sub.quiz_id) || {};
+                    supabaseSubs.push({
+                        id: sub.id,
+                        studentId: sub.student_id,
+                        quizId: sub.quiz_id,
+                        title: quizInfo.title || "Assessment",
+                        subject: quizInfo.subject || "General",
+                        topic: quizInfo.topic || quizInfo.title || "General",
+                        classLevel: quizInfo.class_level || (authUser ? authUser.class : null),
+                        scorePercentage: sub.score_percentage,
+                        correctCount: sub.correct_count,
+                        totalQuestions: sub.total_questions,
+                        xpEarned: sub.xp_earned,
+                        coinsEarned: sub.coins_earned,
+                        aiInsight: sub.ai_insight,
+                        mistakeCategories: sub.mistake_categories,
+                        conceptStats: sub.concept_stats,
+                        submittedAt: sub.submitted_at
+                    });
+                }
+            }
+        } catch (dbErr) {
+            console.warn("Supabase quiz_submissions fetch notice:", dbErr.message);
+        }
+    }
+
+    const merged = new Map();
+    for (const sub of inMemorySubs) {
+        merged.set(sub.id, sub);
+    }
+    for (const sub of supabaseSubs) {
+        if (!merged.has(sub.id)) {
+            merged.set(sub.id, sub);
+        } else {
+            const existing = merged.get(sub.id);
+            if (!existing.mistakeCategories && sub.mistakeCategories) {
+                existing.mistakeCategories = sub.mistakeCategories;
+            }
+            if (!existing.conceptStats && sub.conceptStats) {
+                existing.conceptStats = sub.conceptStats;
+            }
+        }
+    }
+
+    return Array.from(merged.values());
+}
+
+async function getStudentLearningIntelligence(studentId, subjectFilter, authUser) {
+    let rawClass = authUser?.class;
+    if (!rawClass && supabase && isValidUUID(studentId)) {
+        try {
+            const { data: prof } = await supabase.from("profiles")
+                .select("class")
+                .or(`user_id.eq.${studentId},id.eq.${studentId}`)
+                .maybeSingle();
+            if (prof?.class) rawClass = prof.class;
+        } catch (_) {}
+    }
+
+    const studentClassNum = rawClass ? String(rawClass).replace(/\D/g, "") : null;
+    const formattedClass = studentClassNum ? `Class ${studentClassNum}` : "Class 10";
+
+    const allSubmissions = await getAllStudentSubmissions(studentId, authUser);
+
+    // Filter by student's authenticated enrolled class level
+    const classFiltered = allSubmissions.filter(s => {
+        if (!studentClassNum) return true;
+        return matchesClass(s.classLevel, studentClassNum);
+    });
+
+    // Filter strictly by requested subject
+    const subjectFiltered = classFiltered.filter(s => {
+        return matchesSubject(s.subject, subjectFilter);
+    });
+
+    if (subjectFiltered.length === 0) {
+        return {
+            success: true,
+            subject: subjectFilter || "All Subjects",
+            classLevel: formattedClass,
+            overallMastery: null,
+            totalAttempts: 0,
+            topics: [],
+            mistakes: [],
+            nextAction: null
+        };
+    }
+
+    const topicMap = new Map();
+    let totalSubjectQuestions = 0;
+    let totalSubjectCorrect = 0;
+    const aggregatedMistakes = {
+        "Calculation Errors": 0,
+        "Conceptual Errors": 0,
+        "Misreading Questions": 0,
+        "Careless Errors": 0,
+        "Unanswered": 0
+    };
+
+    for (const sub of subjectFiltered) {
+        const tName = cleanTopic(sub.topic || sub.title);
+        if (!topicMap.has(tName)) {
+            topicMap.set(tName, {
+                topic: tName,
+                subject: sub.subject || subjectFilter || "General",
+                attempts: 0,
+                totalQuestions: 0,
+                correctCount: 0,
+                lastPracticed: sub.submittedAt,
+                assessmentIds: []
+            });
+        }
+        const topicEntry = topicMap.get(tName);
+        topicEntry.attempts += 1;
+        const qCount = Number(sub.totalQuestions) || 0;
+        const cCount = Number(sub.correctCount) || 0;
+        topicEntry.totalQuestions += qCount;
+        topicEntry.correctCount += cCount;
+        totalSubjectQuestions += qCount;
+        totalSubjectCorrect += cCount;
+        if (sub.quizId) topicEntry.assessmentIds.push(sub.quizId);
+        if (new Date(sub.submittedAt) > new Date(topicEntry.lastPracticed)) {
+            topicEntry.lastPracticed = sub.submittedAt;
+        }
+
+        const mCats = sub.mistakeCategories || sub.mistake_categories;
+        if (mCats && typeof mCats === "object") {
+            aggregatedMistakes["Calculation Errors"] += (mCats["Calculation Error"] || mCats["Calculation Errors"] || 0);
+            aggregatedMistakes["Conceptual Errors"] += (mCats["Conceptual Error"] || mCats["Conceptual Errors"] || 0);
+            aggregatedMistakes["Misreading Questions"] += (mCats["Misinterpretation"] || mCats["Misreading Questions"] || 0);
+            aggregatedMistakes["Careless Errors"] += (mCats["Careless Error"] || mCats["Careless Errors"] || 0);
+            aggregatedMistakes["Unanswered"] += (mCats["Unanswered"] || 0);
+        }
+    }
+
+    const topics = Array.from(topicMap.values()).map(t => {
+        const mastery = t.totalQuestions > 0 ? Math.round((t.correctCount / t.totalQuestions) * 100) : 0;
+        let status = "Needs Practice";
+        let statusClass = "needs-practice-status";
+        if (mastery >= 80) {
+            status = "Strong";
+            statusClass = "strong-status";
+        } else if (mastery >= 60) {
+            status = "Developing";
+            statusClass = "developing-status";
+        }
+        return {
+            topic: t.topic,
+            subject: t.subject,
+            attempts: t.attempts,
+            totalQuestions: t.totalQuestions,
+            correctCount: t.correctCount,
+            mastery,
+            status,
+            statusClass,
+            lastPracticed: t.lastPracticed,
+            assessmentIds: t.assessmentIds
+        };
+    });
+
+    topics.sort((a, b) => a.mastery - b.mastery);
+
+    const overallMastery = totalSubjectQuestions > 0
+        ? Math.round((totalSubjectCorrect / totalSubjectQuestions) * 100)
+        : null;
+
+    const mistakeEntries = Object.entries(aggregatedMistakes)
+        .filter(([, count]) => count > 0)
+        .map(([title, count]) => {
+            let iconClass = "fa-solid fa-triangle-exclamation";
+            let typeClass = "conceptual-icon";
+            if (title === "Calculation Errors") {
+                iconClass = "fa-solid fa-calculator";
+                typeClass = "calculation-icon";
+            } else if (title === "Conceptual Errors") {
+                iconClass = "fa-solid fa-brain";
+                typeClass = "conceptual-icon";
+            } else if (title === "Misreading Questions") {
+                iconClass = "fa-solid fa-eye";
+                typeClass = "reading-icon";
+            }
+            return { title, count, iconClass, typeClass };
+        })
+        .sort((a, b) => b.count - a.count);
+
+    if (mistakeEntries.length > 0) {
+        mistakeEntries[0].mostFrequent = true;
+    }
+
+    const weakestTopic = topics.find(t => t.mastery < 75) || (topics.length > 0 ? topics[0] : null);
+    let nextAction = null;
+    if (weakestTopic) {
+        nextAction = {
+            topic: weakestTopic.topic,
+            subject: weakestTopic.subject,
+            currentMastery: weakestTopic.mastery,
+            estimatedQuestions: 10
+        };
+    }
+
+    return {
+        success: true,
+        subject: subjectFilter || "All Subjects",
+        classLevel: formattedClass,
+        overallMastery,
+        totalAttempts: subjectFiltered.length,
+        topics,
+        mistakes: mistakeEntries,
+        nextAction
+    };
+}
+
+async function getStudentAssessmentHistory(studentId, subjectFilter, authUser) {
+    let rawClass = authUser?.class;
+    if (!rawClass && supabase && isValidUUID(studentId)) {
+        try {
+            const { data: prof } = await supabase.from("profiles")
+                .select("class")
+                .or(`user_id.eq.${studentId},id.eq.${studentId}`)
+                .maybeSingle();
+            if (prof?.class) rawClass = prof.class;
+        } catch (_) {}
+    }
+    const studentClassNum = rawClass ? String(rawClass).replace(/\D/g, "") : null;
+
+    const allSubmissions = await getAllStudentSubmissions(studentId, authUser);
+
+    const filtered = allSubmissions.filter(s => {
+        if (studentClassNum && !matchesClass(s.classLevel, studentClassNum)) {
+            return false;
+        }
+        if (subjectFilter && !matchesSubject(s.subject, subjectFilter)) {
+            return false;
+        }
+        return true;
+    });
+
+    filtered.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+    return filtered.map(sub => {
+        const dateObj = new Date(sub.submittedAt);
+        return {
+            id: sub.id,
+            dateStr: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+            timeStr: dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+            subject: sub.subject || "Mathematics",
+            topic: cleanTopic(sub.topic || sub.title),
+            rawTopic: sub.topic || sub.title,
+            score: sub.scorePercentage,
+            correctCount: sub.correctCount,
+            totalQuestions: sub.totalQuestions,
+            xpEarned: sub.xpEarned,
+            coinsEarned: sub.coinsEarned || 10
+        };
+    });
+}
+
 module.exports = {
     LEVELS,
     AVATARS,
@@ -1508,5 +2066,10 @@ module.exports = {
     getStudentBadges,
     getStudentVisibleBadges,
     redeemRewardBadge,
-    toggleStudentBadgeVisibility
+    toggleStudentBadgeVisibility,
+    getStudentLearningIntelligence,
+    getStudentAssessmentHistory,
+    cleanTopic,
+    matchesSubject,
+    matchesClass
 };

@@ -1,0 +1,223 @@
+LEARNIQ - CHAIN PROMPTS FOR ANTIGRAVITY
+=========================================
+HOW TO USE: Paste ONE prompt at a time, in order (0 to 8). After each step
+the agent updates PROGRESS.md and stops. Say 'next' or paste the next prompt.
+Or tell Antigravity: 'Open LEARNIQ_PROMPTS.txt and run PROMPT N only.'
+
+
+############################################################
+## PROMPT 0 - Rules + Inspection (run first)
+############################################################
+You are fixing my existing app LearnIQ (AI learning platform, Classes 5-12; roles: Student, Teacher, Admin). We work in 8 small steps. Do ONLY the current step.
+
+RULES (apply to every step):
+1. Inspect code before editing. Keep architecture, branding, routes, auth.
+2. No rebuild, no mockups, no fake students, no hard-coded scores/XP/percentages.
+3. Use real authenticated users and real DB rows only.
+4. Never expose secrets/service-role keys in frontend.
+5. Never disable auth or RLS. Server trusts only the authenticated identity, never client-sent user id, class, score or XP.
+6. No destructive migrations, no data deletion, no deploy, no push without my approval.
+7. Never claim "works" unless verified. Report what could not be tested.
+8. Keep diffs small and focused. Add loading, empty, error, success states where touched.
+
+TASK NOW (read-only, no code changes):
+Inspect frontend framework, routing, layouts, CSS; backend routes, middleware, auth; Supabase tables, queries, RLS, migrations; quiz generation/attempt/submit/XP/history; rankings; Learning Intelligence; profile stats; challenges; build scripts and tests.
+
+Create ISSUE_MAP.md with, for each issue below: root cause (or best hypothesis), files, APIs, tables.
+ I1 not responsive (desktop/landscape only)
+ I2 tablet/mobile nav menu stuck over page
+ I3 rankings show other-class/unknown names (e.g. Arjun) and show when logged out
+ I4 class vs semester/other labels; wrong class/subject/topic/difficulty/count passed to quiz generation
+ I5 5-minute timer auto-starts on class select
+ I6 Adaptive Quiz appears without user action
+ I7 Challenge opens as auto-completed with fake XP/score
+ I8 Learning Intelligence shows Math topics under Science
+ I9 profile quiz count shows 2 after 1 quiz
+Check for: duplicate handlers/inserts, hard-coded fallbacks, stale state, wrong filters, repeated API calls, differing definitions of "completed quiz".
+Also create PROGRESS.md (empty checklist for steps 1-8).
+Report: stack, test/build commands, and anything blocking.
+
+END: Update PROGRESS.md (done / verified / not verified / files changed).
+Then STOP and wait for me to say "next".
+
+
+############################################################
+## PROMPT 1 - Identity + Class Rankings (Issue 3)
+############################################################
+STEP 1. Read ISSUE_MAP.md (do not re-scan the whole repo). Fix Issue 3 only.
+
+Find root cause: seed/demo data shown as real, wrong class filter, bad joins (auth user -> profile -> student), stale session, frontend fallback rankings, saved class vs selected class mismatch.
+
+Required:
+- Get user from existing trusted auth (server side). Read the student's SAVED class from DB.
+- Backend returns rankings ONLY for that class (unless product defines another scope). Filter in backend/DB, not only frontend.
+- Ignore any client-sent class/user id that does not match the user's authorization.
+- Not logged in -> login/access state, no names. Missing class -> prompt to set class, never a silent default.
+- No eligible records -> helpful empty state. Remove any fabricated ranking fallback.
+- Do NOT delete unfamiliar records. Classify them (real user / test / demo) and report; ask me before any cleanup.
+
+Verify: Class 7 student sees only Class 7; logged-out sees none; tampered class param is rejected or ignored. Add tests if the project has a test setup.
+
+END: Update PROGRESS.md (done / verified / not verified / files changed).
+Then STOP and wait for me to say "next".
+
+
+############################################################
+## PROMPT 2 - Class Selection, Quiz Generation, Timer (Issues 4 and 5)
+############################################################
+STEP 2. Read ISSUE_MAP.md and PROGRESS.md. Fix Issues 4 and 5.
+
+Issue 4:
+- Use "Class 5" to "Class 12" everywhere. Remove "semester" and other mislabels.
+- Class value must be stored and passed correctly. Changing class resets dependent fields (subject, topic) - no stale values.
+- Class selection must not show unrelated nav or student-only controls. Teachers can manage multiple classes; do not force the single-student flow.
+- Generation request must carry correct class, subject, topic, difficulty, question count. Validate on server.
+- Keep the existing AI generation method. If generation fails, show an error. Never substitute unrelated questions.
+
+Issue 5:
+- Selecting a class must NOT start any timer. Find and remove the source of the auto 5-minute timer.
+- Duration comes only from explicit quiz config or an existing product rule. Do not add a new default. Respect untimed mode.
+- Start timer at the right lifecycle point; no reset on re-render.
+- Server must enforce the same time rule on submit (do not trust the client timer).
+
+Verify: pick a class -> no timer; timed quiz starts timer once; untimed has none; correct params reach the generator.
+
+END: Update PROGRESS.md (done / verified / not verified / files changed).
+Then STOP and wait for me to say "next".
+
+
+############################################################
+## PROMPT 3 - Adaptive Quiz Activation (Issue 6)
+############################################################
+STEP 3. Read ISSUE_MAP.md and PROGRESS.md. Fix Issue 6 only.
+
+- Adaptive Quiz stays inactive until the student explicitly opens/starts it. Show an intro/empty state first.
+- No question loading, AI call, or quiz-history row on page view, class select, or re-render. Guard against repeated effects (e.g. React StrictMode double-run, missing deps).
+- On activation, use the student's real class/subject/topic and genuine assessment data. Keep existing adaptive logic.
+- Handle loading, error, empty states. Prevent duplicate questions/attempts from double clicks or re-renders.
+
+Verify: open other pages and select class -> no adaptive content, no network call, no DB row. Start it -> one request, one set of questions.
+
+END: Update PROGRESS.md (done / verified / not verified / files changed).
+Then STOP and wait for me to say "next".
+
+
+############################################################
+## PROMPT 4 - Challenges + Idempotent XP (Issue 7)
+############################################################
+STEP 4. Read ISSUE_MAP.md and PROGRESS.md. Fix Issue 7 only.
+
+Lifecycle: open challenge -> load/generate real questions -> student answers -> submit -> backend validates and scores -> backend computes XP using EXISTING reward rules -> save attempt, score, status, XP transaction together (transaction) -> frontend shows the confirmed backend response.
+
+Rules:
+- Opening, refreshing or abandoning never completes the challenge or awards XP. Remove any auto 95% / 95 XP logic.
+- Server scores from submitted answers vs correct answers stored server-side. Never trust client score/XP. Correct answers must not be sent to the client before submit.
+- Validate question ids, answer format, attempt ownership (student cannot submit another student's attempt), challenge eligibility.
+- Idempotency: add a DB unique constraint or transaction so one completion = one XP award. Repeated/refresh/double-click submit returns the existing result, no extra XP.
+- Handle 0 correct, full marks, partial, failed submit, network failure. Generation failure -> clear error, not completed.
+- Follow existing level/badge rules. Update challenge history and profile stats consistently.
+- Migration needed? WRITE the SQL file but do NOT apply it; ask me first.
+
+Verify: open = 0 XP; submit = correct XP once; repeat submit = no new XP; other user's attempt = rejected.
+
+END: Update PROGRESS.md (done / verified / not verified / files changed).
+Then STOP and wait for me to say "next".
+
+
+############################################################
+## PROMPT 5 - Learning Intelligence Subject Filter (Issue 8)
+############################################################
+STEP 5. Read ISSUE_MAP.md and PROGRESS.md. Fix Issue 8 only.
+
+Find root cause: wrong subject-topic mapping, missing subject ids, bad join/filter, stale frontend state or cache, one shared topics array, mock fallback, wrong aggregation.
+
+Required:
+- Authenticated student -> real assessment history -> filter by class AND selected subject (in backend query/API).
+- Each result tied to the right topic and assessment. Compute percentages from real attempts only.
+- Changing subject replaces the whole scorecard; clear old data while loading (no stale topics).
+- No relevant attempts -> honest empty state. No invented mastery or gaps.
+- Must agree with quiz history.
+- If topic data is mis-tagged in the DB, report it with a proposed fix; do not rewrite data without my approval.
+
+Verify at API level: Science returns Science topics only; Mathematics returns Mathematics only.
+
+END: Update PROGRESS.md (done / verified / not verified / files changed).
+Then STOP and wait for me to say "next".
+
+
+############################################################
+## PROMPT 6 - Profile Quiz Count (Issue 9)
+############################################################
+STEP 6. Read ISSUE_MAP.md and PROGRESS.md. Fix Issue 9 only.
+
+Trace the full lifecycle (generate -> start -> answer -> submit -> history -> profile) and find why 1 quiz shows as 2: counting generation/opening, duplicate history rows, double submit handler, duplicate API calls, frontend +1 plus DB refresh, other students' rows, incomplete attempts.
+
+Definition: quiz count = number of the authenticated student's genuinely completed/submitted attempts, from the canonical assessment-history table (no separate conflicting counter).
+- Do not count opened, generated, abandoned or incomplete attempts.
+- Prevent duplicates on submit (unique constraint or idempotency key).
+- Profile, quiz history and Learning Intelligence must show the same count. Refresh must not change it.
+- Legacy duplicates: query and REPORT them (ids, counts). Do NOT delete; ask me.
+- Migration needed? Write SQL only, do not apply.
+
+Verify: 0 quizzes = 0; 1 quiz = 1; several = correct; refresh = unchanged.
+
+END: Update PROGRESS.md (done / verified / not verified / files changed).
+Then STOP and wait for me to say "next".
+
+
+############################################################
+## PROMPT 7 - Responsive Layout + Navigation (Issues 1 and 2)
+############################################################
+STEP 7. Read ISSUE_MAP.md and PROGRESS.md. Fix Issues 1 and 2.
+
+Issue 1 - Responsive:
+- Mobile-first breakpoints. Remove fixed widths/heights that overflow. Cards, grids, forms, charts, modals, quiz screen adapt. Wide tables scroll inside their own container only.
+- No unintended horizontal page scroll. Touch targets at least 44px, readable text. Keep desktop look and brand unchanged.
+- Rearrange layouts for small screens (stack, collapse); do not just shrink.
+- Check Student, Teacher, Admin dashboards separately.
+
+Issue 2 - Navigation:
+- Fix the stuck menu: positioning, z-index, overflow, body scroll lock (always released on close).
+- Opens/closes reliably; close button, outside click, Escape; selecting an item navigates AND closes; closes on route change.
+- Must not block quiz controls or forms. Desktop nav unchanged. Role-based menu items unchanged; do not bypass access control.
+
+Test viewports: 1440x900, 1024x768, 768x1024, 390x844, 360x800 (use browser tool or Playwright if available; else say so). Open/close/navigate repeatedly for each role.
+
+END: Update PROGRESS.md (done / verified / not verified / files changed).
+Then STOP and wait for me to say "next".
+
+
+############################################################
+## PROMPT 8 - Regression Test + Final Report
+############################################################
+STEP 8. Read ISSUE_MAP.md and PROGRESS.md. No new features.
+
+Run production build and all existing tests. Then verify, marking PASS / FAIL / NOT TESTED (with reason):
+1 Class 7 student sees only Class 7 rankings
+2 Logged-out visitor sees no personalized rankings
+3 Class select does not start a timer
+4 Adaptive Quiz inactive until activated
+5 Opening a challenge gives no XP
+6 Submitting a challenge gives correct XP once
+7 Repeat submit gives no duplicate XP
+8 Science scorecard = Science topics only
+9 Mathematics scorecard = Mathematics topics only
+10 One completed quiz = count 1
+11 Profile refresh keeps count
+12 Pages usable at all 5 viewport sizes
+13 Navbar opens, closes, navigates without trapping
+14 Student/Teacher/Admin boundaries intact
+15 Build and tests pass
+Fix regressions found.
+
+FINAL REPORT (concise):
+a) root cause per issue (9)
+b) modified files + one-line reason each
+c) backend / frontend / DB changes
+d) migrations: list them and say applied or NOT applied
+e) test results table
+f) remaining bugs, assumptions, limits, legacy duplicate/demo data found
+g) manual check steps for my tablet and phone
+h) git commands to review, commit, push (do not run push)
+i) Render/Supabase config changes needed (no secrets)
+Clearly separate: code changed / tested / committed / pushed / deployed.

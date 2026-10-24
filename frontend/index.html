@@ -422,19 +422,19 @@
                     <!-- Mandatory Class Selection (For Students Only) -->
                     <div class="form-group" id="landingSignupClassGroup" style="margin-bottom: 12px;">
                         <label style="font-size: 12px; color: var(--muted); display: flex; justify-content: space-between;">
-                            <span>Class / Standard <strong style="color: #ef4444;">*</strong></span>
+                            <span>Class <strong style="color: #ef4444;">*</strong></span>
                             <span style="font-size: 10.5px; color: var(--cyan);">Mandatory for Students</span>
                         </label>
                         <select id="landingSignupClass" class="form-control" required style="font-size: 13px; padding: 9px 10px; background: #0b1120; color: var(--text);">
-                            <option value="" disabled selected>-- Select Your Class / Grade --</option>
-                            <option value="5">Class 5 (Primary Upper)</option>
-                            <option value="6">Class 6 (Middle School)</option>
-                            <option value="7">Class 7 (Middle School)</option>
-                            <option value="8">Class 8 (Middle School)</option>
-                            <option value="9">Class 9 (Secondary)</option>
-                            <option value="10">Class 10 (Secondary Board)</option>
-                            <option value="11">Class 11 (Senior Secondary)</option>
-                            <option value="12">Class 12 (Senior Secondary)</option>
+                            <option value="" disabled selected>-- Select Your Class --</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10">Class 10</option>
+                            <option value="11">Class 11</option>
+                            <option value="12">Class 12</option>
                         </select>
                     </div>
 
@@ -491,8 +491,8 @@
         <div class="form-grid">
 
             <div class="form-group">
-                <label>Class / Grade Level</label>
-                <select id="genClass" class="form-control">
+                <label>Class</label>
+                <select id="genClass" class="form-control" onchange="onClassChange()">
                     <option value="5">Class 5</option>
                     <option value="6">Class 6</option>
                     <option value="7">Class 7</option>
@@ -1225,7 +1225,69 @@
 
 
 
-    <div class="quiz-layout-wrapper">
+    <!-- 0. INACTIVE / INTRO STATE -->
+    <div id="assessmentIntroCard" class="quiz-card" style="margin-bottom: 24px; padding: 32px 28px; text-align: left; max-width: 820px; margin: 0 auto 30px auto;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(0, 240, 255, 0.12); color: var(--cyan); display: grid; place-items: center; font-size: 22px; border: 1px solid rgba(0, 240, 255, 0.25);">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <div>
+                <span class="eyebrow" style="margin-bottom: 2px;">AI-POWERED ADAPTIVE ENGINE</span>
+                <h2 style="font-size: 22px; margin: 0; color: var(--text);">Adaptive Assessment Portal</h2>
+            </div>
+        </div>
+
+        <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 24px;">
+            Adaptive assessments calibrate question difficulty in real-time according to your accuracy. Stays completely inactive until you choose to start. Select your subject and focus area below to launch your session.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; background: rgba(7, 11, 20, 0.6); padding: 18px; border-radius: 12px; border: 1px solid var(--border);">
+            <div>
+                <label style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 600;">Enrolled Class</label>
+                <div id="adaptiveClassBadge" style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--cyan); padding: 7px 0;">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span id="adaptiveClassLabel">Class 10</span>
+                </div>
+            </div>
+
+            <div>
+                <label for="adaptiveSubjectSelect" style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 600;">Assessment Subject</label>
+                <select id="adaptiveSubjectSelect" onchange="onAdaptiveSubjectChange()" style="width: 100%; background: #0b1120; border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                    <option value="Mathematics" selected>Mathematics</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Biology">Biology</option>
+                    <option value="English">English</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="adaptiveTopicSelect" style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 600;">Target Focus Topic</label>
+                <select id="adaptiveTopicSelect" style="width: 100%; background: #0b1120; border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                    <option value="Quadratic Equations">Quadratic Equations</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="adaptiveErrorBanner" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 20px;">
+            <i class="fa-solid fa-circle-exclamation" style="margin-right: 6px;"></i>
+            <span id="adaptiveErrorMessage">Unable to activate assessment.</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);">
+                <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i>
+                <span>Real-time AI evaluation • Safe assessment environment</span>
+            </div>
+
+            <button type="button" id="startAdaptiveAssessmentBtn" class="primary-btn" onclick="startAdaptiveAssessment()" style="padding: 12px 28px; font-size: 14px; font-weight: 700; border-radius: 10px;">
+                <i class="fa-solid fa-play"></i> <span>Start Adaptive Assessment</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 1. ACTIVE QUIZ LAYOUT WRAPPER (Hidden until user explicitly starts) -->
+    <div class="quiz-layout-wrapper" id="quizActiveLayout" style="display: none;">
 
         <div class="quiz-card">
 
@@ -1236,20 +1298,26 @@
                         ADAPTIVE ASSESSMENT
                     </span>
                     <h2 id="quizTitle">
-                        Linear Equations
+                        Assessment
                     </h2>
                 </div>
 
                 <!-- Timer Controls & Mode Switcher -->
-                <div class="quiz-header-controls">
+                <div class="quiz-header-controls" style="display: flex; align-items: center; gap: 10px;">
                     <div class="timer-mode-switcher">
-                        <button type="button" id="btnTimerModeOverall" class="timer-mode-btn active" onclick="setQuizTimerMode('overall')">
+                        <button type="button" id="btnTimerModeOverall" class="timer-mode-btn" onclick="setQuizTimerMode('overall')">
                             <i class="fa-solid fa-hourglass-half"></i> Overall Quiz
                         </button>
                         <button type="button" id="btnTimerModeQuestion" class="timer-mode-btn" onclick="setQuizTimerMode('question')">
                             <i class="fa-solid fa-stopwatch"></i> Per Question
                         </button>
+                        <button type="button" id="btnTimerModeUntimed" class="timer-mode-btn active" onclick="setQuizTimerMode('untimed')">
+                            <i class="fa-solid fa-infinity"></i> Untimed
+                        </button>
                     </div>
+                    <button type="button" class="secondary-btn" onclick="exitActiveQuiz()" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;" title="Exit to Assessment Portal">
+                        <i class="fa-solid fa-xmark"></i> Exit
+                    </button>
                 </div>
             </div>
 
@@ -1435,43 +1503,24 @@
                 <div><span class="eyebrow">YOUR SUBJECTS</span><h2 id="topicMasteryTitle">Learning Overview</h2><p id="topicMasteryDescription">See your progress across subjects. Choose a subject to explore its topics.</p></div>
             </div>
                 <div id="learningSubjectOverview" class="subject-overview-grid"></div>
-                <div id="learningSubjectDetail" hidden>
+                <div id="learningSubjectDetail">
                 <div class="subject-mastery-summary"><span id="selectedSubjectName">Mathematics</span><strong><span id="selectedSubjectMastery">--</span><small> overall mastery</small></strong></div>
-                <div class="learning-empty-inline" id="subjectTopicsEmpty" hidden>No topic results for this subject yet. Complete a quiz to see your mastery here.</div>
-                <div class="mastery-list" id="subjectTopicsList">
-                    <article class="mastery-row" data-topic="Fractions" data-mastery="92">
-                    <div class="mastery-topic"><strong>Fractions</strong><span class="mastery-status strong-status">Strong</span></div>
-                    <div class="mastery-progress"><div class="mastery-track" role="progressbar" aria-label="Fractions mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="92"><span style="width:92%"></span></div><span>92%</span></div>
-                    <button class="topic-practice-btn" onclick="practiceLearningTopic('Fractions')">Practice</button>
-                </article>
-                <article class="mastery-row" data-topic="Algebra" data-mastery="71">
-                    <div class="mastery-topic"><strong>Algebra</strong><span class="mastery-status developing-status">Developing</span></div>
-                    <div class="mastery-progress"><div class="mastery-track" role="progressbar" aria-label="Algebra mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="71"><span style="width:71%"></span></div><span>71%</span></div>
-                    <button class="topic-practice-btn" onclick="practiceLearningTopic('Algebra')">Practice</button>
-                </article>
-                <article class="mastery-row" data-topic="Linear Equations" data-mastery="54">
-                    <div class="mastery-topic"><strong>Linear Equations</strong><span class="mastery-status needs-practice-status">Needs Practice</span></div>
-                    <div class="mastery-progress"><div class="mastery-track" role="progressbar" aria-label="Linear Equations mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="54"><span style="width:54%"></span></div><span>54%</span></div>
-                    <button class="topic-practice-btn" onclick="practiceLearningTopic('Linear Equations')">Practice</button>
-                </article>
-                <article class="mastery-row" data-topic="Geometry" data-mastery="84">
-                    <div class="mastery-topic"><strong>Geometry</strong><span class="mastery-status strong-status">Strong</span></div>
-                    <div class="mastery-progress"><div class="mastery-track" role="progressbar" aria-label="Geometry mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="84"><span style="width:84%"></span></div><span>84%</span></div>
-                    <button class="topic-practice-btn" onclick="practiceLearningTopic('Geometry')">Practice</button>
-                </article>
-            </div>
+                <div class="learning-empty-inline" id="subjectTopicsLoading" hidden><i class="fa-solid fa-spinner fa-spin"></i> Loading topic mastery...</div>
+                <div class="learning-empty-inline" id="subjectTopicsEmpty">No topic results for this subject yet. Complete a quiz to see your mastery here.</div>
+                <div class="mastery-list" id="subjectTopicsList"></div>
             </div>
         </section>
 
         <aside class="learning-support-column">
             <section class="next-action-card" aria-labelledby="nextActionTitle">
                 <span class="next-action-kicker"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> YOUR NEXT BEST ACTION</span>
-                <h2 id="nextActionTitle">Practice Linear Equations</h2>
-                <p id="nextActionDescription">Your current mastery is <strong id="nextActionMastery">54%</strong>. You have the most room for improvement in this topic.</p>
-                <div class="focus-topics" id="nextActionFocus"><span>Focus on:</span><ul><li>Solving multi-step equations</li><li>Sign changes</li></ul></div>
-                <div class="practice-estimate" id="nextActionEstimate"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Estimated practice: <strong>10 questions</strong></div>
-                <button class="next-action-button" id="nextActionButton" onclick="startRecommendedPractice()">Practice Now <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
-                <p id="recommendationEmpty" class="recommendation-empty" hidden>No practice recommendation yet. Complete a quiz to get your next step.</p>
+                <div id="nextActionContent" hidden>
+                    <h2 id="nextActionTitle">Practice Topics</h2>
+                    <p id="nextActionDescription">Your current mastery is <strong id="nextActionMastery">--</strong>. You have room for improvement in this topic.</p>
+                    <div class="practice-estimate" id="nextActionEstimate"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Estimated practice: <strong>10 questions</strong></div>
+                    <button class="next-action-button" id="nextActionButton">Practice Now <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                </div>
+                <p id="recommendationEmpty" class="recommendation-empty">No practice recommendation yet. Complete a quiz to get your next step.</p>
             </section>
         </aside>
     </div>
@@ -1481,12 +1530,8 @@
             <div><span class="eyebrow">LEARN FROM EACH TRY</span><h2 id="commonMistakesTitle">Common Mistakes</h2><p>Patterns in your recent answers.</p></div>
             <button class="topic-practice-btn review-mistakes-btn" onclick="document.getElementById('mistakeCards').focus()">Review Mistakes</button>
         </div>
-        <div id="mistakeCards" class="learning-mistake-grid" tabindex="-1">
-            <article class="learning-mistake-card"><span class="mistake-card-icon calculation-icon"><i class="fa-solid fa-calculator" aria-hidden="true"></i></span><div><strong>Calculation Errors</strong><span>4 mistakes</span></div><small class="most-frequent-label">Most frequent</small></article>
-            <article class="learning-mistake-card"><span class="mistake-card-icon conceptual-icon"><i class="fa-solid fa-brain" aria-hidden="true"></i></span><div><strong>Conceptual Errors</strong><span>3 mistakes</span></div></article>
-            <article class="learning-mistake-card"><span class="mistake-card-icon reading-icon"><i class="fa-solid fa-eye" aria-hidden="true"></i></span><div><strong>Misreading Questions</strong><span>2 mistakes</span></div></article>
-        </div>
-        <div id="mistakesEmpty" class="learning-empty-inline" hidden>No mistake patterns for this subject yet. Complete a quiz to see what to work on.</div>
+        <div id="mistakeCards" class="learning-mistake-grid" tabindex="-1"></div>
+        <div id="mistakesEmpty" class="learning-empty-inline">No mistake patterns for this subject yet. Complete a quiz to see what to work on.</div>
     </section>
 
     <section class="learning-panel progress-insight-panel" aria-labelledby="learningProgressTitle">
@@ -1521,7 +1566,7 @@
                 Push Your Challenges
             </h1>
             <p id="challengesClassSubtitle">
-                Age-appropriate, subject-specific daily quests designed for your grade.
+                Age-appropriate, subject-specific daily quests designed for your class.
             </p>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
@@ -1567,7 +1612,7 @@
     <div class="challenge-grid-v2" id="dailyChallengesGrid">
         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--muted);">
             <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--cyan); margin-bottom: 10px;"></i>
-            <p>Loading your grade's daily challenges...</p>
+            <p>Loading your class's daily challenges...</p>
         </div>
     </div>
 
@@ -2399,19 +2444,19 @@ document.addEventListener(
                 <!-- Mandatory Class Selection (For Students Only) -->
                 <div class="form-group" id="modalSignupClassGroup" style="margin-bottom: 12px;">
                     <label style="font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <span>Class / Standard <strong style="color: #ef4444;">*</strong></span>
+                        <span>Class <strong style="color: #ef4444;">*</strong></span>
                         <span style="font-size: 10.5px; color: var(--cyan);">Mandatory for Students</span>
                     </label>
                     <select id="signupClass" class="form-control" required style="font-size: 13px; padding: 9px 10px; background: #0b1120; color: var(--text);">
-                        <option value="" disabled selected>-- Select Your Class / Grade --</option>
-                        <option value="5">Class 5 (Primary Upper)</option>
-                        <option value="6">Class 6 (Middle School)</option>
-                        <option value="7">Class 7 (Middle School)</option>
-                        <option value="8">Class 8 (Middle School)</option>
-                        <option value="9">Class 9 (Secondary)</option>
-                        <option value="10">Class 10 (Secondary Board)</option>
-                        <option value="11">Class 11 (Senior Secondary)</option>
-                        <option value="12">Class 12 (Senior Secondary)</option>
+                        <option value="" disabled selected>-- Select Your Class --</option>
+                        <option value="5">Class 5</option>
+                        <option value="6">Class 6</option>
+                        <option value="7">Class 7</option>
+                        <option value="8">Class 8</option>
+                        <option value="9">Class 9</option>
+                        <option value="10">Class 10</option>
+                        <option value="11">Class 11</option>
+                        <option value="12">Class 12</option>
                     </select>
                 </div>
 

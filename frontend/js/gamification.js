@@ -212,6 +212,7 @@ export function openChallengeTask(challengeId) {
 
     state.selectedChallengeTask = c;
     state.selectedChallengeOption = null;
+    state.selectedChallengeAnswers = {};
 
     const modal = document.getElementById("challengeTaskModal");
     const badge = document.getElementById("modalChallengeBadge");
@@ -235,30 +236,44 @@ export function openChallengeTask(challengeId) {
         submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xpReward || c.xp || 50} XP`;
     }
 
-    if (interactiveArea && c.problem) {
-        interactiveArea.innerHTML = `
-            <div style="font-size: 14.5px; font-weight: 600; color: var(--text); margin-bottom: 14px; line-height: 1.5;">
-                <i class="fa-solid fa-circle-question" style="color: var(--cyan); margin-right: 8px;"></i>${escapeHtml(c.problem.question)}
-            </div>
-            <div class="answer-grid" style="grid-template-columns: 1fr; gap: 8px;">
-                ${c.problem.options.map((opt, idx) => `
-                    <button type="button" class="answer-option" id="challengeOptBtn_${idx}" onclick="selectChallengeTaskOption(${idx})" style="padding: 10px 14px; text-align: left;">
-                        <span class="option-num-badge">${idx + 1}</span>
-                        <span style="font-size: 13px; color: var(--text);">${escapeHtml(opt)}</span>
-                    </button>
-                `).join("")}
-            </div>
-        `;
+    const questions = Array.isArray(c.questions) && c.questions.length > 0
+        ? c.questions
+        : (c.problem ? [{ id: 0, question: c.problem.question, options: c.problem.options }] : []);
+
+    if (interactiveArea) {
+        if (questions.length > 0) {
+            interactiveArea.innerHTML = questions.map((q, qIdx) => `
+                <div style="margin-bottom: ${qIdx < questions.length - 1 ? '16px' : '0'};">
+                    <div style="font-size: 14.5px; font-weight: 600; color: var(--text); margin-bottom: 12px; line-height: 1.5;">
+                        <i class="fa-solid fa-circle-question" style="color: var(--cyan); margin-right: 8px;"></i>${escapeHtml(q.question)}
+                    </div>
+                    <div class="answer-grid" style="grid-template-columns: 1fr; gap: 8px;">
+                        ${q.options.map((opt, optIdx) => `
+                            <button type="button" class="answer-option" id="challengeOptBtn_${qIdx}_${optIdx}" onclick="selectChallengeTaskOption(${optIdx}, ${qIdx})" style="padding: 10px 14px; text-align: left;">
+                                <span class="option-num-badge">${optIdx + 1}</span>
+                                <span style="font-size: 13px; color: var(--text);">${escapeHtml(opt)}</span>
+                            </button>
+                        `).join("")}
+                    </div>
+                </div>
+            `).join("");
+        } else {
+            interactiveArea.innerHTML = `
+                <p style="color: var(--muted); text-align: center; margin: 0;">Task ready. Click Complete & Claim to verify and earn XP.</p>
+            `;
+        }
     }
 
     if (modal) modal.classList.add("active");
 }
 
-export function selectChallengeTaskOption(idx) {
-    state.selectedChallengeOption = idx;
-    const options = document.querySelectorAll("#modalChallengeInteractiveArea .answer-option");
-    options.forEach((btn, i) => {
-        if (i === idx) btn.classList.add("selected");
+export function selectChallengeTaskOption(optIdx, qIdx = 0) {
+    if (!state.selectedChallengeAnswers) state.selectedChallengeAnswers = {};
+    state.selectedChallengeAnswers[qIdx] = optIdx;
+    state.selectedChallengeOption = optIdx;
+    const buttons = document.querySelectorAll(`#modalChallengeInteractiveArea button[id^="challengeOptBtn_${qIdx}_"]`);
+    buttons.forEach((btn, i) => {
+        if (i === optIdx) btn.classList.add("selected");
         else btn.classList.remove("selected");
     });
 }
@@ -268,45 +283,52 @@ export function closeChallengeTaskModal() {
     if (modal) modal.classList.remove("active");
     state.selectedChallengeTask = null;
     state.selectedChallengeOption = null;
+    state.selectedChallengeAnswers = {};
 }
 
 export async function verifyAndClaimChallenge() {
-    if (!state.selectedChallengeTask) return;
+    if (!state.selectedChallengeTask || state.challengeClaimInProgress) return;
     const c = state.selectedChallengeTask;
     const feedback = document.getElementById("modalChallengeFeedback");
     const submitBtn = document.getElementById("modalChallengeSubmitBtn");
 
-    if (c.problem && state.selectedChallengeOption === null) {
-        showToast("⚠️ Please select an answer option first.");
-        return;
-    }
+    const questions = Array.isArray(c.questions) && c.questions.length > 0
+        ? c.questions
+        : (c.problem ? [{ id: 0, question: c.problem.question, options: c.problem.options }] : []);
 
-    if (c.problem && state.selectedChallengeOption !== c.problem.correctIndex) {
-        if (feedback) {
-            feedback.style.display = "block";
-            feedback.style.background = "rgba(239, 68, 68, 0.15)";
-            feedback.style.border = "1px solid rgba(239, 68, 68, 0.3)";
-            feedback.style.color = "#ef4444";
-            feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i> Not quite right! Review the problem and try another option.`;
+    if (questions.length > 0) {
+        const answers = state.selectedChallengeAnswers || {};
+        const answeredCount = Object.keys(answers).filter(k => answers[k] !== null && answers[k] !== undefined).length;
+        if (answeredCount < questions.length) {
+            showToast("⚠️ Please select an answer option first.");
+            return;
         }
-        return;
     }
 
+    state.challengeClaimInProgress = true;
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying & Claiming...`;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Submitting & Verifying...`;
     }
 
     try {
-        const response = await fetch(`${API_BASE}/students/challenges/claim`, {
+        const response = await fetch(`${API_BASE}/students/challenges/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ challengeId: c.id })
+            credentials: "same-origin",
+            body: JSON.stringify({
+                challengeId: c.id,
+                answers: state.selectedChallengeAnswers || {}
+            })
         });
-        const data = await response.json();
 
-        if (data.success) {
-            const earnedXp = data.earnedXp || c.xp;
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "Could not complete challenge.");
+        }
+
+        if (data.success && (data.passed !== false)) {
+            const earnedXp = data.earnedXp || 0;
             const totalXp = data.totalXp !== undefined ? data.totalXp : ((state.studentProfile.xp || 0) + earnedXp);
             state.studentProfile.xp = totalXp;
             updateXPDisplay(totalXp);
@@ -318,30 +340,48 @@ export async function verifyAndClaimChallenge() {
                 feedback.style.background = "rgba(34, 197, 94, 0.15)";
                 feedback.style.border = "1px solid rgba(34, 197, 94, 0.3)";
                 feedback.style.color = "#22c55e";
-                feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> Correct! ${escapeHtml(c.problem?.explanation || '')}<br><strong style="color: var(--cyan); margin-top: 4px; display: inline-block;">+${earnedXp} XP Awarded! 🎉</strong>`;
+                const explanationText = data.feedback?.[0]?.explanation || "";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> ${data.alreadyClaimed ? 'Already completed!' : 'Correct!'} ${escapeHtml(explanationText)}<br><strong style="color: var(--cyan); margin-top: 4px; display: inline-block;">+${earnedXp} XP Awarded! 🎉</strong>`;
             }
 
-            showToast(`+${earnedXp} XP 🎉 → Challenge Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+            if (data.alreadyClaimed) {
+                showToast("ℹ️ This daily challenge was already completed today.");
+            } else {
+                showToast(`+${earnedXp} XP 🎉 → Challenge Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+            }
 
             c.completed = true;
-            fetchDailyChallenges();
+            c.claimed = true;
+            await fetchDailyChallenges();
+            await fetchStudentProfile();
 
             setTimeout(() => {
                 closeChallengeTaskModal();
-            }, 1400);
+            }, 1500);
         } else {
-            showToast(`❌ ${data.message || 'Could not complete challenge.'}`);
+            // Unsuccessful attempt (e.g. 0 correct)
+            if (feedback) {
+                feedback.style.display = "block";
+                feedback.style.background = "rgba(239, 68, 68, 0.15)";
+                feedback.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+                feedback.style.color = "#ef4444";
+                const explanationText = data.feedback?.[0]?.explanation || data.message || "Review the problem and try another option.";
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i> Not quite right! ${escapeHtml(explanationText)}`;
+            }
+            showToast(`❌ ${data.message || 'Incorrect answer. Try again!'}`);
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xp} XP`;
+                submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xpReward || c.xp || 50} XP`;
             }
         }
     } catch (err) {
-        showToast("⚠️ Could not reach server to claim challenge.");
+        showToast(`⚠️ ${err.message || "Could not reach server to claim challenge."}`);
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xp} XP`;
+            submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xpReward || c.xp || 50} XP`;
         }
+    } finally {
+        state.challengeClaimInProgress = false;
     }
 }
 
@@ -369,11 +409,11 @@ export async function redeemReward(cost, title = "Reward Item") {
     }
 }
 
-export function practiceLearningTopic(topic) {
-    const subject = document.getElementById("genSubject");
+export function practiceLearningTopic(topic, subject) {
+    const subjectElem = document.getElementById("genSubject");
     const topicInput = document.getElementById("genTopic");
-    if (subject) {
-        subject.value = "Mathematics";
+    if (subject && subjectElem) {
+        subjectElem.value = subject;
         if (window.onSubjectChange) window.onSubjectChange();
     }
     if (topicInput) topicInput.value = topic;
@@ -387,6 +427,11 @@ export function startLinearEquationsPractice() {
 }
 
 export function startRecommendedPractice() {
+    if (currentLearningIntelligence && currentLearningIntelligence.nextAction) {
+        const action = currentLearningIntelligence.nextAction;
+        practiceLearningTopic(action.topic, action.subject);
+        return;
+    }
     const topicRows = [...document.querySelectorAll("#intelligence .mastery-row")];
     const weakestTopic = topicRows.reduce((weakest, row) => {
         const mastery = Number(row.dataset.mastery);
@@ -395,8 +440,9 @@ export function startRecommendedPractice() {
             : weakest;
     }, null);
 
-    const topic = weakestTopic?.name || "Fractions";
-    practiceLearningTopic(topic);
+    const currentSubject = document.getElementById("learningSubjectSelect")?.value || "Mathematics";
+    const topic = weakestTopic?.name || "Linear Equations";
+    practiceLearningTopic(topic, currentSubject);
 }
 
 export function renderLearningIntelligence() {
@@ -573,9 +619,56 @@ export async function loadLeaderboard() {
     const container = document.getElementById("rankingListContainer");
     if (!container) return;
 
+    if (!state.currentUser) {
+        updateYourRankCard([], -1);
+        container.innerHTML = `
+            <div class="ranking-empty-card">
+                <i class="fa-solid fa-lock" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
+                <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">Sign In to View Rankings</h3>
+                <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Sign in with your student account to see your class standings and compete with your classmates.</p>
+                <button class="primary-btn" onclick="openAuthModal()" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In to LearnIQ
+                </button>
+            </div>
+        `;
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE}/students/leaderboard`);
+        if (response.status === 401) {
+            updateYourRankCard([], -1);
+            container.innerHTML = `
+                <div class="ranking-empty-card">
+                    <i class="fa-solid fa-lock" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
+                    <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">Authentication Required</h3>
+                    <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Your session has expired. Please sign in again to access class rankings.</p>
+                    <button class="primary-btn" onclick="openAuthModal()" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
         const data = await response.json();
+
+        if (data.missingClass) {
+            updateYourRankCard([], -1);
+            const statusLine = document.getElementById("yourRankStatusLine");
+            if (statusLine) statusLine.innerHTML = "⚠️ Please set your Class to view rankings.";
+            container.innerHTML = `
+                <div class="ranking-empty-card">
+                    <i class="fa-solid fa-graduation-cap" style="font-size: 36px; color: #f59e0b; margin-bottom: 12px; display: block;"></i>
+                    <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">Class Not Set</h3>
+                    <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Your profile is missing an assigned class. Please select your Class (Class 5 to 12) in your profile or settings to join your classmates on the leaderboard.</p>
+                    <button class="secondary-btn" onclick="showPage('settings')" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                        <i class="fa-solid fa-gear"></i> Set Your Class in Settings
+                    </button>
+                </div>
+            `;
+            return;
+        }
 
         if (data.success && Array.isArray(data.leaderboard) && data.leaderboard.length > 0) {
             const leaderboard = data.leaderboard;
@@ -600,8 +693,8 @@ export async function loadLeaderboard() {
                 );
 
                 const cleanName = (item.name || "Student").replace(/\s*\((?:you|You)\)\s*/gi, "").trim();
-                const rawClass = String(item.class || "Class 10").replace(/class\s*/gi, "").trim();
-                const classDisplay = `CLASS ${rawClass || "10"}`;
+                const rawClass = String(item.class || (data.classNumber ? `Class ${data.classNumber}` : "Class 10")).replace(/class\s*/gi, "").trim();
+                const classDisplay = `CLASS ${rawClass}`;
 
                 return `
                     <article class="leaderboard-row ${isCurrentUser ? 'current-user-row' : ''}">
@@ -617,53 +710,148 @@ export async function loadLeaderboard() {
                 `;
             }).join("");
         } else {
+            const studentClassNum = data.classNumber || (state.currentUser?.class ? Number.parseInt(String(state.currentUser.class).replace(/\D/g, ""), 10) : null);
+            const classTitle = studentClassNum ? `Class ${studentClassNum}` : "your class";
             updateYourRankCard([], -1);
-            if (state.currentUser && state.currentUser.name) {
-                const cleanName = (state.currentUser.name || "Student").replace(/\s*\((?:you|You)\)\s*/gi, "").trim();
-                const rawClass = String(state.currentUser.class || "Class 10").replace(/class\s*/gi, "").trim();
-                container.innerHTML = `
-                    <article class="leaderboard-row current-user-row">
-                        <span class="leaderboard-rank rank-gold">#1</span>
-                        <div class="leaderboard-avatar" aria-hidden="true">${(cleanName || "U").charAt(0).toUpperCase()}</div>
-                        <div class="leaderboard-info">
-                            <span class="leaderboard-name">${escapeHtml(cleanName)}</span>
-                            <span class="you-badge">YOU</span>
-                        </div>
-                        <span class="class-chip">CLASS ${rawClass || "10"}</span>
-                        <span class="leaderboard-xp">${(state.studentProfile.xp || 0).toLocaleString()} XP</span>
-                    </article>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="ranking-empty-card">
-                        <i class="fa-solid fa-ranking-star" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
-                        <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">No Active Leaderboard Members Yet</h3>
-                        <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Sign in and complete AI quizzes to earn XP and claim the #1 spot on the leaderboard!</p>
-                        <button class="primary-btn" onclick="openAuthModal()" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
-                            <i class="fa-solid fa-user-plus"></i> Sign In to Join Leaderboard
-                        </button>
-                    </div>
-                `;
-            }
+
+            container.innerHTML = `
+                <div class="ranking-empty-card">
+                    <i class="fa-solid fa-ranking-star" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
+                    <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">No Active ${classTitle} Students Yet</h3>
+                    <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Be the first student in ${classTitle} to complete an AI quiz and claim the #1 spot on the leaderboard!</p>
+                    <button class="primary-btn" onclick="showPage('generator')" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Take a Quiz Now
+                    </button>
+                </div>
+            `;
         }
     } catch (err) {
         console.warn("Leaderboard fetch notice:", err.message);
     }
 }
 
-export function selectLearningSubject(subject) {
+export let currentLearningIntelligence = null;
+
+export async function selectLearningSubject(subject) {
     const overview = document.getElementById("learningSubjectOverview");
     const detail = document.getElementById("learningSubjectDetail");
     const nameEl = document.getElementById("selectedSubjectName");
     const select = document.getElementById("learningSubjectSelect");
-    if (select && select.value !== subject) select.value = subject;
+    const masteryEl = document.getElementById("selectedSubjectMastery");
+    const topicsList = document.getElementById("subjectTopicsList");
+    const topicsEmpty = document.getElementById("subjectTopicsEmpty");
+    const topicsLoading = document.getElementById("subjectTopicsLoading");
+    const mistakeCards = document.getElementById("mistakeCards");
+    const mistakesEmpty = document.getElementById("mistakesEmpty");
+    const nextActionContent = document.getElementById("nextActionContent");
+    const nextActionEmpty = document.getElementById("recommendationEmpty");
+    const nextActionTitle = document.getElementById("nextActionTitle");
+    const nextActionMastery = document.getElementById("nextActionMastery");
+    const nextActionButton = document.getElementById("nextActionButton");
 
-    if (!subject || subject === "All Subjects") {
-        if (overview) overview.hidden = false;
-        if (detail) detail.hidden = true;
-    } else {
-        if (overview) overview.hidden = true;
-        if (detail) detail.hidden = false;
-        if (nameEl) nameEl.textContent = subject;
+    if (select && select.value !== subject) select.value = subject;
+    if (nameEl) nameEl.textContent = subject || "Mathematics";
+
+    // Immediate cleanup: clear stale topics scorecard while loading fresh data
+    if (topicsList) topicsList.innerHTML = "";
+    if (topicsEmpty) topicsEmpty.hidden = true;
+    if (topicsLoading) topicsLoading.hidden = false;
+    if (masteryEl) masteryEl.textContent = "--";
+    if (mistakeCards) mistakeCards.innerHTML = "";
+    if (mistakesEmpty) mistakesEmpty.hidden = true;
+    if (nextActionContent) nextActionContent.hidden = true;
+    if (nextActionEmpty) nextActionEmpty.hidden = false;
+
+    if (overview) overview.hidden = true;
+    if (detail) detail.hidden = false;
+
+    try {
+        const querySubject = (subject && subject !== "All Subjects") ? subject : "";
+        const res = await fetch(`${API_BASE}/students/intelligence?subject=${encodeURIComponent(querySubject)}`);
+        const data = await res.json();
+
+        if (topicsLoading) topicsLoading.hidden = true;
+
+        if (!data || !data.success) {
+            if (topicsEmpty) topicsEmpty.hidden = false;
+            return;
+        }
+
+        currentLearningIntelligence = data;
+
+        if (masteryEl) {
+            masteryEl.textContent = data.overallMastery !== null ? `${data.overallMastery}%` : "--";
+        }
+
+        const topics = Array.isArray(data.topics) ? data.topics : [];
+        if (topics.length === 0) {
+            if (topicsEmpty) {
+                topicsEmpty.textContent = `No topic results for ${escapeHtml(subject || 'this subject')} yet. Complete a quiz to see your mastery here.`;
+                topicsEmpty.hidden = false;
+            }
+            if (topicsList) topicsList.innerHTML = "";
+        } else {
+            if (topicsEmpty) topicsEmpty.hidden = true;
+            if (topicsList) {
+                topicsList.innerHTML = topics.map(t => {
+                    const statusClass = t.statusClass || (t.mastery >= 80 ? "strong-status" : t.mastery >= 60 ? "developing-status" : "needs-practice-status");
+                    return `
+                        <article class="mastery-row" data-topic="${escapeHtml(t.topic)}" data-mastery="${t.mastery}">
+                            <div class="mastery-topic">
+                                <strong>${escapeHtml(t.topic)}</strong>
+                                <span class="mastery-status ${statusClass}">${escapeHtml(t.status)}</span>
+                            </div>
+                            <div class="mastery-progress">
+                                <div class="mastery-track" role="progressbar" aria-label="${escapeHtml(t.topic)} mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${t.mastery}">
+                                    <span style="width:${t.mastery}%"></span>
+                                </div>
+                                <span>${t.mastery}%</span>
+                            </div>
+                            <button class="topic-practice-btn" onclick="practiceLearningTopic('${escapeHtml(t.topic)}', '${escapeHtml(t.subject || subject)}')">Practice</button>
+                        </article>
+                    `;
+                }).join("");
+            }
+        }
+
+        const mistakes = Array.isArray(data.mistakes) ? data.mistakes : [];
+        if (mistakes.length === 0) {
+            if (mistakesEmpty) mistakesEmpty.hidden = false;
+            if (mistakeCards) mistakeCards.innerHTML = "";
+        } else {
+            if (mistakesEmpty) mistakesEmpty.hidden = true;
+            if (mistakeCards) {
+                mistakeCards.innerHTML = mistakes.map(m => `
+                    <article class="learning-mistake-card">
+                        <span class="mistake-card-icon ${escapeHtml(m.typeClass || 'conceptual-icon')}">
+                            <i class="${escapeHtml(m.iconClass || 'fa-solid fa-triangle-exclamation')}" aria-hidden="true"></i>
+                        </span>
+                        <div>
+                            <strong>${escapeHtml(m.title)}</strong>
+                            <span>${m.count} ${m.count === 1 ? 'mistake' : 'mistakes'}</span>
+                        </div>
+                        ${m.mostFrequent ? '<small class="most-frequent-label">Most frequent</small>' : ''}
+                    </article>
+                `).join("");
+            }
+        }
+
+        if (data.nextAction) {
+            if (nextActionEmpty) nextActionEmpty.hidden = true;
+            if (nextActionContent) nextActionContent.hidden = false;
+            if (nextActionTitle) nextActionTitle.textContent = `Practice ${data.nextAction.topic}`;
+            if (nextActionMastery) nextActionMastery.textContent = `${data.nextAction.currentMastery}%`;
+            if (nextActionButton) {
+                nextActionButton.onclick = () => practiceLearningTopic(data.nextAction.topic, data.nextAction.subject || subject);
+            }
+        } else {
+            if (nextActionContent) nextActionContent.hidden = true;
+            if (nextActionEmpty) nextActionEmpty.hidden = false;
+        }
+
+    } catch (err) {
+        console.error("Error loading learning intelligence:", err);
+        if (topicsLoading) topicsLoading.hidden = true;
+        if (topicsEmpty) topicsEmpty.hidden = false;
     }
 }

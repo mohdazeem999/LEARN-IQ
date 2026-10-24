@@ -26,11 +26,14 @@ let currentQuiz = null;
 let currentQuestionIdx = 0;
 let userAnswers = {};
 let quizTimerInterval = null;
-let quizSecondsLeft = 300; // 5 mins
-let quizTimerMode = "overall"; // "overall" | "question"
+let quizSecondsLeft = 0;
+let quizTimerMode = "untimed"; // "untimed" | "overall" | "question"
 let questionSecondsLeft = 45;
 let questionTimerInterval = null;
+let quizStartTime = null;
 let quizSubmissionInProgress = false;
+let quizActive = false;
+let quizActivationInProgress = false;
 let studentProfile = {
     xp: 0,
     streak: 0,
@@ -43,6 +46,8 @@ let studentProfile = {
 let currentDailyChallenges = [];
 let selectedChallengeTask = null;
 let selectedChallengeOption = null;
+let selectedChallengeAnswers = {};
+let challengeClaimInProgress = false;
 
 // Default fallback quiz if backend server is unreachable
 const defaultQuiz = {
@@ -151,9 +156,12 @@ function showPage(pageId) {
         }
     });
 
-    if (pageId === "assessment" && (!currentQuiz || currentQuestionIdx === 0)) {
-        startQuiz(currentQuiz || defaultQuiz);
-    } else if (pageId === "admin-dashboard") {
+    if (pageId !== "assessment") {
+        clearQuizTimers();
+    } else {
+        renderAssessmentIntro();
+    }
+    if (pageId === "admin-dashboard") {
         loadAdminOverview();
     } else if (pageId === "teacher-map") {
         loadTeacherClassMap();
@@ -165,6 +173,8 @@ function showPage(pageId) {
         renderProfileTestHistory();
     } else if (pageId === "intelligence") {
         renderLearningIntelligence();
+        const currentSel = document.getElementById("learningSubjectSelect")?.value || "Mathematics";
+        selectLearningSubject(currentSel);
     }
 }
 
@@ -181,55 +191,87 @@ function toggleSidebar() {
 // ==========================================
 // AI QUIZ GENERATOR
 // ==========================================
+function onClassChange() {
+    const topicInput = document.getElementById("genTopic");
+    if (topicInput) topicInput.value = "";
+    const previewContainer = document.getElementById("genPreviewContainer");
+    if (previewContainer) previewContainer.style.display = "none";
+    onSubjectChange();
+}
+
 function onSubjectChange() {
-    const subject = document.getElementById("genSubject").value;
+    const subject = document.getElementById("genSubject")?.value || "Mathematics";
     const topicInput = document.getElementById("genTopic");
     const subjectLabel = document.getElementById("selectedSubjectLabel");
     const chipsContainer = document.getElementById("quickTopicChips");
+    const classElem = document.getElementById("genClass");
+    const classLevel = classElem ? classElem.value : "10";
 
     if (subjectLabel) subjectLabel.innerText = subject;
 
-    const subjectPresets = {
-        Physics: [
-            { topic: "Laws of Motion", classLevel: "10" },
-            { topic: "Electricity & Circuits", classLevel: "10" },
-            { topic: "Work & Energy", classLevel: "9" },
-            { topic: "Optics & Light Refraction", classLevel: "10" }
-        ],
-        Chemistry: [
-            { topic: "Periodic Table & Trends", classLevel: "10" },
-            { topic: "Acids, Bases & Salts", classLevel: "10" },
-            { topic: "Chemical Reactions", classLevel: "9" },
-            { topic: "Atomic Structure", classLevel: "9" }
-        ],
-        Biology: [
-            { topic: "Photosynthesis in Plants", classLevel: "10" },
-            { topic: "Cell Structure & Organelles", classLevel: "9" },
-            { topic: "Human Respiration System", classLevel: "10" },
-            { topic: "Genetics & DNA", classLevel: "11" }
-        ],
-        Mathematics: [
-            { topic: "Quadratic Equations", classLevel: "10" },
-            { topic: "Trigonometry Ratios", classLevel: "10" },
-            { topic: "Fractions & Decimals", classLevel: "6" },
-            { topic: "Simultaneous Equations", classLevel: "10" }
-        ],
-        English: [
-            { topic: "Tenses & Active/Passive Voice", classLevel: "9" },
-            { topic: "Subject-Verb Agreement", classLevel: "8" },
-            { topic: "Reading Comprehension", classLevel: "10" },
-            { topic: "Vocabulary & Idioms", classLevel: "10" }
-        ]
+    const curriculumBySubject = {
+        Mathematics: {
+            "5": ["Fractions & Decimals", "Large Numbers", "Basic Geometry", "Factors & Multiples"],
+            "6": ["Fractions & Decimals", "Integers", "Basic Algebra", "Ratio & Proportion"],
+            "7": ["Linear Equations", "Triangles & Properties", "Rational Numbers", "Perimeter & Area"],
+            "8": ["Linear Equations in One Variable", "Quadrilaterals", "Algebraic Expressions", "Mensuration"],
+            "9": ["Polynomials", "Coordinate Geometry", "Linear Equations in Two Variables", "Triangles"],
+            "10": ["Quadratic Equations", "Trigonometry Ratios", "Arithmetic Progressions", "Real Numbers"],
+            "11": ["Sets & Functions", "Complex Numbers", "Trigonometric Functions", "Calculus Foundations"],
+            "12": ["Relations & Functions", "Matrices & Determinants", "Integrals", "Differential Equations"]
+        },
+        Physics: {
+            "5": ["Light & Shadows", "Simple Machines", "Forces & Energy", "Magnetism Basics"],
+            "6": ["Light, Shadows & Reflection", "Motion & Distances", "Electricity & Circuits", "Fun with Magnets"],
+            "7": ["Motion and Time", "Heat & Temperature", "Electric Current Effects", "Light & Optics"],
+            "8": ["Force and Pressure", "Friction", "Sound Waves", "Chemical Effects of Current"],
+            "9": ["Motion", "Force and Laws of Motion", "Gravitation", "Work and Energy"],
+            "10": ["Light Reflection & Refraction", "Human Eye & Colourful World", "Electricity", "Magnetic Effects of Electric Current"],
+            "11": ["Units & Measurements", "Kinematics", "Laws of Motion", "Thermodynamics"],
+            "12": ["Electrostatics", "Current Electricity", "Electromagnetic Induction", "Wave Optics"]
+        },
+        Chemistry: {
+            "5": ["Solids, Liquids, Gases", "Water Cycle", "Mixing & Dissolving", "Air Properties"],
+            "6": ["Sorting Materials", "Separation of Substances", "Changes Around Us", "Water & Solutions"],
+            "7": ["Acids, Bases & Salts", "Physical & Chemical Changes", "Water Resources", "Air & Combustion"],
+            "8": ["Synthetic Fibres & Plastics", "Metals and Non-Metals", "Coal and Petroleum", "Combustion & Flame"],
+            "9": ["Matter in Our Surroundings", "Is Matter Around Us Pure", "Atoms and Molecules", "Structure of the Atom"],
+            "10": ["Chemical Reactions & Equations", "Acids, Bases & Salts", "Metals & Non-Metals", "Carbon and its Compounds"],
+            "11": ["Basic Concepts of Chemistry", "Structure of Atom", "Chemical Bonding", "Thermodynamics"],
+            "12": ["Solutions & Colligative Properties", "Electrochemistry", "Chemical Kinetics", "Coordination Compounds"]
+        },
+        Biology: {
+            "5": ["Plants & Seeds", "Animals & Habitats", "Human Body Basics", "Food & Nutrition"],
+            "6": ["Components of Food", "Getting to Know Plants", "Body Movements", "Living Organisms & Surroundings"],
+            "7": ["Nutrition in Plants", "Nutrition in Animals", "Respiration in Organisms", "Transportation in Animals & Plants"],
+            "8": ["Crop Production", "Microorganisms: Friend and Foe", "Cell - Structure and Functions", "Reproduction in Animals"],
+            "9": ["Fundamental Unit of Life (Cell)", "Tissues", "Diversity in Living Organisms", "Natural Resources"],
+            "10": ["Life Processes", "Control and Coordination", "How do Organisms Reproduce?", "Heredity and Evolution"],
+            "11": ["Diversity in Living World", "Cell Structure & Function", "Plant Physiology", "Human Physiology"],
+            "12": ["Reproduction in Organisms", "Genetics & Evolution", "Biology in Human Welfare", "Biotechnology & Ecology"]
+        },
+        English: {
+            "5": ["Nouns & Pronouns", "Verbs & Tenses", "Adjectives & Comparison", "Reading Comprehension"],
+            "6": ["Parts of Speech", "Tenses & Voice", "Vocabulary & Synonyms", "Reading Comprehension"],
+            "7": ["Subject-Verb Agreement", "Active and Passive Voice", "Direct and Indirect Speech", "Creative Writing"],
+            "8": ["Tenses & Modals", "Clauses & Complex Sentences", "Vocabulary & Idioms", "Formal Letter & Essays"],
+            "9": ["Tenses & Modals", "Reported Speech", "Analytical Paragraph Writing", "Literary Devices"],
+            "10": ["Subject-Verb Concord", "Reported Speech & Commands", "Analytical Writing", "Literature Comprehension"],
+            "11": ["Advanced Grammar & Syntax", "Formal Speech & Debate Writing", "Literary Analysis", "Reading Comprehension"],
+            "12": ["Advanced Syntax & Discourse", "Report & Proposal Writing", "Critical Reading", "Literary Devices & Rhetoric"]
+        }
     };
 
-    const presets = subjectPresets[subject] || subjectPresets["Physics"];
+    const subjectTopics = curriculumBySubject[subject] || curriculumBySubject["Mathematics"];
+    const topics = subjectTopics[classLevel] || subjectTopics["10"] || ["Foundations", "Core Principles", "Applications"];
+
     if (topicInput) {
-        topicInput.placeholder = `e.g. ${presets.map(p => p.topic).join(", ")}...`;
+        topicInput.placeholder = `e.g. ${topics.join(", ")}...`;
     }
 
     if (chipsContainer) {
-        chipsContainer.innerHTML = presets.map(p => `
-            <button type="button" class="chip-btn" onclick="setTopic('${p.topic}', '${subject}', '${p.classLevel}')">⚡ ${p.topic}</button>
+        chipsContainer.innerHTML = topics.map(t => `
+            <button type="button" class="chip-btn" onclick="setTopic('${t.replace(/'/g, "\\'")}', '${subject}', '${classLevel}')">⚡ ${t}</button>
         `).join("");
     }
 }
@@ -237,21 +279,31 @@ function onSubjectChange() {
 function getDefaultTopicForSubject(subject) {
     switch (subject) {
         case "Physics": return "Laws of Motion";
-        case "Chemistry": return "Acids & Bases";
-        case "Biology": return "Photosynthesis";
-        case "English": return "Grammar & Tenses";
+        case "Chemistry": return "Acids, Bases & Salts";
+        case "Biology": return "Life Processes";
+        case "English": return "Subject-Verb Concord";
         case "Mathematics": default: return "Quadratic Equations";
     }
 }
 
 function setTopic(topic, subject, classLevel) {
-    if (topic) document.getElementById("genTopic").value = topic;
-    if (subject) {
-        document.getElementById("genSubject").value = subject;
-        onSubjectChange();
+    if (topic) {
+        const topicElem = document.getElementById("genTopic");
+        if (topicElem) topicElem.value = topic;
     }
-    if (classLevel) document.getElementById("genClass").value = classLevel;
-    showToast(`Selected topic: ${topic} (${subject})`);
+    if (subject) {
+        const subjElem = document.getElementById("genSubject");
+        if (subjElem) {
+            subjElem.value = subject;
+            onSubjectChange();
+        }
+    }
+    // Only allow setting class if the user is a teacher/admin or logged out (never overwrite an enrolled student's assigned class)
+    if (classLevel && currentUser?.role !== "student") {
+        const classElem = document.getElementById("genClass");
+        if (classElem) classElem.value = classLevel;
+    }
+    showToast(`Selected topic: ${topic} (${subject || "Topic"})`);
 }
 
 async function generateAIQuiz() {
@@ -272,56 +324,23 @@ async function generateAIQuiz() {
         const response = await fetch(`${API_BASE}/assessments/generate`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
             body: JSON.stringify({ classLevel, subject, topic, difficulty, questionCount, prompt })
         });
 
         const data = await response.json();
-        if (data.success && data.quiz) {
+        if (response.ok && data.success && data.quiz) {
             currentQuiz = data.quiz;
             renderQuizPreview(data.quiz);
             showToast(`✨ Generated ${data.quiz.questions.length} AI ${subject} questions for "${topic}"!`);
         } else {
-            throw new Error(data.message || "Failed to generate");
+            throw new Error(data.message || "Failed to generate assessment.");
         }
     } catch (err) {
-        console.warn("API generate notice:", err);
-        // Fallback subject-aligned quiz generation
-        currentQuiz = {
-            title: `${topic} (${subject})`,
-            subject,
-            classLevel: `Class ${classLevel}`,
-            difficulty,
-            questions: [
-                {
-                    id: 1,
-                    question: `In ${subject}, what is the foundational concept behind ${topic}?`,
-                    options: [
-                        `Key theoretical principles governing ${topic}`,
-                        `An unrelated formula`,
-                        `An obsolete convention`,
-                        `None of the above`
-                    ],
-                    correctIndex: 0,
-                    concept: `${subject} - ${topic}`,
-                    explanation: `Understanding ${topic} requires mastering core principles in ${subject}.`
-                },
-                {
-                    id: 2,
-                    question: `Which of the following is essential when evaluating ${topic} in ${subject}?`,
-                    options: [
-                        `Accurate conceptual definition and empirical analysis`,
-                        `Ignoring environmental factors`,
-                        `Relying on arbitrary guesses`,
-                        `Omitting standard formulas`
-                    ],
-                    correctIndex: 0,
-                    concept: `${subject} - ${topic} Principles`,
-                    explanation: `Proper evaluation in ${subject} relies on verifying foundational concepts.`
-                }
-            ]
-        };
-        renderQuizPreview(currentQuiz);
-        showToast(`✨ Generated AI ${subject} Quiz preview for "${topic}"!`);
+        console.error("Quiz generation notice:", err);
+        showToast(`❌ Quiz generation failed: ${err.message || "Unable to generate assessment."}`);
+        const previewContainer = document.getElementById("genPreviewContainer");
+        if (previewContainer) previewContainer.style.display = "none";
     } finally {
         generateBtn.disabled = false;
         generateBtn.innerHTML = originalBtnHTML;
@@ -350,50 +369,264 @@ function renderQuizPreview(quiz) {
     previewContainer.scrollIntoView({ behavior: "smooth" });
 }
 
+function renderAssessmentIntro() {
+    const introCard = document.getElementById("assessmentIntroCard");
+    const activeLayout = document.getElementById("quizActiveLayout");
+    if (!introCard || !activeLayout) return;
+
+    if (quizActive && currentQuiz) {
+        introCard.style.display = "none";
+        activeLayout.style.display = "grid";
+        return;
+    }
+
+    introCard.style.display = "block";
+    activeLayout.style.display = "none";
+
+    const classLabel = document.getElementById("adaptiveClassLabel");
+    const classNum = currentUser?.classNumber || (currentUser?.class ? String(currentUser.class).replace(/\D/g, "") : null) || (studentProfile.classLevel ? String(studentProfile.classLevel).replace(/\D/g, "") : "10");
+    if (classLabel) {
+        classLabel.innerText = `Class ${classNum}`;
+    }
+
+    onAdaptiveSubjectChange();
+}
+
+function onAdaptiveSubjectChange() {
+    const subjectSelect = document.getElementById("adaptiveSubjectSelect");
+    const topicSelect = document.getElementById("adaptiveTopicSelect");
+    if (!subjectSelect || !topicSelect) return;
+
+    const subject = subjectSelect.value || "Mathematics";
+    const classNum = currentUser?.classNumber || (currentUser?.class ? String(currentUser.class).replace(/\D/g, "") : null) || (studentProfile.classLevel ? String(studentProfile.classLevel).replace(/\D/g, "") : "10");
+
+    const curriculum = {
+        Mathematics: {
+            "5": ["Fractions & Decimals", "Large Numbers", "Basic Geometry", "Factors & Multiples"],
+            "6": ["Fractions & Decimals", "Integers", "Basic Algebra", "Ratio & Proportion"],
+            "7": ["Linear Equations", "Triangles & Properties", "Rational Numbers", "Perimeter & Area"],
+            "8": ["Linear Equations in One Variable", "Quadrilaterals", "Algebraic Expressions", "Mensuration"],
+            "9": ["Polynomials", "Coordinate Geometry", "Linear Equations in Two Variables", "Triangles"],
+            "10": ["Quadratic Equations", "Trigonometry Ratios", "Arithmetic Progressions", "Real Numbers"],
+            "11": ["Sets & Functions", "Complex Numbers", "Trigonometric Functions", "Calculus Foundations"],
+            "12": ["Relations & Functions", "Matrices & Determinants", "Integrals", "Differential Equations"]
+        },
+        Physics: {
+            "5": ["Light & Shadows", "Simple Machines", "Forces & Energy", "Magnetism Basics"],
+            "6": ["Light, Shadows & Reflection", "Motion & Distances", "Electricity & Circuits", "Fun with Magnets"],
+            "7": ["Motion and Time", "Heat & Temperature", "Electric Current Effects", "Light & Optics"],
+            "8": ["Force and Pressure", "Friction", "Sound Waves", "Chemical Effects of Current"],
+            "9": ["Motion", "Force and Laws of Motion", "Gravitation", "Work and Energy"],
+            "10": ["Light Reflection & Refraction", "Human Eye & Colourful World", "Electricity", "Magnetic Effects of Electric Current"],
+            "11": ["Units & Measurements", "Kinematics", "Laws of Motion", "Thermodynamics"],
+            "12": ["Electrostatics", "Current Electricity", "Electromagnetic Induction", "Wave Optics"]
+        },
+        Chemistry: {
+            "5": ["Solids, Liquids, Gases", "Water Cycle", "Mixing & Dissolving", "Air Properties"],
+            "6": ["Sorting Materials", "Separation of Substances", "Changes Around Us", "Water & Solutions"],
+            "7": ["Acids, Bases & Salts", "Physical & Chemical Changes", "Water Resources", "Air & Combustion"],
+            "8": ["Synthetic Fibres & Plastics", "Metals and Non-Metals", "Coal and Petroleum", "Combustion & Flame"],
+            "9": ["Matter in Our Surroundings", "Is Matter Around Us Pure", "Atoms and Molecules", "Structure of the Atom"],
+            "10": ["Chemical Reactions & Equations", "Acids, Bases & Salts", "Metals & Non-Metals", "Carbon and its Compounds"],
+            "11": ["Basic Concepts of Chemistry", "Structure of Atom", "Chemical Bonding", "Thermodynamics"],
+            "12": ["Solutions & Colligative Properties", "Electrochemistry", "Chemical Kinetics", "Coordination Compounds"]
+        },
+        Biology: {
+            "5": ["Plants & Seeds", "Animals & Habitats", "Human Body Basics", "Food & Nutrition"],
+            "6": ["Components of Food", "Getting to Know Plants", "Body Movements", "Living Organisms & Surroundings"],
+            "7": ["Nutrition in Plants", "Nutrition in Animals", "Respiration in Organisms", "Transportation in Animals & Plants"],
+            "8": ["Crop Production", "Microorganisms: Friend and Foe", "Cell - Structure and Functions", "Reproduction in Animals"],
+            "9": ["Fundamental Unit of Life (Cell)", "Tissues", "Diversity in Living Organisms", "Natural Resources"],
+            "10": ["Life Processes", "Control and Coordination", "How do Organisms Reproduce?", "Heredity and Evolution"],
+            "11": ["Diversity in Living World", "Cell Structure & Function", "Plant Physiology", "Human Physiology"],
+            "12": ["Reproduction in Organisms", "Genetics & Evolution", "Biology in Human Welfare", "Biotechnology & Ecology"]
+        },
+        English: {
+            "5": ["Nouns & Pronouns", "Verbs & Tenses", "Adjectives & Comparison", "Reading Comprehension"],
+            "6": ["Parts of Speech", "Tenses & Voice", "Vocabulary & Synonyms", "Reading Comprehension"],
+            "7": ["Subject-Verb Agreement", "Active and Passive Voice", "Direct and Indirect Speech", "Creative Writing"],
+            "8": ["Tenses & Modals", "Clauses & Complex Sentences", "Vocabulary & Idioms", "Formal Letter & Essays"],
+            "9": ["Tenses & Modals", "Reported Speech", "Analytical Paragraph Writing", "Literary Devices"],
+            "10": ["Subject-Verb Concord", "Reported Speech & Commands", "Analytical Writing", "Literature Comprehension"],
+            "11": ["Advanced Grammar & Syntax", "Formal Speech & Debate Writing", "Literary Analysis", "Reading Comprehension"],
+            "12": ["Advanced Syntax & Discourse", "Report & Proposal Writing", "Critical Reading", "Literary Devices & Rhetoric"]
+        }
+    };
+
+    const topics = curriculum[subject]?.[String(classNum)] || curriculum[subject]?.["10"] || ["Foundations", "Core Principles", "Applications"];
+    topicSelect.innerHTML = topics.map(t => `<option value="${t}">${t}</option>`).join("");
+}
+
+async function startAdaptiveAssessment() {
+    if (quizActivationInProgress) return;
+    quizActivationInProgress = true;
+
+    const btn = document.getElementById("startAdaptiveAssessmentBtn");
+    const originalBtnHTML = btn ? btn.innerHTML : "";
+    const errorBanner = document.getElementById("adaptiveErrorBanner");
+    const errorMsg = document.getElementById("adaptiveErrorMessage");
+    if (errorBanner) errorBanner.style.display = "none";
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Preparing Adaptive Assessment...`;
+    }
+
+    const classNum = currentUser?.classNumber || (currentUser?.class ? Number.parseInt(String(currentUser.class).replace(/\D/g, ""), 10) : null) || 10;
+    const subject = document.getElementById("adaptiveSubjectSelect")?.value || "Mathematics";
+    const topic = document.getElementById("adaptiveTopicSelect")?.value || "Linear Equations";
+
+    try {
+        const response = await fetch(`${API_BASE}/assessments/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({
+                classLevel: classNum,
+                subject,
+                topic,
+                difficulty: "Medium",
+                questionCount: 5
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.quiz || !Array.isArray(data.quiz.questions) || data.quiz.questions.length === 0) {
+            throw new Error(data.message || "No assessment questions could be prepared. Please try another topic.");
+        }
+
+        currentQuiz = data.quiz;
+        quizActive = true;
+
+        const introCard = document.getElementById("assessmentIntroCard");
+        const activeLayout = document.getElementById("quizActiveLayout");
+        if (introCard) introCard.style.display = "none";
+        if (activeLayout) activeLayout.style.display = "grid";
+
+        startQuiz(currentQuiz);
+        showToast(`✨ Adaptive assessment loaded for ${topic} (${subject})`);
+    } catch (err) {
+        console.error("Adaptive activation error:", err);
+        if (errorBanner && errorMsg) {
+            errorMsg.innerText = err.message || "Failed to activate adaptive assessment. Please try again.";
+            errorBanner.style.display = "block";
+        }
+        showToast(`❌ ${err.message || "Unable to start assessment."}`);
+    } finally {
+        quizActivationInProgress = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHTML;
+        }
+    }
+}
+
+function exitActiveQuiz() {
+    clearQuizTimers();
+    quizActive = false;
+    currentQuiz = null;
+    currentQuestionIdx = 0;
+    userAnswers = {};
+
+    const introCard = document.getElementById("assessmentIntroCard");
+    const activeLayout = document.getElementById("quizActiveLayout");
+    if (introCard) introCard.style.display = "block";
+    if (activeLayout) activeLayout.style.display = "none";
+
+    renderAssessmentIntro();
+    showToast("Assessment session closed.");
+}
+
 function startGeneratedQuiz() {
     if (!currentQuiz) return;
-    startQuiz(currentQuiz);
+    quizActive = true;
     showPage("assessment");
+    const introCard = document.getElementById("assessmentIntroCard");
+    const activeLayout = document.getElementById("quizActiveLayout");
+    if (introCard) introCard.style.display = "none";
+    if (activeLayout) activeLayout.style.display = "grid";
+    startQuiz(currentQuiz);
 }
 
 // ==========================================
 // INTERACTIVE QUIZ ENGINE & DUAL TIMER MODES
 // ==========================================
-function setQuizTimerMode(mode) {
-    quizTimerMode = mode;
+function updateTimerModeButtons(mode) {
     const btnOverall = document.getElementById("btnTimerModeOverall");
     const btnQuestion = document.getElementById("btnTimerModeQuestion");
+    const btnUntimed = document.getElementById("btnTimerModeUntimed");
     const modeBadge = document.getElementById("quizTimerModeBadge");
 
-    if (btnOverall && btnQuestion) {
-        if (mode === "overall") {
-            btnOverall.classList.add("active");
-            btnOverall.style.background = "var(--primary-gradient)";
-            btnOverall.style.color = "white";
-            btnQuestion.classList.remove("active");
-            btnQuestion.style.background = "transparent";
-            btnQuestion.style.color = "var(--muted)";
-            if (modeBadge) {
-                modeBadge.innerText = "Overall";
-                modeBadge.style.background = "rgba(0, 240, 255, 0.2)";
-                modeBadge.style.color = "var(--cyan)";
-            }
-            clearInterval(questionTimerInterval);
-            updateTimerDisplay();
-        } else {
-            btnQuestion.classList.add("active");
-            btnQuestion.style.background = "var(--primary-gradient)";
-            btnQuestion.style.color = "white";
-            btnOverall.classList.remove("active");
-            btnOverall.style.background = "transparent";
-            btnOverall.style.color = "var(--muted)";
-            if (modeBadge) {
-                modeBadge.innerText = "Per Question";
-                modeBadge.style.background = "rgba(168, 85, 247, 0.25)";
-                modeBadge.style.color = "var(--purple)";
-            }
-            startQuestionTimer(45);
+    [btnOverall, btnQuestion, btnUntimed].forEach(b => {
+        if (b) {
+            b.classList.remove("active");
+            b.style.background = "transparent";
+            b.style.color = "var(--muted)";
         }
+    });
+
+    if (mode === "overall" && btnOverall) {
+        btnOverall.classList.add("active");
+        btnOverall.style.background = "var(--primary-gradient)";
+        btnOverall.style.color = "white";
+        if (modeBadge) {
+            modeBadge.innerText = "Overall";
+            modeBadge.style.background = "rgba(0, 240, 255, 0.2)";
+            modeBadge.style.color = "var(--cyan)";
+        }
+    } else if (mode === "question" && btnQuestion) {
+        btnQuestion.classList.add("active");
+        btnQuestion.style.background = "var(--primary-gradient)";
+        btnQuestion.style.color = "white";
+        if (modeBadge) {
+            modeBadge.innerText = "Per Question";
+            modeBadge.style.background = "rgba(168, 85, 247, 0.25)";
+            modeBadge.style.color = "var(--purple)";
+        }
+    } else if (btnUntimed) {
+        btnUntimed.classList.add("active");
+        btnUntimed.style.background = "var(--primary-gradient)";
+        btnUntimed.style.color = "white";
+        if (modeBadge) {
+            modeBadge.innerText = "Untimed";
+            modeBadge.style.background = "rgba(16, 185, 129, 0.2)";
+            modeBadge.style.color = "#10b981";
+        }
+    }
+}
+
+function setQuizTimerMode(mode) {
+    quizTimerMode = mode;
+    updateTimerModeButtons(mode);
+
+    if (mode === "untimed") {
+        clearQuizTimers();
+        const timerElem = document.getElementById("quizTimer");
+        if (timerElem) timerElem.innerText = "Untimed";
+    } else if (mode === "overall") {
+        clearInterval(questionTimerInterval);
+        const duration = currentQuiz?.timeLimit || currentQuiz?.durationSeconds || null;
+        if (duration) {
+            if (quizSecondsLeft <= 0) quizSecondsLeft = duration;
+            startTimer(quizSecondsLeft);
+        } else {
+            const timerElem = document.getElementById("quizTimer");
+            if (timerElem) timerElem.innerText = "Untimed";
+        }
+    } else if (mode === "question") {
+        clearInterval(quizTimerInterval);
+        startQuestionTimer(45);
+    }
+}
+
+function clearQuizTimers() {
+    if (quizTimerInterval) {
+        clearInterval(quizTimerInterval);
+        quizTimerInterval = null;
+    }
+    if (questionTimerInterval) {
+        clearInterval(questionTimerInterval);
+        questionTimerInterval = null;
     }
 }
 
@@ -402,11 +635,34 @@ function startQuiz(quiz) {
     currentQuestionIdx = 0;
     userAnswers = {};
     quizSubmissionInProgress = false;
+    quizActive = true;
+    quizStartTime = new Date().toISOString();
+
+    const introCard = document.getElementById("assessmentIntroCard");
+    const activeLayout = document.getElementById("quizActiveLayout");
+    if (introCard) introCard.style.display = "none";
+    if (activeLayout) activeLayout.style.display = "grid";
 
     const quizTitleElem = document.getElementById("quizTitle");
     if (quizTitleElem) quizTitleElem.innerText = currentQuiz.title || "Adaptive Assessment";
 
-    startTimer(300); // 5 minutes overall timer
+    clearQuizTimers();
+
+    const duration = currentQuiz.timeLimit || currentQuiz.durationSeconds || null;
+
+    if (quizTimerMode === "untimed" || currentQuiz.untimed || (!duration && quizTimerMode !== "question")) {
+        quizTimerMode = "untimed";
+        updateTimerModeButtons("untimed");
+        const timerElem = document.getElementById("quizTimer");
+        if (timerElem) timerElem.innerText = "Untimed";
+    } else if (quizTimerMode === "question") {
+        updateTimerModeButtons("question");
+        startQuestionTimer(45);
+    } else if (duration) {
+        updateTimerModeButtons("overall");
+        startTimer(duration);
+    }
+
     renderCurrentQuestion();
 }
 
@@ -419,8 +675,7 @@ function startTimer(seconds) {
         quizSecondsLeft--;
         if (quizTimerMode === "overall") updateTimerDisplay();
         if (quizSecondsLeft <= 0) {
-            clearInterval(quizTimerInterval);
-            clearInterval(questionTimerInterval);
+            clearQuizTimers();
             showToast("⏳ Quiz time's up! Submitting answers...");
             finishQuiz();
         }
@@ -461,20 +716,22 @@ function autoAdvanceQuestion() {
         currentQuestionIdx++;
         renderCurrentQuestion();
     } else {
-        clearInterval(quizTimerInterval);
-        clearInterval(questionTimerInterval);
+        clearQuizTimers();
         finishQuiz();
     }
 }
 
 function updateTimerDisplay() {
+    const timerElem = document.getElementById("quizTimer");
+    if (!timerElem) return;
+    if (quizTimerMode === "untimed") {
+        timerElem.innerText = "Untimed";
+        return;
+    }
     if (quizTimerMode !== "overall") return;
     const mins = Math.floor(Math.max(0, quizSecondsLeft) / 60);
     const secs = Math.max(0, quizSecondsLeft) % 60;
-    const timerElem = document.getElementById("quizTimer");
-    if (timerElem) {
-        timerElem.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
+    timerElem.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
 function renderCurrentQuestion() {
@@ -567,10 +824,17 @@ async function finishQuiz() {
     showToast("🧠 AI is analyzing your quiz responses...");
 
     try {
+        const elapsedSeconds = quizStartTime ? Math.max(0, Math.round((Date.now() - new Date(quizStartTime).getTime()) / 1000)) : 0;
         const response = await fetch(`${API_BASE}/assessments/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ quiz: currentQuiz, answers: userAnswers })
+            credentials: "same-origin",
+            body: JSON.stringify({
+                quiz: currentQuiz,
+                answers: userAnswers,
+                startTime: quizStartTime,
+                timeElapsedSeconds: elapsedSeconds
+            })
         });
 
         const data = await response.json();
@@ -695,6 +959,7 @@ async function finishQuiz() {
         logQuizAttendance(currentQuiz, mockAnalysis);
     } finally {
         quizSubmissionInProgress = false;
+        quizActive = false;
     }
 }
 
@@ -926,7 +1191,13 @@ async function startSimilarPractice() {
         }
         currentQuiz = data.quiz;
         currentQuestionIdx = 0;
+        quizActive = true;
         showPage("assessment");
+        const introCard = document.getElementById("assessmentIntroCard");
+        const activeLayout = document.getElementById("quizActiveLayout");
+        if (introCard) introCard.style.display = "none";
+        if (activeLayout) activeLayout.style.display = "grid";
+        startQuiz(currentQuiz);
         document.getElementById("diagnosisModal").classList.remove("active");
         showToast(`Practice is ready for ${topic}.`);
     } catch (error) {
@@ -1242,6 +1513,7 @@ function openChallengeTask(challengeId) {
 
     selectedChallengeTask = c;
     selectedChallengeOption = null;
+    selectedChallengeAnswers = {};
 
     const modal = document.getElementById("challengeTaskModal");
     const badge = document.getElementById("modalChallengeBadge");
@@ -1265,30 +1537,43 @@ function openChallengeTask(challengeId) {
         submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xpReward || c.xp || 50} XP`;
     }
 
-    if (interactiveArea && c.problem) {
-        interactiveArea.innerHTML = `
-            <div style="font-size: 14.5px; font-weight: 600; color: var(--text); margin-bottom: 14px; line-height: 1.5;">
-                <i class="fa-solid fa-circle-question" style="color: var(--cyan); margin-right: 8px;"></i>${escapeHtml(c.problem.question)}
-            </div>
-            <div class="answer-grid" style="grid-template-columns: 1fr; gap: 8px;">
-                ${c.problem.options.map((opt, idx) => `
-                    <button type="button" class="answer-option" id="challengeOptBtn_${idx}" onclick="selectChallengeTaskOption(${idx})" style="padding: 10px 14px; text-align: left;">
-                        <span class="option-num-badge">${idx + 1}</span>
-                        <span style="font-size: 13px; color: var(--text);">${escapeHtml(opt)}</span>
-                    </button>
-                `).join("")}
-            </div>
-        `;
+    const questions = Array.isArray(c.questions) && c.questions.length > 0
+        ? c.questions
+        : (c.problem ? [{ id: 0, question: c.problem.question, options: c.problem.options }] : []);
+
+    if (interactiveArea) {
+        if (questions.length > 0) {
+            interactiveArea.innerHTML = questions.map((q, qIdx) => `
+                <div style="margin-bottom: ${qIdx < questions.length - 1 ? '16px' : '0'};">
+                    <div style="font-size: 14.5px; font-weight: 600; color: var(--text); margin-bottom: 12px; line-height: 1.5;">
+                        <i class="fa-solid fa-circle-question" style="color: var(--cyan); margin-right: 8px;"></i>${escapeHtml(q.question)}
+                    </div>
+                    <div class="answer-grid" style="grid-template-columns: 1fr; gap: 8px;">
+                        ${q.options.map((opt, optIdx) => `
+                            <button type="button" class="answer-option" id="challengeOptBtn_${qIdx}_${optIdx}" onclick="selectChallengeTaskOption(${optIdx}, ${qIdx})" style="padding: 10px 14px; text-align: left;">
+                                <span class="option-num-badge">${optIdx + 1}</span>
+                                <span style="font-size: 13px; color: var(--text);">${escapeHtml(opt)}</span>
+                            </button>
+                        `).join("")}
+                    </div>
+                </div>
+            `).join("");
+        } else {
+            interactiveArea.innerHTML = `
+                <p style="color: var(--muted); text-align: center; margin: 0;">Task ready. Click Complete & Claim to verify and earn XP.</p>
+            `;
+        }
     }
 
     if (modal) modal.classList.add("active");
 }
 
-function selectChallengeTaskOption(idx) {
-    selectedChallengeOption = idx;
-    const options = document.querySelectorAll("#modalChallengeInteractiveArea .answer-option");
-    options.forEach((btn, i) => {
-        if (i === idx) btn.classList.add("selected");
+function selectChallengeTaskOption(optIdx, qIdx = 0) {
+    selectedChallengeAnswers[qIdx] = optIdx;
+    selectedChallengeOption = optIdx;
+    const buttons = document.querySelectorAll(`#modalChallengeInteractiveArea button[id^="challengeOptBtn_${qIdx}_"]`);
+    buttons.forEach((btn, i) => {
+        if (i === optIdx) btn.classList.add("selected");
         else btn.classList.remove("selected");
     });
 }
@@ -1298,46 +1583,51 @@ function closeChallengeTaskModal() {
     if (modal) modal.classList.remove("active");
     selectedChallengeTask = null;
     selectedChallengeOption = null;
+    selectedChallengeAnswers = {};
 }
 
 async function verifyAndClaimChallenge() {
-    if (!selectedChallengeTask) return;
+    if (!selectedChallengeTask || challengeClaimInProgress) return;
     const c = selectedChallengeTask;
     const feedback = document.getElementById("modalChallengeFeedback");
     const submitBtn = document.getElementById("modalChallengeSubmitBtn");
 
-    if (c.problem && selectedChallengeOption === null) {
-        showToast("⚠️ Please select an answer option first.");
-        return;
-    }
+    const questions = Array.isArray(c.questions) && c.questions.length > 0
+        ? c.questions
+        : (c.problem ? [{ id: 0, question: c.problem.question, options: c.problem.options }] : []);
 
-    // Check correctness
-    if (c.problem && selectedChallengeOption !== c.problem.correctIndex) {
-        if (feedback) {
-            feedback.style.display = "block";
-            feedback.style.background = "rgba(239, 68, 68, 0.15)";
-            feedback.style.border = "1px solid rgba(239, 68, 68, 0.3)";
-            feedback.style.color = "#ef4444";
-            feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i> Not quite right! Review the problem and try another option.`;
+    if (questions.length > 0) {
+        const answeredCount = Object.keys(selectedChallengeAnswers).filter(k => selectedChallengeAnswers[k] !== null && selectedChallengeAnswers[k] !== undefined).length;
+        if (answeredCount < questions.length) {
+            showToast("⚠️ Please select an answer option first.");
+            return;
         }
-        return;
     }
 
+    challengeClaimInProgress = true;
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying & Claiming...`;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Submitting & Verifying...`;
     }
 
     try {
-        const response = await fetch(`${API_BASE}/students/challenges/claim`, {
+        const response = await fetch(`${API_BASE}/students/challenges/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ challengeId: c.id })
+            credentials: "same-origin",
+            body: JSON.stringify({
+                challengeId: c.id,
+                answers: selectedChallengeAnswers
+            })
         });
-        const data = await response.json();
 
-        if (data.success) {
-            const earnedXp = data.earnedXp || c.xp;
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "Could not complete challenge.");
+        }
+
+        if (data.success && (data.passed !== false)) {
+            const earnedXp = data.earnedXp || 0;
             const totalXp = data.totalXp !== undefined ? data.totalXp : ((studentProfile.xp || 0) + earnedXp);
             studentProfile.xp = totalXp;
             updateXPDisplay(totalXp);
@@ -1349,30 +1639,48 @@ async function verifyAndClaimChallenge() {
                 feedback.style.background = "rgba(34, 197, 94, 0.15)";
                 feedback.style.border = "1px solid rgba(34, 197, 94, 0.3)";
                 feedback.style.color = "#22c55e";
-                feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> Correct! ${escapeHtml(c.problem?.explanation || '')}<br><strong style="color: var(--cyan); margin-top: 4px; display: inline-block;">+${earnedXp} XP Awarded! 🎉</strong>`;
+                const explanationText = data.feedback?.[0]?.explanation || "";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> ${data.alreadyClaimed ? 'Already completed!' : 'Correct!'} ${escapeHtml(explanationText)}<br><strong style="color: var(--cyan); margin-top: 4px; display: inline-block;">+${earnedXp} XP Awarded! 🎉</strong>`;
             }
 
-            showToast(`+${earnedXp} XP 🎉 → Challenge Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+            if (data.alreadyClaimed) {
+                showToast("ℹ️ This daily challenge was already completed today.");
+            } else {
+                showToast(`+${earnedXp} XP 🎉 → Challenge Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+            }
 
             c.completed = true;
-            fetchDailyChallenges();
+            c.claimed = true;
+            await fetchDailyChallenges();
+            if (window.fetchStudentProfile) await fetchStudentProfile();
 
             setTimeout(() => {
                 closeChallengeTaskModal();
-            }, 1400);
+            }, 1500);
         } else {
-            showToast(`❌ ${data.message || 'Could not complete challenge.'}`);
+            // Unsuccessful attempt (e.g. 0 correct)
+            if (feedback) {
+                feedback.style.display = "block";
+                feedback.style.background = "rgba(239, 68, 68, 0.15)";
+                feedback.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+                feedback.style.color = "#ef4444";
+                const explanationText = data.feedback?.[0]?.explanation || data.message || "Review the problem and try another option.";
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i> Not quite right! ${escapeHtml(explanationText)}`;
+            }
+            showToast(`❌ ${data.message || 'Incorrect answer. Try again!'}`);
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xp} XP`;
+                submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xpReward || c.xp || 50} XP`;
             }
         }
     } catch (err) {
-        showToast("⚠️ Could not reach server to claim challenge.");
+        showToast(`⚠️ ${err.message || "Could not reach server to claim challenge."}`);
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xp} XP`;
+            submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Complete & Claim +${c.xpReward || c.xp || 50} XP`;
         }
+    } finally {
+        challengeClaimInProgress = false;
     }
 }
 
@@ -1409,11 +1717,11 @@ async function redeemReward(cost, title = "Reward Item") {
     }
 }
 
-function practiceLearningTopic(topic) {
-    const subject = document.getElementById("genSubject");
+function practiceLearningTopic(topic, subject) {
+    const subjectElem = document.getElementById("genSubject");
     const topicInput = document.getElementById("genTopic");
-    if (subject) {
-        subject.value = "Mathematics";
+    if (subject && subjectElem) {
+        subjectElem.value = subject;
         onSubjectChange();
     }
     if (topicInput) topicInput.value = topic;
@@ -1426,7 +1734,14 @@ function startLinearEquationsPractice() {
     showPage("assessment");
 }
 
+let currentLearningIntelligence = null;
+
 function startRecommendedPractice() {
+    if (currentLearningIntelligence && currentLearningIntelligence.nextAction) {
+        const action = currentLearningIntelligence.nextAction;
+        practiceLearningTopic(action.topic, action.subject);
+        return;
+    }
     const topicRows = [...document.querySelectorAll("#intelligence .mastery-row")];
     const weakestTopic = topicRows.reduce((weakest, row) => {
         const mastery = Number(row.dataset.mastery);
@@ -1435,24 +1750,136 @@ function startRecommendedPractice() {
             : weakest;
     }, null);
 
-    const topic = weakestTopic ? weakestTopic.name : "Fractions";
-    practiceLearningTopic(topic);
+    const currentSubject = document.getElementById("learningSubjectSelect")?.value || "Mathematics";
+    const topic = weakestTopic ? weakestTopic.name : "Linear Equations";
+    practiceLearningTopic(topic, currentSubject);
 }
 
-function selectLearningSubject(subject) {
+async function selectLearningSubject(subject) {
     const overview = document.getElementById("learningSubjectOverview");
     const detail = document.getElementById("learningSubjectDetail");
     const nameEl = document.getElementById("selectedSubjectName");
     const select = document.getElementById("learningSubjectSelect");
-    if (select && select.value !== subject) select.value = subject;
+    const masteryEl = document.getElementById("selectedSubjectMastery");
+    const topicsList = document.getElementById("subjectTopicsList");
+    const topicsEmpty = document.getElementById("subjectTopicsEmpty");
+    const topicsLoading = document.getElementById("subjectTopicsLoading");
+    const mistakeCards = document.getElementById("mistakeCards");
+    const mistakesEmpty = document.getElementById("mistakesEmpty");
+    const nextActionContent = document.getElementById("nextActionContent");
+    const nextActionEmpty = document.getElementById("recommendationEmpty");
+    const nextActionTitle = document.getElementById("nextActionTitle");
+    const nextActionMastery = document.getElementById("nextActionMastery");
+    const nextActionButton = document.getElementById("nextActionButton");
 
-    if (!subject || subject === "All Subjects") {
-        if (overview) overview.hidden = false;
-        if (detail) detail.hidden = true;
-    } else {
-        if (overview) overview.hidden = true;
-        if (detail) detail.hidden = false;
-        if (nameEl) nameEl.textContent = subject;
+    if (select && select.value !== subject) select.value = subject;
+    if (nameEl) nameEl.textContent = subject || "Mathematics";
+
+    // Immediate cleanup: clear stale topics scorecard while loading fresh data
+    if (topicsList) topicsList.innerHTML = "";
+    if (topicsEmpty) topicsEmpty.hidden = true;
+    if (topicsLoading) topicsLoading.hidden = false;
+    if (masteryEl) masteryEl.textContent = "--";
+    if (mistakeCards) mistakeCards.innerHTML = "";
+    if (mistakesEmpty) mistakesEmpty.hidden = true;
+    if (nextActionContent) nextActionContent.hidden = true;
+    if (nextActionEmpty) nextActionEmpty.hidden = false;
+
+    if (overview) overview.hidden = true;
+    if (detail) detail.hidden = false;
+
+    try {
+        const querySubject = (subject && subject !== "All Subjects") ? subject : "";
+        const res = await fetch(`${API_BASE}/students/intelligence?subject=${encodeURIComponent(querySubject)}`);
+        const data = await res.json();
+
+        if (topicsLoading) topicsLoading.hidden = true;
+
+        if (!data || !data.success) {
+            if (topicsEmpty) topicsEmpty.hidden = false;
+            return;
+        }
+
+        currentLearningIntelligence = data;
+
+        // Overall Subject Mastery
+        if (masteryEl) {
+            masteryEl.textContent = data.overallMastery !== null ? `${data.overallMastery}%` : "--";
+        }
+
+        // Topics Scorecard
+        const topics = Array.isArray(data.topics) ? data.topics : [];
+        if (topics.length === 0) {
+            if (topicsEmpty) {
+                topicsEmpty.textContent = `No topic results for ${escapeHtml(subject || 'this subject')} yet. Complete a quiz to see your mastery here.`;
+                topicsEmpty.hidden = false;
+            }
+            if (topicsList) topicsList.innerHTML = "";
+        } else {
+            if (topicsEmpty) topicsEmpty.hidden = true;
+            if (topicsList) {
+                topicsList.innerHTML = topics.map(t => {
+                    const statusClass = t.statusClass || (t.mastery >= 80 ? "strong-status" : t.mastery >= 60 ? "developing-status" : "needs-practice-status");
+                    return `
+                        <article class="mastery-row" data-topic="${escapeHtml(t.topic)}" data-mastery="${t.mastery}">
+                            <div class="mastery-topic">
+                                <strong>${escapeHtml(t.topic)}</strong>
+                                <span class="mastery-status ${statusClass}">${escapeHtml(t.status)}</span>
+                            </div>
+                            <div class="mastery-progress">
+                                <div class="mastery-track" role="progressbar" aria-label="${escapeHtml(t.topic)} mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${t.mastery}">
+                                    <span style="width:${t.mastery}%"></span>
+                                </div>
+                                <span>${t.mastery}%</span>
+                            </div>
+                            <button class="topic-practice-btn" onclick="practiceLearningTopic('${escapeHtml(t.topic)}', '${escapeHtml(t.subject || subject)}')">Practice</button>
+                        </article>
+                    `;
+                }).join("");
+            }
+        }
+
+        // Mistakes Patterns
+        const mistakes = Array.isArray(data.mistakes) ? data.mistakes : [];
+        if (mistakes.length === 0) {
+            if (mistakesEmpty) mistakesEmpty.hidden = false;
+            if (mistakeCards) mistakeCards.innerHTML = "";
+        } else {
+            if (mistakesEmpty) mistakesEmpty.hidden = true;
+            if (mistakeCards) {
+                mistakeCards.innerHTML = mistakes.map(m => `
+                    <article class="learning-mistake-card">
+                        <span class="mistake-card-icon ${escapeHtml(m.typeClass || 'conceptual-icon')}">
+                            <i class="${escapeHtml(m.iconClass || 'fa-solid fa-triangle-exclamation')}" aria-hidden="true"></i>
+                        </span>
+                        <div>
+                            <strong>${escapeHtml(m.title)}</strong>
+                            <span>${m.count} ${m.count === 1 ? 'mistake' : 'mistakes'}</span>
+                        </div>
+                        ${m.mostFrequent ? '<small class="most-frequent-label">Most frequent</small>' : ''}
+                    </article>
+                `).join("");
+            }
+        }
+
+        // Next Best Action
+        if (data.nextAction) {
+            if (nextActionEmpty) nextActionEmpty.hidden = true;
+            if (nextActionContent) nextActionContent.hidden = false;
+            if (nextActionTitle) nextActionTitle.textContent = `Practice ${data.nextAction.topic}`;
+            if (nextActionMastery) nextActionMastery.textContent = `${data.nextAction.currentMastery}%`;
+            if (nextActionButton) {
+                nextActionButton.onclick = () => practiceLearningTopic(data.nextAction.topic, data.nextAction.subject || subject);
+            }
+        } else {
+            if (nextActionContent) nextActionContent.hidden = true;
+            if (nextActionEmpty) nextActionEmpty.hidden = false;
+        }
+
+    } catch (err) {
+        console.error("Error loading learning intelligence:", err);
+        if (topicsLoading) topicsLoading.hidden = true;
+        if (topicsEmpty) topicsEmpty.hidden = false;
     }
 }
 
@@ -1717,7 +2144,23 @@ function updateUserUI(user) {
             window.fetchUserBadges(true);
         }
 
-        // Sidebar navigation visibility based on role
+        // Sidebar navigation visibility and class selection based on role
+        const genClassElem = document.getElementById("genClass");
+        if (genClassElem) {
+            if (user.role === "student" && user.class) {
+                const classNum = String(user.class).replace(/\D/g, "");
+                genClassElem.value = classNum;
+                genClassElem.disabled = true;
+                genClassElem.title = `Enrolled in Class ${classNum}`;
+            } else {
+                genClassElem.disabled = false;
+                genClassElem.removeAttribute("title");
+                if (user.class) {
+                    genClassElem.value = String(user.class).replace(/\D/g, "");
+                }
+            }
+        }
+
         if (user.role === "teacher") {
             if (navDashboard) navDashboard.style.display = "none";
             if (navChallenges) navChallenges.style.display = "none";
@@ -1756,7 +2199,7 @@ function updateUserUI(user) {
         if (modalUserAvatar) modalUserAvatar.innerText = name.charAt(0).toUpperCase();
         if (modalUserName) modalUserName.innerText = name;
         if (modalUserEmail) modalUserEmail.innerText = user.email || "";
-        if (modalUserRoleBadge) modalUserRoleBadge.innerText = user.role === "teacher" ? "Educator Mode" : user.role === "admin" ? "Administrator Mode" : `Student Mode (${user.class ? 'Class ' + user.class : 'Class 10'})`;
+        if (modalUserRoleBadge) modalUserRoleBadge.innerText = user.role === "teacher" ? "Educator Mode" : user.role === "admin" ? "Administrator Mode" : `Student Mode (${user.class ? 'Class ' + user.class : 'Class Not Set'})`;
     } else {
         if (userNameElem) userNameElem.innerText = "Sign in";
         if (welcomeUserName) welcomeUserName.innerText = "Learner";
@@ -1862,9 +2305,58 @@ async function loadLeaderboard() {
     const container = document.getElementById("rankingListContainer");
     if (!container) return;
 
+    // Logged-out access state: no names or mock ranks
+    if (!currentUser) {
+        updateYourRankCard([], -1);
+        container.innerHTML = `
+            <div class="ranking-empty-card">
+                <i class="fa-solid fa-lock" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
+                <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">Sign In to View Rankings</h3>
+                <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Sign in with your student account to see your class standings and compete with your classmates.</p>
+                <button class="primary-btn" onclick="openAuthModal()" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In to LearnIQ
+                </button>
+            </div>
+        `;
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE}/students/leaderboard`);
+        if (response.status === 401) {
+            updateYourRankCard([], -1);
+            container.innerHTML = `
+                <div class="ranking-empty-card">
+                    <i class="fa-solid fa-lock" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
+                    <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">Authentication Required</h3>
+                    <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Your session has expired. Please sign in again to access class rankings.</p>
+                    <button class="primary-btn" onclick="openAuthModal()" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
         const data = await response.json();
+
+        // Missing class prompt: never default silently
+        if (data.missingClass) {
+            updateYourRankCard([], -1);
+            const statusLine = document.getElementById("yourRankStatusLine");
+            if (statusLine) statusLine.innerHTML = "⚠️ Please set your Class to view rankings.";
+            container.innerHTML = `
+                <div class="ranking-empty-card">
+                    <i class="fa-solid fa-graduation-cap" style="font-size: 36px; color: #f59e0b; margin-bottom: 12px; display: block;"></i>
+                    <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">Class Not Set</h3>
+                    <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Your profile is missing an assigned class. Please select your Class (Class 5 to 12) in your profile or settings to join your classmates on the leaderboard.</p>
+                    <button class="secondary-btn" onclick="showPage('settings')" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                        <i class="fa-solid fa-gear"></i> Set Your Class in Settings
+                    </button>
+                </div>
+            `;
+            return;
+        }
 
         if (data.success && Array.isArray(data.leaderboard) && data.leaderboard.length > 0) {
             const leaderboard = data.leaderboard;
@@ -1887,8 +2379,8 @@ async function loadLeaderboard() {
                 );
 
                 const cleanName = (item.name || "Student").replace(/\s*\((?:you|You)\)\s*/gi, "").trim();
-                const rawClass = String(item.class || "Class 10").replace(/class\s*/gi, "").trim();
-                const classDisplay = `CLASS ${rawClass || "10"}`;
+                const rawClass = String(item.class || (data.classNumber ? `Class ${data.classNumber}` : "Class 10")).replace(/class\s*/gi, "").trim();
+                const classDisplay = `CLASS ${rawClass}`;
                 const studentBadges = (isCurrentUser && window.cachedUserBadges) ? window.cachedUserBadges : (item.badges || []);
                 const badgesHtml = typeof renderUserBadges === 'function' ? renderUserBadges(studentBadges, { size: 24, max: 3, gap: 5 }) : '';
 
@@ -1907,37 +2399,21 @@ async function loadLeaderboard() {
                 `;
             }).join("");
         } else {
+            // Truthful, helpful empty state - NO fabricated fallback rankings
+            const studentClassNum = data.classNumber || (currentUser.class ? Number.parseInt(String(currentUser.class).replace(/\D/g, ""), 10) : null);
+            const classTitle = studentClassNum ? `Class ${studentClassNum}` : "your class";
             updateYourRankCard([], -1);
-            if (currentUser && currentUser.name) {
-                const cleanName = (currentUser.name || "Student").replace(/\s*\((?:you|You)\)\s*/gi, "").trim();
-                const rawClass = String(currentUser.class || "Class 10").replace(/class\s*/gi, "").trim();
-                const myBadges = window.cachedUserBadges || [];
-                const badgesHtml = typeof renderUserBadges === 'function' ? renderUserBadges(myBadges, { size: 24, max: 3, gap: 5 }) : '';
-                container.innerHTML = `
-                    <article class="leaderboard-row current-user-row">
-                        <span class="leaderboard-rank rank-gold">#1</span>
-                        <div class="leaderboard-avatar" aria-hidden="true">${(cleanName || "U").charAt(0).toUpperCase()}</div>
-                        <div class="leaderboard-info">
-                            <span class="leaderboard-name">${escapeHtml(cleanName)}</span>
-                            ${badgesHtml}
-                            <span class="you-badge">YOU</span>
-                        </div>
-                        <span class="class-chip">CLASS ${rawClass || "10"}</span>
-                        <span class="leaderboard-xp">${(studentProfile.xp || 0).toLocaleString()} XP</span>
-                    </article>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="ranking-empty-card">
-                        <i class="fa-solid fa-ranking-star" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
-                        <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">No Active Leaderboard Members Yet</h3>
-                        <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Sign in and complete AI quizzes to earn XP and claim the #1 spot on the leaderboard!</p>
-                        <button class="primary-btn" onclick="openAuthModal()" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
-                            <i class="fa-solid fa-user-plus"></i> Sign In to Join Leaderboard
-                        </button>
-                    </div>
-                `;
-            }
+
+            container.innerHTML = `
+                <div class="ranking-empty-card">
+                    <i class="fa-solid fa-ranking-star" style="font-size: 36px; color: #38d6ff; margin-bottom: 12px; display: block;"></i>
+                    <h3 style="font-size: 16px; color: #ffffff; margin-bottom: 6px;">No Active ${classTitle} Students Yet</h3>
+                    <p style="font-size: 13px; color: #9aa6bd; max-width: 380px; margin: 0 auto 16px auto;">Be the first student in ${classTitle} to complete an AI quiz and claim the #1 spot on the leaderboard!</p>
+                    <button class="primary-btn" onclick="showPage('generator')" style="margin: 0 auto; padding: 10px 20px; font-size: 13px;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Take a Quiz Now
+                    </button>
+                </div>
+            `;
         }
     } catch (err) {
         console.warn("Leaderboard fetch notice:", err.message);
@@ -2154,7 +2630,7 @@ async function handleAuthSubmit(event, type) {
                 const classSelect = form.querySelector('select');
                 classLevel = classSelect?.value || "";
                 if (!classLevel) {
-                    showToast("⚠️ Please select your Class / Grade level (Required for students).");
+                    showToast("⚠️ Please select your Class (Required for students).");
                     form.dataset.authSubmitting = "false";
                     if (submitButton) {
                         submitButton.disabled = false;

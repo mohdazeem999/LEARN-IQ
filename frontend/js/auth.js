@@ -376,7 +376,7 @@ export async function handleAuthSubmit(event, type) {
                 const classSelect = form.querySelector("select");
                 classLevel = classSelect?.value || "";
                 if (!classLevel) {
-                    showToast("⚠️ Please select your Class / Grade level (Required for students).");
+                    showToast("⚠️ Please select your Class (Required for students).");
                     form.dataset.authSubmitting = "false";
                     if (submitButton) {
                         submitButton.disabled = false;

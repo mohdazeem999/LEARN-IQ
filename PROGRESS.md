@@ -1,0 +1,134 @@
+# LearnIQ — 8-Step Implementation Progress
+
+## Steps Checklist
+
+- [x] **Step 1: Codebase Inspection & Issue Mapping**
+  - Status: Done
+  - Verified: Code inspection completed across frontend, backend, middleware, routing, database schemas, gamification, quizzes, rankings, learning intelligence, challenges, and build/test suite. 19/19 backend node tests passing.
+  - Not Verified: Live UI browser responsiveness on physical mobile/tablet devices (deferred to UI remediation step).
+  - Files Changed:
+    - [ISSUE_MAP.md](file:///c:/Users/2025s/Desktop/screening1/ISSUE_MAP.md)
+    - [PROGRESS.md](file:///c:/Users/2025s/Desktop/screening1/PROGRESS.md)
+
+- [x] **Step 1 (Issue 3 Fix): Class Scoping & Role-Based Rankings / Leaderboard (I3)**
+  - Status: Done
+  - Verified:
+    - Logged-out users receive 401 on `GET /api/students/leaderboard` and see an authentication prompt with no leaked names.
+    - Class 7 students only receive Class 7 rankings from the database; Class 10 students (e.g., Alex Student, mohdazeez) are excluded.
+    - Class 10 students only receive Class 10 rankings; Class 7 students (Arjun Sharma) are excluded.
+    - Tampered `?classLevel=` or `?class=` query parameters are ignored on the server for students; the server strictly reads the student's saved class from the database.
+    - Missing class returns `missingClass: true` prompt without defaulting silently to Class 10.
+    - Fabricated fallback rankings removed from frontend; truthful empty state displayed when no class records exist.
+    - All 23 backend tests passing (including 4 dedicated new automated tests).
+  - Not Verified: None
+  - Files Changed:
+    - [studentRoutes.js](file:///c:/Users/2025s/Desktop/screening1/backend/routes/studentRoutes.js)
+    - [auth.js](file:///c:/Users/2025s/Desktop/screening1/backend/middleware/auth.js)
+    - [script.js](file:///c:/Users/2025s/Desktop/screening1/frontend/script.js)
+    - [gamification.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/gamification.js)
+    - [leaderboard.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/leaderboard.test.js)
+
+- [x] **Step 2: Class Selection, Quiz Generation & Timer Lifecycle (Issues 4 and 5)**
+  - Status: Done
+  - Verified:
+    - Standardized "Class 5" through "Class 12" across all signup forms, AI quiz configuration, teacher selectors, and challenge views; removed "semester", "Grade", and "Standard" mislabels.
+    - Class selection updates dynamically: changing class in generator clears topic and updates quick topic suggestions to match that class level without stale values.
+    - Teachers can select and generate quizzes across any Class 5 to Class 12 without being forced into a single-student flow; students are locked to their enrolled class.
+    - Generation requests carry validated `classLevel` (5–12), `subject`, `topic`, `difficulty`, and `questionCount` (1–30); validated on server with 400 for invalid inputs and 403 for cross-class student tampering.
+    - Removed client-side fallback that substituted fake placeholder questions; server error messages are displayed directly to the user if generation fails.
+    - Removed auto-starting timer from `showPage("assessment")` and eliminated the hardcoded 5-minute timer default.
+    - Timer lifecycle respected: selecting a class starts no timer; untimed assessments run no timer; timed quizzes start timer once upon explicit user action and do not reset on question re-renders.
+    - Added explicit Untimed mode toggle to the assessment UI and state management.
+    - Server enforces the same time limit rule on quiz submission (rejects submissions exceeding the quiz time limit + 30s grace period with 400; untimed submissions are accepted).
+    - 26/26 backend tests passing (including 3 new automated integration tests in [assessment.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/assessment.test.js)).
+  - Not Verified: None
+  - Files Changed:
+    - [index.html](file:///c:/Users/2025s/Desktop/screening1/frontend/index.html)
+    - [script.js](file:///c:/Users/2025s/Desktop/screening1/frontend/script.js)
+    - [assessmentRoutes.js](file:///c:/Users/2025s/Desktop/screening1/backend/routes/assessmentRoutes.js)
+    - [quiz.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/quiz.js)
+    - [ui.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/ui.js)
+    - [auth.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/auth.js)
+    - [gamification.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/gamification.js)
+    - [assessment.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/assessment.test.js)
+
+- [x] **Step 3: Adaptive Quiz Activation & Lifecycle (Issue 6)**
+  - Status: Done
+  - Verified:
+    - Adaptive quiz remains completely inactive on page view, class select, or re-render until explicit user initiation.
+    - Intro/empty state rendered first (`#assessmentIntroCard`) displaying student's enrolled class badge and subject/curriculum focus selection; live layout hidden.
+    - Zero question loading, zero AI calls, zero network requests, and zero quiz-history rows on page view or class select; guarded against double activation with `quizActivationInProgress`.
+    - On activation (`#startAdaptiveAssessmentBtn`), student's real enrolled class (enforced on server) and selected curriculum topic are used to generate a genuine question set.
+    - Full loading spinner state on activation button; server error banner and toast notifications on failure.
+    - Exit assessment button (`exitActiveQuiz()`) clears all timers, resets `quizActive`, and safely returns to the intro card.
+    - Added automated integration test in [assessment.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/assessment.test.js) verifying real student class and topic generation and rejection of cross-class generation attempts.
+    - All 27 backend tests passing.
+  - Not Verified: None
+  - Files Changed:
+    - [index.html](file:///c:/Users/2025s/Desktop/screening1/frontend/index.html)
+    - [script.js](file:///c:/Users/2025s/Desktop/screening1/frontend/script.js)
+    - [quiz.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/quiz.js)
+    - [app.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/app.js)
+    - [ui.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/ui.js)
+    - [assessment.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/assessment.test.js)
+
+- [x] **Step 4: Daily Curriculum Challenges & Verification Fixes (Issue 7)**
+  - Status: Done
+  - Verified:
+    - Daily curriculum challenges lifecycle enforced: open challenge -> load real sanitized questions -> student answers -> submit -> backend validates and scores against server-stored correct answers.
+    - Opening, refreshing, or abandoning gives 0 XP and never marks challenges completed; questions are sanitized before client delivery (correct answers and explanations stripped).
+    - Server scores submitted answers against genuine curriculum answers stored server-side; client scores or fake percentages are never trusted.
+    - Submitting with 0 correct answers awards 0 XP, keeps challenge uncompleted, and returns actionable feedback to review without awarding XP.
+    - Submitting with correct answers awards correct XP once and records an atomic transaction in `xp_transactions`, gamification store, and Supabase profile.
+    - Idempotency strictly enforced: repeat submit or double-clicking returns existing confirmed result with 0 new XP.
+    - Attempt ownership validated: student cannot submit an attempt on behalf of another student (tampered `studentId` rejected with 403 Forbidden).
+    - Created database migration SQL file [daily-challenges-migration.sql](file:///c:/Users/2025s/Desktop/screening1/backend/daily-challenges-migration.sql) with unique constraint `UNIQUE(student_id, challenge_id, date_key)` (written, not applied without user approval).
+    - Automated integration tests in [challenges.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/challenges.test.js) pass cleanly (4/4 tests passed).
+  - Not Verified: None
+  - Files Changed:
+    - [gamificationService.js](file:///c:/Users/2025s/Desktop/screening1/backend/services/gamificationService.js)
+    - [studentRoutes.js](file:///c:/Users/2025s/Desktop/screening1/backend/routes/studentRoutes.js)
+    - [daily-challenges-migration.sql](file:///c:/Users/2025s/Desktop/screening1/backend/daily-challenges-migration.sql)
+    - [challenges.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/challenges.test.js)
+    - [script.js](file:///c:/Users/2025s/Desktop/screening1/frontend/script.js)
+    - [gamification.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/gamification.js)
+
+- [x] **Step 5: Learning Intelligence Subject Separation & Mastery Stats (Issue 8)**
+  - Status: Done
+  - Verified:
+    - Root cause identified: `frontend/index.html` contained static hardcoded Math topics (Fractions, Algebra, Linear Equations, Geometry) and static fake mistake cards; `selectLearningSubject` in `script.js` and `gamification.js` merely toggled visibility and updated label text without fetching data; no backend intelligence endpoint existed to calculate mastery by subject and class.
+    - Database tagging verified: inspected all records in Supabase `quizzes`, `quiz_submissions`, and `gamification_store.json`. All rows are correctly tagged with appropriate subjects (Chemistry, Biology, Physics, Mathematics, English) and class levels; zero rows were mis-tagged in the DB and no data rewrite was required.
+    - Backend API `GET /api/students/intelligence` implemented: authenticates student, scopes queries to student's enrolled class level, and filters by requested `?subject=`.
+    - API-level verification: `GET /api/students/intelligence?subject=Science` returns Science topics only (e.g. Periodic Table & Trends - Chemistry) and zero Mathematics topics; `GET /api/students/intelligence?subject=Mathematics` returns Mathematics topics only (e.g. Linear Equations) and zero Science topics.
+    - Mastery percentages computed strictly from genuine attempts: `Math.round((correctCount / totalQuestions) * 100)`.
+    - Subject change lifecycle: selecting a new subject immediately clears the previous scorecard and displays a loading state (`#subjectTopicsLoading`) while fetching fresh data, preventing stale topic leaks.
+    - Honest empty states: selecting an unattempted subject (e.g. Social Science) returns `overallMastery: null`, `topics: []`, `mistakes: []`, `nextAction: null`; UI displays truthful empty message without invented mastery or gaps.
+    - Strict agreement with quiz history: `GET /api/students/history` updated to support `?subject=`, using the exact same unified submissions dataset as the intelligence endpoint.
+    - Common mistakes and next action recommendations are generated strictly from genuine student submission records.
+    - All 33 backend tests passing (including 2 new automated integration tests in [intelligence.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/intelligence.test.js)).
+  - Not Verified: None
+  - Files Changed:
+    - [gamificationService.js](file:///c:/Users/2025s/Desktop/screening1/backend/services/gamificationService.js)
+    - [studentRoutes.js](file:///c:/Users/2025s/Desktop/screening1/backend/routes/studentRoutes.js)
+    - [intelligence.test.js](file:///c:/Users/2025s/Desktop/screening1/backend/tests/intelligence.test.js)
+    - [index.html](file:///c:/Users/2025s/Desktop/screening1/frontend/index.html)
+    - [script.js](file:///c:/Users/2025s/Desktop/screening1/frontend/script.js)
+    - [gamification.js](file:///c:/Users/2025s/Desktop/screening1/frontend/js/gamification.js)
+
+- [ ] **Step 6: Quiz Submission Flow, History Sync & Profile Accuracy (Issue 9)**
+  - Status: Pending
+  - Verified: Not verified
+  - Not Verified: All
+  - Files Changed: None
+
+- [ ] **Step 7: Responsive Layout & Mobile/Tablet Navigation (Issues 1 and 2)**
+  - Status: Pending
+  - Verified: Not verified
+  - Not Verified: All
+  - Files Changed: None
+
+- [ ] **Step 8: Final End-to-End Verification & Regression Suite**
+  - Status: Pending
+  - Verified: Not verified
+  - Not Verified: All
+  - Files Changed: None

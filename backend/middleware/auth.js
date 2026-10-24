@@ -146,6 +146,7 @@ async function resolveSession(req, res) {
 
 async function authenticate(req, res, next) {
     try {
+        if (req.auth) return next();
         const session = await resolveSession(req, res);
         if (!session) {
             return res.status(401).json({ success: false, message: "Authentication required." });

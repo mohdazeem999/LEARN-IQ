@@ -17,25 +17,79 @@ router.post("/generate", async (req, res) => {
     try {
         let { classLevel, subject, topic, difficulty, questionCount, prompt } = req.body;
 
-        // Strict RBAC: Students can only generate and access content for their own assigned class
+        // Role-based Class Scoping & Validation: LearnIQ supports Class 5 through Class 12
         if (req.auth?.user?.role === "student") {
-            const studentClassNum = req.auth.user.classNumber || Number.parseInt(String(req.auth.user.class).replace(/\D/g, ""), 10) || 10;
-            const requestedClassNum = req.body.classLevel ? Number.parseInt(String(req.body.classLevel).replace(/\D/g, ""), 10) : null;
+            const studentClassNum = req.auth.user.classNumber || (req.auth.user.class ? Number.parseInt(String(req.auth.user.class).replace(/\D/g, ""), 10) : null);
+            if (!studentClassNum || studentClassNum < 5 || studentClassNum > 12) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please set your Class (Class 5 to 12) in your profile before generating assessments."
+                });
+            }
+            const requestedClassNum = classLevel ? Number.parseInt(String(classLevel).replace(/\D/g, ""), 10) : null;
             if (requestedClassNum && requestedClassNum !== studentClassNum) {
                 return res.status(403).json({
                     success: false,
-                    message: `Access denied. As a Class ${studentClassNum} student, you can only access Class ${studentClassNum} content.`
+                    message: `Access denied. As a Class ${studentClassNum} student, you can only generate assessments for Class ${studentClassNum}.`
                 });
             }
             classLevel = studentClassNum;
+        } else {
+            // Teachers and Admins can generate assessments for any Class 5 through Class 12
+            const parsedClass = Number.parseInt(String(classLevel).replace(/\D/g, ""), 10);
+            if (!Number.isInteger(parsedClass) || parsedClass < 5 || parsedClass > 12) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Valid class level (Class 5 through Class 12) is required."
+                });
+            }
+            classLevel = parsedClass;
         }
 
+        // Validate subject
+        if (!subject || typeof subject !== "string" || !subject.trim() || subject.trim().length > 100) {
+            return res.status(400).json({
+                success: false,
+                message: "Subject is required and must be a valid text string (max 100 characters)."
+            });
+        }
+        subject = subject.trim();
+
+        // Validate topic
+        if (!topic || typeof topic !== "string" || !topic.trim() || topic.trim().length > 200) {
+            return res.status(400).json({
+                success: false,
+                message: "Topic is required and must be a valid text string (max 200 characters)."
+            });
+        }
+        topic = topic.trim();
+
+        // Validate difficulty
+        const validDifficulties = ["Easy", "Medium", "Hard"];
+        if (difficulty && !validDifficulties.includes(difficulty)) {
+            return res.status(400).json({
+                success: false,
+                message: "Difficulty must be one of: Easy, Medium, Hard."
+            });
+        }
+        difficulty = difficulty || "Medium";
+
+        // Validate questionCount
+        const count = Number.parseInt(questionCount, 10);
+        if (!Number.isInteger(count) || count < 1 || count > 30) {
+            return res.status(400).json({
+                success: false,
+                message: "Question count must be an integer between 1 and 30."
+            });
+        }
+        questionCount = count;
+
         const quiz = await generateQuizQuestions({
-            classLevel: classLevel || 10,
-            subject: subject || "Mathematics",
-            topic: topic || "Linear Equations",
-            difficulty: difficulty || "Medium",
-            questionCount: parseInt(questionCount) || 5,
+            classLevel,
+            subject,
+            topic,
+            difficulty,
+            questionCount,
             prompt: prompt || ""
         });
 
@@ -131,6 +185,31 @@ router.post("/submit", requireRole("student", "admin"), async (req, res) => {
                 }
             } catch (err) {
                 console.warn("Quiz lookup warning:", err.message);
+            }
+        }
+
+        // Server-enforced time rule: verify elapsed time against explicit quiz duration
+        const allowedDuration = analysisQuiz.timeLimit || analysisQuiz.durationSeconds || (analysisQuiz.timerMode === "question" ? analysisQuiz.questions.length * 45 : null);
+        if (allowedDuration && Number.isFinite(allowedDuration) && allowedDuration > 0) {
+            const gracePeriod = 30; // 30-second buffer for network transmission
+            const maxAllowed = allowedDuration + gracePeriod;
+            if (req.body.timeElapsedSeconds && req.body.timeElapsedSeconds > maxAllowed) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Assessment time limit exceeded (${allowedDuration}s limit). Submission rejected.`
+                });
+            }
+            if (req.body.startTime) {
+                const startTimeMs = new Date(req.body.startTime).getTime();
+                if (Number.isFinite(startTimeMs)) {
+                    const elapsedSinceStart = (Date.now() - startTimeMs) / 1000;
+                    if (elapsedSinceStart > maxAllowed) {
+                        return res.status(400).json({
+                            success: false,
+                            message: `Assessment time limit exceeded (${allowedDuration}s limit). Submission rejected.`
+                        });
+                    }
+                }
             }
         }
 

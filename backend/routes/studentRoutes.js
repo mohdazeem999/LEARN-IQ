@@ -4,18 +4,51 @@ const supabase = require("../config/supabaseClient");
 const { authenticate, requireRole } = require("../middleware/auth");
 const gamificationService = require("../services/gamificationService");
 
-// Public or Semi-Public Leaderboard
 // GET /api/students/leaderboard
-router.get("/leaderboard", async (req, res) => {
+// Strict class-scoped leaderboard: requires trusted server authentication.
+// Students can ONLY view rankings for their own saved class from the database.
+router.get("/leaderboard", authenticate, async (req, res) => {
     try {
+        const user = req.auth?.user;
+        if (!user) {
+            return res.status(401).json({ success: false, message: "Authentication required to view rankings." });
+        }
+
+        // Student role: strictly scoped to the student's own SAVED class from DB
+        let targetClass = null;
+        if (user.role === "student") {
+            const rawClass = user.classNumber || (user.class ? Number.parseInt(String(user.class).replace(/\D/g, ""), 10) : null);
+            if (!rawClass || !Number.isSafeInteger(rawClass)) {
+                return res.status(200).json({
+                    success: true,
+                    missingClass: true,
+                    message: "Please set your Class in your profile to view class rankings.",
+                    leaderboard: [],
+                    classNumber: null,
+                    className: null
+                });
+            }
+            // Ignore any client-sent class/user id in query or body - trust only authenticated DB record
+            targetClass = rawClass;
+        } else {
+            // Admin or Teacher: can pass class query or defaults to 10
+            const queryClass = req.query.classLevel || req.query.class || "10";
+            targetClass = Number.parseInt(String(queryClass).replace(/\D/g, ""), 10) || 10;
+        }
+
         let profilesData = [];
         if (supabase) {
-            const { data } = await supabase.from("profiles")
+            const { data, error } = await supabase.from("profiles")
                 .select("user_id, id, name, xp, streak, class, role")
                 .eq("role", "student")
+                .eq("class", targetClass)
                 .order("xp", { ascending: false })
-                .limit(25);
-            if (data) profilesData = data;
+                .limit(50);
+            if (error) {
+                console.error("Leaderboard query error:", error.message);
+            } else if (data) {
+                profilesData = data;
+            }
         }
 
         const leaderboard = profilesData.map((profile, index) => {
@@ -28,7 +61,7 @@ router.get("/leaderboard", async (req, res) => {
                 xp: profile.xp || 0,
                 level: lvl.levelNumber,
                 levelTitle: lvl.title,
-                class: profile.class ? `Class ${profile.class}` : "Class 10",
+                class: `Class ${targetClass}`,
                 streak: profile.streak || 0,
                 role: profile.role,
                 badges: gamificationService.getStudentVisibleBadges(uid)
@@ -37,6 +70,8 @@ router.get("/leaderboard", async (req, res) => {
 
         res.json({
             success: true,
+            classNumber: targetClass,
+            className: `Class ${targetClass}`,
             leaderboard
         });
     } catch (err) {
@@ -87,26 +122,12 @@ router.get("/gamification", async (req, res) => {
 // GET /api/students/history
 router.get("/history", async (req, res) => {
     try {
-        const gamificationProfile = await gamificationService.getStudentGamificationProfile(
+        const { subject } = req.query;
+        const historyItems = await gamificationService.getStudentAssessmentHistory(
             req.auth.user.id,
+            subject,
             req.auth.user
         );
-
-        const historyItems = (gamificationProfile.recentHistory || []).map(submission => {
-            const dateObj = new Date(submission.submittedAt);
-            return {
-                id: submission.id,
-                dateStr: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-                timeStr: dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-                subject: submission.subject || "Mathematics",
-                topic: submission.topic || submission.title || "Assessment",
-                score: submission.scorePercentage,
-                correctCount: submission.correctCount,
-                totalQuestions: submission.totalQuestions,
-                xpEarned: submission.xpEarned,
-                coinsEarned: submission.coinsEarned || 10
-            };
-        });
 
         return res.json({
             success: true,
@@ -115,6 +136,23 @@ router.get("/history", async (req, res) => {
     } catch (error) {
         console.error("History fetch error:", error.message);
         return res.status(500).json({ success: false, message: "Unable to load assessment history." });
+    }
+});
+
+// GET /api/students/intelligence
+router.get("/intelligence", async (req, res) => {
+    try {
+        const { subject } = req.query;
+        const intelligence = await gamificationService.getStudentLearningIntelligence(
+            req.auth.user.id,
+            subject,
+            req.auth.user
+        );
+
+        return res.json(intelligence);
+    } catch (error) {
+        console.error("Intelligence fetch error:", error.message);
+        return res.status(500).json({ success: false, message: "Unable to load learning intelligence." });
     }
 });
 
@@ -207,7 +245,7 @@ router.get("/challenges", async (req, res) => {
     try {
         const student = req.auth.user;
         const classNum = student.classNumber || Number.parseInt(String(student.class).replace(/\D/g, ""), 10) || 10;
-        const challengesData = gamificationService.getStudentDailyChallenges(student.id, classNum);
+        const challengesData = await gamificationService.getStudentDailyChallenges(student.id, classNum);
 
         res.json({
             success: true,
@@ -219,24 +257,30 @@ router.get("/challenges", async (req, res) => {
     }
 });
 
-// POST /api/students/challenges/claim
-router.post("/challenges/claim", async (req, res) => {
+// POST /api/students/challenges/claim & /challenges/submit
+router.post(["/challenges/claim", "/challenges/submit"], async (req, res) => {
     try {
-        const { challengeId } = req.body;
+        const { challengeId, answers, studentId } = req.body;
         if (!challengeId || typeof challengeId !== "string") {
             return res.status(400).json({ success: false, message: "Valid challengeId is required." });
         }
 
         const student = req.auth.user;
+
+        // Attempt ownership validation: reject attempts submitted on behalf of other students
+        if (studentId && String(studentId) !== String(student.id)) {
+            return res.status(403).json({ success: false, message: "Forbidden: You cannot submit attempts for another student." });
+        }
+
         const classNum = student.classNumber || Number.parseInt(String(student.class).replace(/\D/g, ""), 10) || 10;
-        const result = await gamificationService.completeDailyChallenge(student.id, challengeId, classNum);
+        const result = await gamificationService.completeDailyChallenge(student.id, challengeId, answers, classNum);
 
         res.json({
-            success: true,
+            success: result.success !== false,
             ...result
         });
     } catch (error) {
-        console.error("Challenge claim error:", error.message);
+        console.error("Challenge submit error:", error.message);
         res.status(400).json({ success: false, message: error.message });
     }
 });
