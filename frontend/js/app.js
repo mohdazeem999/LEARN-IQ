@@ -6,9 +6,9 @@ import { state, defaultQuiz, API_BASE } from "./state.js";
 import { escapeHtml, showToast, toggleSidebar, toggleUserDropdown, closeUserDropdown, showPage } from "./ui.js";
 import { checkAuthSession, logout, updateUserUI, openAuthModal, closeAuthModal, selectLandingRole, selectAuthModalRole, switchAuthTab, switchLandingTab, handleAuthSubmit } from "./auth.js";
 import { onSubjectChange, setTopic, generateAIQuiz, startGeneratedQuiz, setQuizTimerMode, startQuiz, selectOption, nextQuestion, finishQuiz, openDiagnosisModal, startSimilarPractice, closeDiagnosisModal, renderAssessmentIntro, onAdaptiveSubjectChange, startAdaptiveAssessment, exitActiveQuiz } from "./quiz.js";
-import { fetchStudentProfile, updateStudentXP, updateXPDisplay, fetchDailyChallenges, openChallengeTask, selectChallengeTaskOption, closeChallengeTaskModal, verifyAndClaimChallenge, redeemReward, practiceLearningTopic, selectLearningSubject, startLinearEquationsPractice, startRecommendedPractice, renderLearningIntelligence, loadLeaderboard, switchRankingTab, logQuizAttendance, renderProfileTestHistory } from "./gamification.js";
+import { fetchStudentProfile, updateStudentXP, updateXPDisplay, fetchDailyChallenges, openChallengeTask, selectChallengeTaskOption, closeChallengeTaskModal, verifyAndClaimChallenge, redeemReward, practiceLearningTopic, selectLearningSubject, startLinearEquationsPractice, startRecommendedPractice, renderLearningIntelligence, loadLeaderboard, switchRankingTab, logQuizAttendance, renderProfileTestHistory, loadStudentHistory } from "./gamification.js";
 import { loadTeacherClassMap, onTeacherClassChanged, generateIntervention, renderTeacherClassMap } from "./teacher.js";
-import { loadAdminOverview, updateUserRole } from "./admin.js";
+import { loadAdminOverview, updateUserRole, loadTeacherAssignments, handleAssignTeacherClass, removeTeacherAssignment } from "./admin.js";
 
 // ==========================================
 // BIND GLOBAL FUNCTIONS FOR INLINE HTML ONCLICK
@@ -67,6 +67,7 @@ window.loadLeaderboard = loadLeaderboard;
 window.switchRankingTab = switchRankingTab;
 window.logQuizAttendance = logQuizAttendance;
 window.renderProfileTestHistory = renderProfileTestHistory;
+window.loadStudentHistory = loadStudentHistory;
 
 // Teacher & Admin
 window.loadTeacherClassMap = loadTeacherClassMap;
@@ -75,6 +76,9 @@ window.generateIntervention = generateIntervention;
 window.renderTeacherClassMap = renderTeacherClassMap;
 window.loadAdminOverview = loadAdminOverview;
 window.updateUserRole = updateUserRole;
+window.loadTeacherAssignments = loadTeacherAssignments;
+window.handleAssignTeacherClass = handleAssignTeacherClass;
+window.removeTeacherAssignment = removeTeacherAssignment;
 
 // State references
 window.defaultQuiz = defaultQuiz;
@@ -123,6 +127,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             await fetchStudentProfile();
             fetchDailyChallenges();
+            loadStudentHistory();
             showPage("dashboard");
         }
     } else {

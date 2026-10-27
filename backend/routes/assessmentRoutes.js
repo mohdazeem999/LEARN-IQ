@@ -213,6 +213,45 @@ router.post("/submit", requireRole("student", "admin"), async (req, res) => {
             }
         }
 
+        const idempotencyKey = req.body.idempotencyKey || req.headers["idempotency-key"] || null;
+
+        // Idempotency check: verify if this quiz attempt has already been submitted to Supabase
+        if (supabase && quizId && isValidUUID(quizId)) {
+            try {
+                const { data: existingDbSub } = await supabase.from("quiz_submissions")
+                    .select("id, quiz_id, student_id, score_percentage, correct_count, total_questions, xp_earned, ai_insight, mistake_categories, concept_stats, submitted_at")
+                    .eq("quiz_id", quizId)
+                    .eq("student_id", req.auth.user.id)
+                    .maybeSingle();
+
+                if (existingDbSub) {
+                    return res.json({
+                        success: true,
+                        message: "Assessment submission already recorded.",
+                        analysis: {
+                            scorePercentage: existingDbSub.score_percentage,
+                            correctCount: existingDbSub.correct_count,
+                            totalQuestions: existingDbSub.total_questions,
+                            xpEarned: existingDbSub.xp_earned,
+                            aiInsight: existingDbSub.ai_insight || null,
+                            mistakeCategories: existingDbSub.mistake_categories || null,
+                            conceptStats: existingDbSub.concept_stats || null
+                        },
+                        submission: {
+                            id: existingDbSub.id,
+                            submittedAt: existingDbSub.submitted_at
+                        },
+                        gamification: {
+                            earnedXp: 0,
+                            isDuplicate: true
+                        }
+                    });
+                }
+            } catch (checkErr) {
+                console.warn("Existing submission check warning:", checkErr.message);
+            }
+        }
+
         const analysis = await analyzeQuizSubmission(analysisQuiz, answers);
 
         // Process full gamification reward calculations: XP, LearnCoins, Streak, Level-up, Badges, Daily missions
@@ -221,13 +260,28 @@ router.post("/submit", requireRole("student", "admin"), async (req, res) => {
             studentName: req.auth.user.name,
             quiz,
             answers,
-            analysis
+            analysis,
+            idempotencyKey
         });
 
-        // Optionally persist to Supabase if tables exist and quizId is a valid UUID
+        if (gamification.isDuplicate) {
+            return res.json({
+                success: true,
+                message: "Assessment submission already recorded.",
+                analysis,
+                submission: {
+                    id: gamification.submissionId,
+                    submittedAt: new Date().toISOString()
+                },
+                gamification
+            });
+        }
+
+        // Persist to Supabase canonical table using the exact same submissionId
         if (supabase && quizId && isValidUUID(quizId)) {
             try {
                 const { error: subErr } = await supabase.from("quiz_submissions").insert({
+                    id: gamification.submissionId,
                     quiz_id: quizId,
                     student_id: req.auth.user.id,
                     score_percentage: analysis.scorePercentage,

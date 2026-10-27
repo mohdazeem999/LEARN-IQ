@@ -111,4 +111,91 @@ router.post("/role", async (req, res) => {
     }
 });
 
+const assignmentService = require("../services/assignmentService");
+
+// GET /api/admin/teacher-assignments
+// List all teacher class assignments
+router.get("/teacher-assignments", async (req, res) => {
+    try {
+        const assignments = await assignmentService.getAllAssignments();
+        res.json({
+            success: true,
+            assignments
+        });
+    } catch (err) {
+        console.error("Admin fetch teacher assignments error:", err.message);
+        res.status(500).json({ success: false, message: "Failed to list teacher assignments." });
+    }
+});
+
+// POST /api/admin/teacher-assignments
+// Assign a class to an educator
+router.post("/teacher-assignments", async (req, res) => {
+    try {
+        const { teacherId, classLevel, section = "Section A", subject = "All Curriculum Subjects" } = req.body;
+
+        if (!teacherId || !isValidUUID(teacherId)) {
+            return res.status(400).json({ success: false, message: "Valid teacherId (UUID) is required." });
+        }
+
+        const classNum = Number(classLevel);
+        if (!Number.isInteger(classNum) || classNum < 5 || classNum > 12) {
+            return res.status(400).json({ success: false, message: "Class must be an integer between 5 and 12." });
+        }
+
+        // Verify that target user is a teacher
+        if (supabase) {
+            const { data: targetProfile } = await supabase
+                .from("profiles")
+                .select("id, role, name")
+                .or(`user_id.eq.${teacherId},id.eq.${teacherId}`)
+                .maybeSingle();
+
+            if (targetProfile && targetProfile.role !== "teacher" && targetProfile.role !== "admin") {
+                return res.status(400).json({
+                    success: false,
+                    message: `User ${targetProfile.name || teacherId} is currently a '${targetProfile.role}'. Update their role to 'teacher' before assigning classes.`
+                });
+            }
+        }
+
+        const assignment = await assignmentService.assignClassToTeacher({
+            teacherId,
+            classLevel: classNum,
+            section,
+            subject,
+            assignedBy: req.auth.user.id
+        });
+
+        res.status(201).json({
+            success: true,
+            message: `Successfully assigned Class ${classNum} (${section}) to educator.`,
+            assignment
+        });
+    } catch (err) {
+        console.error("Admin assign teacher class error:", err.message);
+        res.status(400).json({ success: false, message: err.message || "Failed to assign class." });
+    }
+});
+
+// DELETE /api/admin/teacher-assignments/:id
+// Remove a class assignment
+router.delete("/teacher-assignments/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ success: false, message: "Assignment ID is required." });
+        }
+
+        await assignmentService.removeTeacherAssignment(id);
+        res.json({
+            success: true,
+            message: "Class assignment successfully removed."
+        });
+    } catch (err) {
+        console.error("Admin remove teacher assignment error:", err.message);
+        res.status(500).json({ success: false, message: "Failed to remove assignment." });
+    }
+});
+
 module.exports = router;

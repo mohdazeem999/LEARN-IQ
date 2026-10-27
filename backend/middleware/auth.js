@@ -65,26 +65,26 @@ async function getProfile(userId) {
     return data;
 }
 
-async function ensureProfile(user, { fullName, role: requestedRole, classLevel } = {}) {
+async function ensureProfile(user, { fullName, classLevel } = {}) {
     const existingProfile = await getProfile(user.id);
     if (existingProfile) return existingProfile;
 
-    const role = ["student", "teacher", "admin"].includes(requestedRole)
-        ? requestedRole
-        : (["student", "teacher", "admin"].includes(user.user_metadata?.role) ? user.user_metadata.role : "student");
+    // Security: Public registration and automatic profile creation is student-only.
+    // Teacher and Admin roles must be assigned by an authorized admin through
+    // a secure server-side process (e.g. POST /api/admin/role).
+    // Editable user metadata and client-sent role parameters are never trusted.
+    const role = "student";
 
     let classValue = null;
-    if (role === "student") {
-        const classMatch = typeof classLevel === "string"
-            ? classLevel.match(/\d+/)
-            : (typeof user.user_metadata?.class_level === "string" ? user.user_metadata.class_level.match(/\d+/) : null);
-        const parsed = classMatch ? Number.parseInt(classMatch[0], 10) : null;
-        classValue = Number.isSafeInteger(parsed) ? parsed : null;
-    }
+    const classMatch = typeof classLevel === "string"
+        ? classLevel.match(/\d+/)
+        : (typeof user.user_metadata?.class_level === "string" ? user.user_metadata.class_level.match(/\d+/) : null);
+    const parsed = classMatch ? Number.parseInt(classMatch[0], 10) : null;
+    classValue = Number.isSafeInteger(parsed) ? parsed : null;
 
     const name = typeof fullName === "string" && fullName.trim()
         ? fullName.trim()
-        : user.user_metadata?.full_name || user.email?.split("@")[0] || (role === "teacher" ? "Educator" : "Student");
+        : user.user_metadata?.full_name || user.email?.split("@")[0] || "Student";
 
     const { data, error } = await supabase.from("profiles").insert({
         id: user.id,

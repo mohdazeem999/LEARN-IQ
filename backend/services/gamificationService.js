@@ -1008,9 +1008,28 @@ function checkAchievements(studentId, currentTotalXp, currentStreak, totalQuizze
 // 7. CORE QUIZ GAMIFICATION PROCESSOR (ATOMIC & VERIFIED)
 // ========================================================
 
-async function processQuizSubmission({ studentId, studentName = "Student", quiz, answers, analysis }) {
+async function processQuizSubmission({ studentId, studentName = "Student", quiz, answers, analysis, idempotencyKey, explicitSubmissionId }) {
     const store = loadStore();
     ensureStudentState(studentId);
+
+    // Prevent duplicate submissions via idempotency key or existing quiz attempt
+    const existingAttempt = store.submissions.find(s => 
+        s.studentId === studentId && (
+            (idempotencyKey && s.idempotencyKey === idempotencyKey) ||
+            (quiz.id && isValidUUID(quiz.id) && s.quizId === quiz.id)
+        )
+    );
+    if (existingAttempt) {
+        return {
+            submissionId: existingAttempt.id,
+            earnedXp: 0,
+            earnedCoins: 0,
+            totalXp: store.students[studentId]?.xp || 0,
+            isDuplicate: true,
+            streakDays: store.students[studentId]?.streak || 1,
+            level: calculateLevel(store.students[studentId]?.xp || 0)
+        };
+    }
 
     // Anti-cheat rate limit: minimum 3 seconds between consecutive submissions
     const nowMs = Date.now();
@@ -1175,7 +1194,7 @@ async function processQuizSubmission({ studentId, studentName = "Student", quiz,
     store.students[studentId].coins = (store.students[studentId].coins || 0) + earnedCoins;
 
     // Log XP & Coin transactions
-    const submissionId = crypto.randomUUID();
+    const submissionId = explicitSubmissionId || crypto.randomUUID();
     store.xp_transactions.push({
         id: crypto.randomUUID(),
         studentId,
@@ -1196,6 +1215,7 @@ async function processQuizSubmission({ studentId, studentName = "Student", quiz,
     // Record submission
     const submissionRecord = {
         id: submissionId,
+        idempotencyKey: idempotencyKey || null,
         studentId,
         quizId: quiz.id || crypto.randomUUID(),
         title: quiz.title || "Assessment",
@@ -1391,11 +1411,29 @@ async function getStudentGamificationProfile(studentId, userMetadata = {}) {
     const avatarsView = getUnlockedAvatars(studentId, totalXp, streakDays, userAchList);
     const currentAvatarObj = avatarsView.find(a => a.id === student.activeAvatar) || avatarsView[0];
 
-    // Quiz statistics
-    const userSubs = store.submissions.filter(s => s.studentId === studentId);
+    // Quiz statistics (canonical assessment-history table synchronization)
+    const allSubs = await getAllStudentSubmissions(studentId, userMetadata);
+    let rawClass = userMetadata?.class;
+    if (!rawClass && supabase && isValidUUID(studentId)) {
+        try {
+            const { data: prof } = await supabase.from("profiles")
+                .select("class")
+                .or(`user_id.eq.${studentId},id.eq.${studentId}`)
+                .maybeSingle();
+            if (prof?.class) rawClass = prof.class;
+        } catch (_) {}
+    }
+    const studentClassNum = rawClass ? String(rawClass).replace(/\D/g, "") : null;
+    const userSubs = allSubs.filter(s => {
+        if (studentClassNum && !matchesClass(s.classLevel, studentClassNum)) {
+            return false;
+        }
+        return true;
+    });
+
     const totalAssessments = userSubs.length;
     const avgScore = totalAssessments > 0
-        ? Math.round(userSubs.reduce((acc, s) => acc + s.scorePercentage, 0) / totalAssessments)
+        ? Math.round(userSubs.reduce((acc, s) => acc + (Number(s.scorePercentage) || 0), 0) / totalAssessments)
         : 0;
     const totalQuestionsAnswered = userSubs.reduce((acc, s) => acc + (s.totalQuestions || 0), 0);
     const totalCorrectAnswers = userSubs.reduce((acc, s) => acc + (s.correctCount || 0), 0);
@@ -1544,7 +1582,7 @@ function selectActiveAvatar(studentId, avatarId) {
 // 11. TEACHER GAMIFICATION OVERVIEW
 // ========================================================
 
-async function getTeacherGamificationOverview() {
+async function getTeacherGamificationOverview(assignedClasses = null) {
     const store = loadStore();
     let profilesList = [];
 
@@ -1557,6 +1595,15 @@ async function getTeacherGamificationOverview() {
         } catch (e) {
             console.warn("Supabase profiles query warning:", e.message);
         }
+    }
+
+    // Class scoping: teachers only receive students from classes assigned to them
+    if (Array.isArray(assignedClasses)) {
+        const allowedNums = assignedClasses.map(c => Number(c));
+        profilesList = profilesList.filter(prof => {
+            const c = Number(prof.class);
+            return Number.isInteger(c) && allowedNums.includes(c);
+        });
     }
 
     const studentsOverview = profilesList.map(prof => {
@@ -1814,25 +1861,66 @@ async function getAllStudentSubmissions(studentId, authUser) {
         }
     }
 
-    const merged = new Map();
-    for (const sub of inMemorySubs) {
-        merged.set(sub.id, sub);
-    }
-    for (const sub of supabaseSubs) {
-        if (!merged.has(sub.id)) {
-            merged.set(sub.id, sub);
-        } else {
-            const existing = merged.get(sub.id);
+    const mergedList = [];
+    const seenIds = new Set();
+    const seenAttemptKeys = new Map(); // key -> index in mergedList
+
+    function addOrMerge(sub) {
+        if (!sub) return;
+        const attemptKey = sub.quizId && isValidUUID(sub.quizId)
+            ? (sub.studentId || studentId) + "::" + sub.quizId
+            : null;
+        const idemKey = sub.idempotencyKey
+            ? (sub.studentId || studentId) + "::idemp::" + sub.idempotencyKey
+            : null;
+
+        let existingIdx = -1;
+        if (sub.id && seenIds.has(sub.id)) {
+            existingIdx = mergedList.findIndex(item => item.id === sub.id);
+        } else if (attemptKey && seenAttemptKeys.has(attemptKey)) {
+            existingIdx = seenAttemptKeys.get(attemptKey);
+        } else if (idemKey && seenAttemptKeys.has(idemKey)) {
+            existingIdx = seenAttemptKeys.get(idemKey);
+        }
+
+        if (existingIdx >= 0) {
+            const existing = mergedList[existingIdx];
             if (!existing.mistakeCategories && sub.mistakeCategories) {
                 existing.mistakeCategories = sub.mistakeCategories;
             }
             if (!existing.conceptStats && sub.conceptStats) {
                 existing.conceptStats = sub.conceptStats;
             }
+            if ((!existing.title || existing.title === "Assessment") && sub.title && sub.title !== "Assessment") {
+                existing.title = sub.title;
+            }
+            if ((!existing.subject || existing.subject === "General") && sub.subject && sub.subject !== "General") {
+                existing.subject = sub.subject;
+            }
+            if ((!existing.topic || existing.topic === "General") && sub.topic && sub.topic !== "General") {
+                existing.topic = sub.topic;
+            }
+            if (!existing.classLevel && sub.classLevel) {
+                existing.classLevel = sub.classLevel;
+            }
+        } else {
+            const idx = mergedList.length;
+            mergedList.push({ ...sub });
+            if (sub.id) seenIds.add(sub.id);
+            if (attemptKey) seenAttemptKeys.set(attemptKey, idx);
+            if (idemKey) seenAttemptKeys.set(idemKey, idx);
         }
     }
 
-    return Array.from(merged.values());
+    // Process canonical database submissions first, then store submissions
+    for (const sub of supabaseSubs) {
+        addOrMerge(sub);
+    }
+    for (const sub of inMemorySubs) {
+        addOrMerge(sub);
+    }
+
+    return mergedList;
 }
 
 async function getStudentLearningIntelligence(studentId, subjectFilter, authUser) {
@@ -2045,6 +2133,13 @@ async function getStudentAssessmentHistory(studentId, subjectFilter, authUser) {
     });
 }
 
+function resetSubmissionRateLimit(studentId) {
+    const store = loadStore();
+    if (store && store.submission_timestamps) {
+        store.submission_timestamps[studentId] = 0;
+    }
+}
+
 module.exports = {
     LEVELS,
     AVATARS,
@@ -2071,5 +2166,6 @@ module.exports = {
     getStudentAssessmentHistory,
     cleanTopic,
     matchesSubject,
-    matchesClass
+    matchesClass,
+    resetSubmissionRateLimit
 };

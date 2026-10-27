@@ -58,11 +58,11 @@ export function updateUserUI(user) {
     const dropdownUserRoleBadge = document.getElementById("dropdownUserRoleBadge");
     const dropdownUserClassBadge = document.getElementById("dropdownUserClassBadge");
 
-    const navDashboard = document.getElementById("navDashboard");
+    const navDashboard = document.getElementById("navDashboard") || document.getElementById("navStudentDashboard");
     const navChallenges = document.getElementById("navChallenges");
     const navAssessment = document.getElementById("navAssessment");
     const navTeacherMap = document.getElementById("navTeacherMap");
-    const navAdminDashboard = document.getElementById("navAdminDashboard");
+    const navAdminDashboard = document.getElementById("navAdminDashboard") || document.getElementById("adminNavBtn");
     const navRewards = document.getElementById("navRewards");
 
     if (user) {
@@ -221,7 +221,7 @@ export function selectLandingRole(role) {
     }
 
     if (loginRoleInput) loginRoleInput.value = role;
-    if (signupRoleInput) signupRoleInput.value = role;
+    if (signupRoleInput) signupRoleInput.value = "student";
 
     if (role === "student") {
         if (classGroup) classGroup.style.display = "block";
@@ -233,18 +233,18 @@ export function selectLandingRole(role) {
         if (emailInput) emailInput.placeholder = "student@example.com";
     } else if (role === "teacher") {
         if (classGroup) classGroup.style.display = "none";
-        if (deptGroup) deptGroup.style.display = "block";
-        if (tabsRow) tabsRow.style.display = "flex";
-        if (notice) notice.innerText = "Teacher Portal: Manage classes, track student mastery & review gap intelligence.";
+        if (deptGroup) deptGroup.style.display = "none";
+        if (tabsRow) tabsRow.style.display = "none";
+        switchLandingTab("login");
+        if (notice) notice.innerText = "Teacher Portal: Access assigned classes & student mastery. (Educator accounts are provisioned by an administrator.)";
         if (loginBtnText) loginBtnText.innerText = "Sign In as Teacher";
-        if (signupBtnText) signupBtnText.innerText = "Create Teacher Account";
         if (emailInput) emailInput.placeholder = "teacher@school.org";
     } else if (role === "admin") {
         if (classGroup) classGroup.style.display = "none";
         if (deptGroup) deptGroup.style.display = "none";
         if (tabsRow) tabsRow.style.display = "none";
         switchLandingTab("login");
-        if (notice) notice.innerText = "Admin Portal: System governance, user account roles & platform management.";
+        if (notice) notice.innerText = "Admin Portal: System governance, role assignments & platform management.";
         if (loginBtnText) loginBtnText.innerText = "Sign In as Administrator";
         if (emailInput) emailInput.placeholder = "admin@learniq.local";
     }
@@ -280,7 +280,7 @@ export function selectAuthModalRole(role) {
     }
 
     if (loginRoleInput) loginRoleInput.value = role;
-    if (signupRoleInput) signupRoleInput.value = role;
+    if (signupRoleInput) signupRoleInput.value = "student";
 
     if (role === "student") {
         if (classGroup) classGroup.style.display = "block";
@@ -292,18 +292,18 @@ export function selectAuthModalRole(role) {
         if (emailInput) emailInput.placeholder = "student@example.com";
     } else if (role === "teacher") {
         if (classGroup) classGroup.style.display = "none";
-        if (deptGroup) deptGroup.style.display = "block";
-        if (tabsRow) tabsRow.style.display = "flex";
-        if (notice) notice.innerText = "Teacher Portal: Access classes & track student concept mastery.";
+        if (deptGroup) deptGroup.style.display = "none";
+        if (tabsRow) tabsRow.style.display = "none";
+        switchAuthTab("login");
+        if (notice) notice.innerText = "Teacher Portal: Access assigned classes & student mastery. (Educator accounts are provisioned by an administrator.)";
         if (loginBtnText) loginBtnText.innerText = "Sign In as Teacher";
-        if (signupBtnText) signupBtnText.innerText = "Create Teacher Account";
         if (emailInput) emailInput.placeholder = "teacher@school.org";
     } else if (role === "admin") {
         if (classGroup) classGroup.style.display = "none";
         if (deptGroup) deptGroup.style.display = "none";
         if (tabsRow) tabsRow.style.display = "none";
         switchAuthTab("login");
-        if (notice) notice.innerText = "Admin Portal: System administration & user roles.";
+        if (notice) notice.innerText = "Admin Portal: System governance, role assignments & platform management.";
         if (loginBtnText) loginBtnText.innerText = "Sign In as Administrator";
         if (emailInput) emailInput.placeholder = "admin@learniq.local";
     }

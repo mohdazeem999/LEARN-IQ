@@ -19,28 +19,49 @@ function presentSession(session) {
 function authErrorResponse(error) {
     const code = String(error.code || "").toLowerCase();
     const message = String(error.message || "").toLowerCase();
+
     if (code === "invalid_credentials" || code === "user_not_found" ||
         /invalid login credentials|invalid credentials|user not found/.test(message)) {
         return { status: 401, message: "Invalid email or password." };
     }
-    if (code === "email_not_confirmed" || /email not confirmed/.test(message)) {
-        return { status: 403, message: "Please confirm your email address before signing in." };
+    if (code === "email_not_confirmed" || /email not confirmed/i.test(message)) {
+        return {
+            status: 403,
+            message: "Your email address has not been confirmed yet. Please check your inbox and verify your email before signing in."
+        };
     }
-    if (error.status === 429) {
-        return { status: 429, message: "Too many sign-in attempts. Please wait a few minutes and try again." };
+    if (error.status === 429 || code === "over_email_send_rate_limit" || code === "over_request_rate_limit" ||
+        /rate limit|too many requests|over_email_send_rate_limit|security purposes/i.test(message)) {
+        return {
+            status: 429,
+            message: "Too many sign-in attempts or email rate limit exceeded. Please wait a few minutes and try again."
+        };
+    }
+    if (/already|registered|exists/i.test(message)) {
+        return {
+            status: 409,
+            message: "An account with this email already exists. Please sign in instead."
+        };
+    }
+    if (/password/i.test(message) && /short|weak|character/i.test(message)) {
+        return {
+            status: 400,
+            message: "Password must be at least 6 characters long."
+        };
     }
 
-    if (error.status >= 500 || error.status === 401 || !Number.isFinite(error.status)) {
+    if (error.status >= 500 || !Number.isFinite(error.status)) {
         console.error("Supabase authentication request failed:", {
             status: error.status || null,
-            code: error.code || error.name || "unknown"
+            code: error.code || error.name || "unknown",
+            message: error.message
         });
-        return { status: 503, message: "Authentication is temporarily unavailable. Please try again shortly." };
+        return { status: 503, message: "Authentication service is temporarily unavailable. Please try again shortly." };
     }
 
     return {
-        status: 400,
-        message: "Unable to sign in with those details. Check your credentials and account status."
+        status: error.status || 400,
+        message: error.message || "Unable to sign in with those details. Check your credentials and account status."
     };
 }
 
@@ -59,7 +80,7 @@ router.get("/me", readSession);
 
 router.post("/signup", async (req, res) => {
     try {
-        const { email, password, fullName, role = "student", classLevel } = req.body;
+        const { email, password, fullName, role, classLevel } = req.body;
         if (typeof email !== "string" || !email.trim() ||
             typeof password !== "string" || password.length < 6 ||
             typeof fullName !== "string" || !fullName.trim()) {
@@ -69,8 +90,16 @@ router.post("/signup", async (req, res) => {
             });
         }
 
-        const normalizedRole = role === "teacher" ? "teacher" : "student";
-        if (normalizedRole === "student" && (!classLevel || !String(classLevel).trim())) {
+        // Security: Public registration is student-only.
+        // Teacher and Administrator accounts must be assigned by an authorized administrator.
+        if (role && role !== "student") {
+            return res.status(403).json({
+                success: false,
+                message: "Public registration is student-only. Teacher and Administrator accounts must be assigned by an authorized administrator."
+            });
+        }
+
+        if (!classLevel || !String(classLevel).trim()) {
             return res.status(400).json({
                 success: false,
                 message: "Please select your Class / Standard (Class 5 to 12). Class is mandatory for student registration."
@@ -82,45 +111,14 @@ router.post("/signup", async (req, res) => {
         }
 
         const authClient = getAuthClient();
-        let authResult = await authClient.auth.signUp({
+        const authResult = await authClient.auth.signUp({
             email: email.trim(),
             password,
-            options: { data: { full_name: fullName.trim(), role: normalizedRole, class_level: normalizedRole === "student" ? classLevel : null } }
+            options: { data: { full_name: fullName.trim(), role: "student", class_level: classLevel } }
         });
-
-        // If provider email rate limit is exceeded (e.g. Supabase free tier email limit) and admin API is available,
-        // create the user directly with email pre-confirmed so registration doesn't fail.
-        if (authResult.error && (authResult.error.status === 429 || /rate limit|email/i.test(authResult.error.message)) && supabase?.auth?.admin) {
-            const adminCreate = await supabase.auth.admin.createUser({
-                email: email.trim(),
-                password,
-                email_confirm: true,
-                user_metadata: { full_name: fullName.trim(), class_level: normalizedRole === "student" ? classLevel : null, role: normalizedRole }
-            });
-            if (adminCreate.error) {
-                authResult.error = adminCreate.error;
-            } else {
-                const signInRes = await authClient.auth.signInWithPassword({
-                    email: email.trim(),
-                    password
-                });
-                if (!signInRes.error && signInRes.data.session) {
-                    authResult = signInRes;
-                } else {
-                    authResult = { data: { user: adminCreate.data.user, session: null }, error: null };
-                }
-            }
-        }
 
         const { data, error } = authResult;
         if (error) {
-            const duplicate = /already|registered|exists/i.test(error.message);
-            if (duplicate) {
-                return res.status(409).json({
-                    success: false,
-                    message: "An account with this email already exists."
-                });
-            }
             const mappedError = authErrorResponse(error);
             return res.status(mappedError.status).json({
                 success: false,
@@ -135,35 +133,21 @@ router.post("/signup", async (req, res) => {
         try {
             profile = await ensureProfile(data.user, {
                 fullName: fullName.trim(),
-                role: normalizedRole,
-                classLevel: normalizedRole === "student" ? classLevel : null
+                classLevel
             });
         } catch (profileError) {
             console.error("Unable to create account profile:", profileError.message);
             return res.status(500).json({ success: false, message: "Account was created, but its profile could not be saved. Please contact support." });
         }
 
-        let session = data.session;
-        if (!session && supabase?.auth?.admin && data.user) {
-            try {
-                await supabase.auth.admin.updateUserById(data.user.id, { email_confirm: true });
-                const autoLogin = await authClient.auth.signInWithPassword({
-                    email: email.trim(),
-                    password
-                });
-                if (!autoLogin.error && autoLogin.data.session) {
-                    session = autoLogin.data.session;
-                }
-            } catch (confirmErr) {
-                console.warn("Auto-confirm failed on signup:", confirmErr.message);
-            }
-        }
-
+        const session = data.session;
+        // In standard email confirmation flows, session is null until verified.
+        // Provide clear instructions without auto-confirming.
         if (!session) {
-            return res.json({
+            return res.status(201).json({
                 success: true,
                 requiresEmailConfirmation: true,
-                message: "Account created. Please sign in."
+                message: "Account created successfully! Please check your email to confirm your account before signing in."
             });
         }
 
@@ -171,7 +155,7 @@ router.post("/signup", async (req, res) => {
         const user = presentUser(data.user, profile);
         return res.status(201).json({
             success: true,
-            message: `Successfully created ${normalizedRole === "teacher" ? "teacher" : "student"} account and logged in!`,
+            message: "Successfully created student account and logged in!",
             session: { user }
         });
     } catch (error) {
@@ -188,29 +172,11 @@ router.post("/login", async (req, res) => {
             return res.status(400).json({ success: false, message: "Email and password are required." });
         }
         const authClient = getAuthClient();
-        let { data, error } = await authClient.auth.signInWithPassword({
+        const { data, error } = await authClient.auth.signInWithPassword({
             email: email.trim(),
             password
         });
-        if (error && (/email not confirmed/i.test(error.message) || error.code === "email_not_confirmed") && supabase?.auth?.admin) {
-            try {
-                const { data: usersData } = await supabase.auth.admin.listUsers();
-                const targetUser = usersData?.users?.find(u => u.email?.toLowerCase() === email.trim().toLowerCase());
-                if (targetUser) {
-                    await supabase.auth.admin.updateUserById(targetUser.id, { email_confirm: true });
-                    const retry = await authClient.auth.signInWithPassword({
-                        email: email.trim(),
-                        password
-                    });
-                    if (!retry.error) {
-                        data = retry.data;
-                        error = null;
-                    }
-                }
-            } catch (autoConfirmErr) {
-                console.warn("Auto-confirm on login failed:", autoConfirmErr.message);
-            }
-        }
+
         if (error) {
             const mappedError = authErrorResponse(error);
             return res.status(mappedError.status).json({ success: false, message: mappedError.message });

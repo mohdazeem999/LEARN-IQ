@@ -7,9 +7,11 @@
 function presentUser(authUser, profile = {}) {
     if (!authUser) return null;
 
+    // Role is strictly read from verified database profile.
+    // Editable browser/client user_metadata is never trusted for role authorization.
     const role = ["student", "teacher", "admin"].includes(profile?.role)
         ? profile.role
-        : (["student", "teacher", "admin"].includes(authUser.user_metadata?.role) ? authUser.user_metadata.role : "student");
+        : "student";
 
     const fallbackName = role === "teacher" ? "Educator" : role === "admin" ? "Administrator" : "Student";
     const name = profile?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || fallbackName;

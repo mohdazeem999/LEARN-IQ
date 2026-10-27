@@ -69,6 +69,7 @@ test("Learning Intelligence: Science returns Science topics only, Math returns M
     });
 
     // Record 1 genuine Mathematics quiz (Linear Equations)
+    gamificationService.resetSubmissionRateLimit(studentId);
     await gamificationService.processQuizSubmission({
         studentId,
         studentName: "Intelligence Test Student",

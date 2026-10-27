@@ -4,7 +4,7 @@
 
 import { API_BASE, state, defaultQuiz } from "./state.js";
 import { showToast, escapeHtml, showPage } from "./ui.js";
-import { updateStudentXP, calculateClientLevel, fetchStudentProfile, logQuizAttendance } from "./gamification.js";
+import { updateStudentXP, calculateClientLevel, fetchStudentProfile, logQuizAttendance, loadStudentHistory } from "./gamification.js";
 
 export function onSubjectChange() {
     const subjectElem = document.getElementById("genSubject");
@@ -589,16 +589,23 @@ export async function finishQuiz() {
     showToast("🧠 AI is analyzing your quiz responses...");
 
     try {
+        if (!state.currentQuiz.idempotencyKey) {
+            state.currentQuiz.idempotencyKey = 'sub_' + (state.currentQuiz.id || Date.now()) + '_' + (state.currentUser?.id || 'anon') + '_' + Date.now();
+        }
+
         const response = await fetch(`${API_BASE}/assessments/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ quiz: state.currentQuiz, answers: state.userAnswers })
+            body: JSON.stringify({
+                quiz: state.currentQuiz,
+                answers: state.userAnswers,
+                idempotencyKey: state.currentQuiz.idempotencyKey
+            })
         });
 
         const data = await response.json();
         if (data.success && data.analysis) {
             openDiagnosisModal(data.analysis);
-            logQuizAttendance(state.currentQuiz, data.analysis);
 
             const earnedXp = data.gamification?.earnedXp || data.analysis.xpEarned || 100;
             const totalXp = data.gamification?.totalXp !== undefined ? data.gamification.totalXp : ((state.studentProfile.xp || 0) + earnedXp);
@@ -606,10 +613,15 @@ export async function finishQuiz() {
             updateStudentXP(earnedXp);
 
             const lvl = calculateClientLevel(totalXp);
-            showToast(`+${earnedXp} XP 🎉 → Quiz Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+            if (data.gamification?.isDuplicate) {
+                showToast(`Quiz completed earlier. Attempt confirmed (${lvl.title}).`);
+            } else {
+                showToast(`+${earnedXp} XP 🎉 → Quiz Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+            }
 
             if (data.submission) {
                 await fetchStudentProfile();
+                await loadStudentHistory();
             }
         } else {
             throw new Error("Invalid response");

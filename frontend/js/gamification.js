@@ -445,6 +445,21 @@ export function startRecommendedPractice() {
     practiceLearningTopic(topic, currentSubject);
 }
 
+export async function loadStudentHistory() {
+    if (!state.currentUser || state.currentUser.role !== "student") return;
+    try {
+        const response = await fetch(`${API_BASE}/students/history`);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.history)) {
+            state.studentHistory = data.history;
+            renderProfileTestHistory();
+            renderLearningIntelligence();
+        }
+    } catch (err) {
+        console.warn("Could not load student quiz history:", err);
+    }
+}
+
 export function renderLearningIntelligence() {
     const history = Array.isArray(state.studentHistory) ? state.studentHistory : [];
     const accuracy = document.getElementById("learningAccuracy");

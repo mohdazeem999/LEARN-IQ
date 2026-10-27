@@ -825,6 +825,10 @@ async function finishQuiz() {
 
     try {
         const elapsedSeconds = quizStartTime ? Math.max(0, Math.round((Date.now() - new Date(quizStartTime).getTime()) / 1000)) : 0;
+        if (!currentQuiz.idempotencyKey) {
+            currentQuiz.idempotencyKey = 'sub_' + (currentQuiz.id || Date.now()) + '_' + (currentUser?.id || 'anon') + '_' + Date.now();
+        }
+
         const response = await fetch(`${API_BASE}/assessments/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -832,6 +836,7 @@ async function finishQuiz() {
             body: JSON.stringify({
                 quiz: currentQuiz,
                 answers: userAnswers,
+                idempotencyKey: currentQuiz.idempotencyKey,
                 startTime: quizStartTime,
                 timeElapsedSeconds: elapsedSeconds
             })
@@ -851,13 +856,16 @@ async function finishQuiz() {
             updateXPDisplay(totalXp);
 
             const lvl = calculateClientLevel(totalXp);
-            showToast(`+${earnedXp} XP 🎉 → Quiz Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+            if (data.gamification?.isDuplicate) {
+                showToast(`Quiz completed earlier. Attempt confirmed (${lvl.title}).`);
+            } else {
+                showToast(`+${earnedXp} XP 🎉 → Quiz Complete → ${lvl.xpNeededForNext} XP to Next Level (${lvl.title})`);
+            }
 
             if (data.submission) {
                 await fetchStudentProfile();
+                await loadStudentHistory();
             }
-            logQuizAttendance(currentQuiz, data.analysis);
-            if (data.submission) await loadStudentHistory();
         } else {
             throw new Error("Invalid response");
         }
@@ -1223,24 +1231,65 @@ async function onTeacherClassChanged(classNum) {
 
 async function loadTeacherClassMap(classNum) {
     if (!["teacher", "admin"].includes(currentUser?.role)) return;
+
     const selectElem = document.getElementById("teacherClassSelect");
-    const targetClass = classNum || selectElem?.value || "10";
-    if (selectElem && selectElem.value !== String(targetClass)) {
-        selectElem.value = String(targetClass);
-    }
     const subtitle = document.getElementById("teacherMapSubtitle");
+
+    try {
+        // Fetch assigned classes for this educator from server
+        const classesRes = await fetch(`${API_BASE}/teachers/classes`, { credentials: "same-origin" });
+        const classesData = await classesRes.json();
+
+        if (classesData.success && Array.isArray(classesData.classes)) {
+            if (selectElem) {
+                if (classesData.classes.length === 0) {
+                    selectElem.innerHTML = `<option value="">No Classes Assigned</option>`;
+                    if (subtitle) {
+                        subtitle.innerText = "No classes have been assigned to your educator account yet. Please contact an administrator.";
+                    }
+                    renderTeacherClassMap({ concepts: [], studentsRequiringSupport: [] });
+                    return;
+                }
+
+                const currentVal = classNum || selectElem.value;
+                const isCurrentAllowed = classesData.classes.some(c => String(c.id) === String(currentVal));
+                const targetVal = isCurrentAllowed ? currentVal : String(classesData.classes[0].id);
+
+                selectElem.innerHTML = classesData.classes.map(c =>
+                    `<option value="${c.id}" ${String(c.id) === String(targetVal) ? "selected" : ""}>Class ${c.id}</option>`
+                ).join("");
+
+                selectElem.value = String(targetVal);
+                classNum = targetVal;
+            }
+        }
+    } catch (err) {
+        console.warn("Unable to refresh assigned classes:", err.message);
+    }
+
+    const targetClass = classNum || selectElem?.value || "10";
     if (subtitle) {
         subtitle.innerText = `Real-time concept mastery trends and automated intervention plans for Class ${targetClass}.`;
     }
+
     try {
-        const response = await fetch(`${API_BASE}/teachers/class-map?classLevel=${targetClass}`);
+        const response = await fetch(`${API_BASE}/teachers/class-map?classLevel=${targetClass}`, { credentials: "same-origin" });
         const data = await response.json();
+
+        if (response.status === 403) {
+            showToast(`⚠️ ${data.message || "You are not assigned to this class."}`);
+            if (subtitle) {
+                subtitle.innerText = `Access restricted: Class ${targetClass} is not assigned to your account.`;
+            }
+            renderTeacherClassMap({ concepts: [], studentsRequiringSupport: [] });
+            return;
+        }
 
         if (data.success && data.learningMap) {
             renderTeacherClassMap(data.learningMap);
         }
     } catch (e) {
-        console.warn("API class-map offline, using fallback:", e);
+        console.warn("Teacher class map request error:", e);
     }
 }
 
@@ -1248,30 +1297,43 @@ function renderTeacherClassMap(data) {
     const barsContainer = document.getElementById("teacherConceptBars");
     const supportContainer = document.getElementById("studentsSupportList");
 
-    if (barsContainer && data.concepts) {
-        barsContainer.innerHTML = data.concepts.map(c => `
-            <div class="dna-item">
-                <div>
-                    <span>${escapeHtml(c.name)}</span>
-                    <strong style="color: ${c.mastery < 60 ? 'var(--red)' : 'var(--cyan)'};">${c.mastery}%</strong>
+    if (barsContainer) {
+        if (!data.concepts || data.concepts.length === 0) {
+            barsContainer.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 24px;">No curriculum concepts recorded for this class.</div>`;
+        } else {
+            barsContainer.innerHTML = data.concepts.map(c => `
+                <div class="dna-item">
+                    <div>
+                        <span>${escapeHtml(c.name)}</span>
+                        <strong style="color: ${c.mastery < 60 ? 'var(--red)' : 'var(--cyan)'};">${c.mastery}%</strong>
+                    </div>
+                    <div class="progress">
+                        <div style="width:${c.mastery}%; background: ${c.mastery < 60 ? 'var(--red)' : 'var(--cyan)'};"></div>
+                    </div>
                 </div>
-                <div class="progress">
-                    <div style="width:${c.mastery}%; background: ${c.mastery < 60 ? 'var(--red)' : 'var(--cyan)'};"></div>
-                </div>
-            </div>
-        `).join("");
+            `).join("");
+        }
     }
 
-    if (supportContainer && data.studentsRequiringSupport) {
-        supportContainer.innerHTML = data.studentsRequiringSupport.map(s => `
-            <div style="background: rgba(7, 11, 20, 0.6); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <strong style="color: var(--text);">${escapeHtml(s.name)}</strong>
-                    <div style="font-size: 12px; color: var(--muted);">${escapeHtml(s.weakConcept)}</div>
+    if (supportContainer) {
+        if (!data.studentsRequiringSupport || data.studentsRequiringSupport.length === 0) {
+            supportContainer.innerHTML = `
+                <div style="background: rgba(7, 11, 20, 0.4); padding: 20px; border-radius: 12px; border: 1px dashed var(--border); text-align: center; color: var(--muted); font-size: 13px;">
+                    <i class="fa-solid fa-circle-check" style="color: var(--cyan); margin-bottom: 6px; display: block; font-size: 18px;"></i>
+                    All assigned students in this class are performing at or above baseline mastery.
                 </div>
-                <span class="badge-pill critical">${escapeHtml(String(s.score))}</span>
-            </div>
-        `).join("");
+            `;
+        } else {
+            supportContainer.innerHTML = data.studentsRequiringSupport.map(s => `
+                <div style="background: rgba(7, 11, 20, 0.6); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: var(--text);">${escapeHtml(s.name)}</strong>
+                        <div style="font-size: 12px; color: var(--muted);">${escapeHtml(s.weakConcept)}</div>
+                    </div>
+                    <span class="badge-pill critical">${escapeHtml(String(s.score))}</span>
+                </div>
+            `).join("");
+        }
     }
 }
 
@@ -1281,9 +1343,14 @@ async function generateIntervention() {
         const response = await fetch(`${API_BASE}/teachers/intervention`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ concept: "Linear Equations", className: `Class ${targetClass}` })
+            credentials: "same-origin",
+            body: JSON.stringify({ concept: "Linear Equations", className: `Class ${targetClass}`, classLevel: targetClass })
         });
         const data = await response.json();
+        if (response.status === 403) {
+            showToast(`⚠️ ${data.message || "You are not assigned to this class."}`);
+            return;
+        }
         if (data.success && data.aiInterventionPlan) {
             const plan = data.aiInterventionPlan;
             document.getElementById("interventTitle").innerText = plan.summary;
@@ -1291,9 +1358,7 @@ async function generateIntervention() {
             showToast("💡 AI Teacher Intervention Plan generated!");
         }
     } catch (e) {
-        document.getElementById("interventTitle").innerText = `Targeted intervention recommended for Class ${targetClass}`;
-        document.getElementById("interventDesc").innerText = "Recommended Action: Spend 5 minutes on foundational rules, then assign targeted practice questions.";
-        showToast("💡 AI Teacher Intervention Plan loaded!");
+        showToast("⚠️ Could not generate intervention plan.");
     }
 }
 
@@ -2096,11 +2161,11 @@ function updateUserUI(user) {
     const dropdownUserClassBadge = document.getElementById("dropdownUserClassBadge");
 
     // Nav elements
-    const navDashboard = document.getElementById("navDashboard");
+    const navDashboard = document.getElementById("navDashboard") || document.getElementById("navStudentDashboard");
     const navChallenges = document.getElementById("navChallenges");
     const navAssessment = document.getElementById("navAssessment");
     const navTeacherMap = document.getElementById("navTeacherMap");
-    const navAdminDashboard = document.getElementById("navAdminDashboard");
+    const navAdminDashboard = document.getElementById("navAdminDashboard") || document.getElementById("adminNavBtn");
     const navRewards = document.getElementById("navRewards");
 
     if (user) {
@@ -2471,7 +2536,7 @@ function selectLandingRole(role) {
     }
 
     if (loginRoleInput) loginRoleInput.value = role;
-    if (signupRoleInput) signupRoleInput.value = role;
+    if (signupRoleInput) signupRoleInput.value = "student";
 
     if (role === "student") {
         if (classGroup) classGroup.style.display = "block";
@@ -2483,18 +2548,18 @@ function selectLandingRole(role) {
         if (emailInput) emailInput.placeholder = "student@example.com";
     } else if (role === "teacher") {
         if (classGroup) classGroup.style.display = "none";
-        if (deptGroup) deptGroup.style.display = "block";
-        if (tabsRow) tabsRow.style.display = "flex";
-        if (notice) notice.innerText = "Teacher Portal: Manage classes, track student mastery & review gap intelligence.";
+        if (deptGroup) deptGroup.style.display = "none";
+        if (tabsRow) tabsRow.style.display = "none";
+        switchLandingTab("login");
+        if (notice) notice.innerText = "Teacher Portal: Access assigned classes & student mastery. (Educator accounts are provisioned by an administrator.)";
         if (loginBtnText) loginBtnText.innerText = "Sign In as Teacher";
-        if (signupBtnText) signupBtnText.innerText = "Create Teacher Account";
         if (emailInput) emailInput.placeholder = "teacher@school.org";
     } else if (role === "admin") {
         if (classGroup) classGroup.style.display = "none";
         if (deptGroup) deptGroup.style.display = "none";
         if (tabsRow) tabsRow.style.display = "none";
         switchLandingTab("login");
-        if (notice) notice.innerText = "Admin Portal: System governance, user account roles & platform management.";
+        if (notice) notice.innerText = "Admin Portal: System governance, role assignments & platform management.";
         if (loginBtnText) loginBtnText.innerText = "Sign In as Administrator";
         if (emailInput) emailInput.placeholder = "admin@learniq.local";
     }
@@ -2530,7 +2595,7 @@ function selectAuthModalRole(role) {
     }
 
     if (loginRoleInput) loginRoleInput.value = role;
-    if (signupRoleInput) signupRoleInput.value = role;
+    if (signupRoleInput) signupRoleInput.value = "student";
 
     if (role === "student") {
         if (classGroup) classGroup.style.display = "block";
@@ -2542,18 +2607,18 @@ function selectAuthModalRole(role) {
         if (emailInput) emailInput.placeholder = "student@example.com";
     } else if (role === "teacher") {
         if (classGroup) classGroup.style.display = "none";
-        if (deptGroup) deptGroup.style.display = "block";
-        if (tabsRow) tabsRow.style.display = "flex";
-        if (notice) notice.innerText = "Teacher Portal: Access classes & track student concept mastery.";
+        if (deptGroup) deptGroup.style.display = "none";
+        if (tabsRow) tabsRow.style.display = "none";
+        switchAuthTab("login");
+        if (notice) notice.innerText = "Teacher Portal: Access assigned classes & student mastery. (Educator accounts are provisioned by an administrator.)";
         if (loginBtnText) loginBtnText.innerText = "Sign In as Teacher";
-        if (signupBtnText) signupBtnText.innerText = "Create Teacher Account";
         if (emailInput) emailInput.placeholder = "teacher@school.org";
     } else if (role === "admin") {
         if (classGroup) classGroup.style.display = "none";
         if (deptGroup) deptGroup.style.display = "none";
         if (tabsRow) tabsRow.style.display = "none";
         switchAuthTab("login");
-        if (notice) notice.innerText = "Admin Portal: System administration & user roles.";
+        if (notice) notice.innerText = "Admin Portal: System governance, role assignments & platform management.";
         if (loginBtnText) loginBtnText.innerText = "Sign In as Administrator";
         if (emailInput) emailInput.placeholder = "admin@learniq.local";
     }
@@ -2689,6 +2754,22 @@ async function handleAuthSubmit(event, type) {
 // TEST ATTENDANCE & STREAK TRACKER
 // ==========================================
 let studentQuizHistory = [];
+
+async function loadStudentHistory() {
+    if (!currentUser || currentUser.role !== "student") return;
+    try {
+        const response = await fetch(`${API_BASE}/students/history`);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.history)) {
+            studentQuizHistory = data.history;
+            renderProfileTestHistory();
+            renderLearningIntelligence();
+        }
+    } catch (err) {
+        console.warn("Could not load student quiz history:", err);
+    }
+}
+window.loadStudentHistory = loadStudentHistory;
 
 function logQuizAttendance(quiz, analysis) {
     if (!quiz || !analysis) return;
@@ -2846,10 +2927,124 @@ async function loadAdminOverview() {
                         </tr>
                     `;
                 }).join("");
+                // Populate teacher selector for class assignments
+                const teacherSelect = document.getElementById("assignTeacherSelect");
+                if (teacherSelect) {
+                    const educators = usersData.users.filter(u => u.role === "teacher");
+                    if (educators.length === 0) {
+                        teacherSelect.innerHTML = `<option value="" disabled selected>-- No educators available (promote a user first) --</option>`;
+                    } else {
+                        teacherSelect.innerHTML = `<option value="" disabled selected>-- Choose Educator --</option>` +
+                            educators.map(t => `<option value="${t.user_id || t.id}">${escapeHtml(t.name || "Teacher")} (${escapeHtml(t.email || "No email")})</option>`).join("");
+                    }
+                }
+            }
+        }
+
+        // Also load teacher class assignments
+        await loadTeacherAssignments();
+    } catch (err) {
+        console.error("Failed to load admin overview:", err);
+    }
+}
+
+async function loadTeacherAssignments() {
+    const tbody = document.getElementById("adminTeacherAssignmentsTableBody");
+    const countBadge = document.getElementById("adminAssignmentsCount");
+    if (!tbody) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/teacher-assignments`, { credentials: "same-origin" });
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.assignments)) {
+            if (countBadge) {
+                countBadge.innerText = `${data.assignments.length} Assignment${data.assignments.length === 1 ? "" : "s"}`;
+            }
+
+            if (data.assignments.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--muted);">No educator class assignments configured. Use the form above to assign a class.</td></tr>`;
+            } else {
+                tbody.innerHTML = data.assignments.map(a => `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                        <td style="padding: 12px 10px; font-weight: 600; color: var(--text);">
+                            ${escapeHtml(a.teacherName || a.teacherEmail || a.teacherId)}
+                        </td>
+                        <td style="padding: 12px 10px;">
+                            <span class="badge-pill" style="background: rgba(0, 240, 255, 0.1); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.3);">
+                                Class ${a.class}
+                            </span>
+                        </td>
+                        <td style="padding: 12px 10px; color: var(--muted);">${escapeHtml(a.section || "Section A")}</td>
+                        <td style="padding: 12px 10px; color: var(--muted);">${escapeHtml(a.subject || "All Curriculum Subjects")}</td>
+                        <td style="padding: 12px 10px; text-align: right;">
+                            <button onclick="removeTeacherAssignment('${a.id}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer;">
+                                <i class="fa-solid fa-trash-can"></i> Unassign
+                            </button>
+                        </td>
+                    </tr>
+                `).join("");
             }
         }
     } catch (err) {
-        console.error("Failed to load admin overview:", err);
+        console.warn("Unable to load teacher assignments:", err.message);
+    }
+}
+
+async function handleAssignTeacherClass(event) {
+    event.preventDefault();
+    const teacherSelect = document.getElementById("assignTeacherSelect");
+    const classSelect = document.getElementById("assignClassSelect");
+    const sectionInput = document.getElementById("assignSectionInput");
+
+    const teacherId = teacherSelect?.value;
+    const classLevel = classSelect?.value;
+    const section = sectionInput?.value || "Section A";
+
+    if (!teacherId) {
+        showToast("⚠️ Please select an educator.");
+        return;
+    }
+    if (!classLevel) {
+        showToast("⚠️ Please select a class.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/teacher-assignments`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ teacherId, classLevel: Number(classLevel), section })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`✅ ${data.message}`);
+            await loadTeacherAssignments();
+        } else {
+            showToast(`❌ ${data.message || "Failed to assign class."}`);
+        }
+    } catch (err) {
+        showToast("⚠️ Could not assign class to educator.");
+    }
+}
+
+async function removeTeacherAssignment(id) {
+    if (!confirm("Remove this educator class assignment?")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/teacher-assignments/${id}`, {
+            method: "DELETE",
+            credentials: "same-origin"
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`✅ ${data.message}`);
+            await loadTeacherAssignments();
+        } else {
+            showToast(`❌ ${data.message || "Failed to remove assignment."}`);
+        }
+    } catch (err) {
+        showToast("⚠️ Could not remove class assignment.");
     }
 }
 

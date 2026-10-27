@@ -822,6 +822,64 @@
             </table>
         </div>
     </div>
+
+    <!-- Educator Class Assignments Governance -->
+    <div class="card" style="padding: 24px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 16px; margin-top: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <h3 style="font-size: 18px; margin: 0; color: var(--text);">Educator Class Assignments</h3>
+                <span style="font-size: 13px; color: var(--muted);">Class-scoped teaching authorizations enforced on backend</span>
+            </div>
+            <span id="adminAssignmentsCount" class="badge-pill" style="background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3);">0 Assignments</span>
+        </div>
+
+        <!-- Assign Class Form -->
+        <form id="assignClassForm" onsubmit="handleAssignTeacherClass(event)" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px;">Select Educator</label>
+                <select id="assignTeacherSelect" class="form-control" required style="padding: 8px 12px; font-size: 13px; background: #0b1120; color: var(--text);">
+                    <option value="" disabled selected>-- Choose Educator --</option>
+                </select>
+            </div>
+            <div style="width: 140px;">
+                <label style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px;">Class</label>
+                <select id="assignClassSelect" class="form-control" required style="padding: 8px 12px; font-size: 13px; background: #0b1120; color: var(--text);">
+                    <option value="5">Class 5</option>
+                    <option value="6">Class 6</option>
+                    <option value="7">Class 7</option>
+                    <option value="8">Class 8</option>
+                    <option value="9">Class 9</option>
+                    <option value="10" selected>Class 10</option>
+                    <option value="11">Class 11</option>
+                    <option value="12">Class 12</option>
+                </select>
+            </div>
+            <div style="width: 130px;">
+                <label style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px;">Section</label>
+                <input type="text" id="assignSectionInput" class="form-control" value="Section A" style="padding: 8px 12px; font-size: 13px; background: #0b1120; color: var(--text);">
+            </div>
+            <button type="submit" class="primary-btn" style="padding: 8px 16px; font-size: 13px; height: 38px;">
+                <i class="fa-solid fa-plus"></i> Assign Class
+            </button>
+        </form>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border); color: var(--muted);">
+                        <th style="padding: 12px 10px;">Educator</th>
+                        <th style="padding: 12px 10px;">Assigned Class</th>
+                        <th style="padding: 12px 10px;">Section</th>
+                        <th style="padding: 12px 10px;">Subject</th>
+                        <th style="padding: 12px 10px; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTeacherAssignmentsTableBody">
+                    <tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--muted);">Loading assignments...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </section>
 
 
